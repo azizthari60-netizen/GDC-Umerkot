@@ -1,0 +1,27 @@
+{
+  "name": "chem-dept-site-backend",
+  "version": "1.0.0",
+  "description": "Backend for Chemistry Department site",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "keywords": [
+    "chemistry",
+    "department",
+    "university"
+  ],
+  "author": "",
+  "license": "ISC"
+}
+

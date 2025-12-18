@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Us - BS Chemistry Department</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner container">
+      <a href="index.html" class="brand">
+        <div class="brand-logo">Chem</div>
+        <div class="brand-text">
+          <span class="brand-title">BS Chemistry Department</span>
+          <span class="brand-subtitle">Faculty of Science</span>
+        </div>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academic-policy.html">Academic Policy</a></li>
+          <li><a href="faculty.html">Faculty</a></li>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="contact.html" class="active">Contact Us</a></li>
+        </ul>
+      </nav>
+      <div class="auth-buttons">
+        <button class="btn btn-outline" id="btn-signin">Sign In</button>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>Contact Us</h1>
+      <p>Reach out for admissions, academic queries, or general information.</p>
+    </div>
+  </section>
+
+  <main class="page-content">
+    <div class="container contact-grid">
+      <div class="contact-card">
+        <h2>Send a Message</h2>
+        <p>
+          Use the form below to send your queries to the BS Chemistry Department. The office will respond to you via
+          email or phone.
+        </p>
+        <form id="contact-form">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required />
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" required />
+          </div>
+          <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Submit</button>
+        </form>
+      </div>
+
+      <div class="contact-card">
+        <h2>Department Contact</h2>
+        <p class="contact-info">
+          BS Chemistry Department<br />
+          Faculty of Science, Your University<br />
+          City, Country
+        </p>
+        <p class="contact-info">
+          Phone: +00-000-0000000<br />
+          Email: chemistry@university.edu
+        </p>
+        <p class="contact-info">
+          Office Hours:<br />
+          Monday to Friday, 9:00 AM - 3:00 PM
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-col">
+        <div class="brand footer-brand">
+          <div class="brand-logo">Chem</div>
+          <div class="brand-text">
+            <span class="brand-title">BS Chemistry Department</span>
+            <span class="brand-subtitle">Faculty of Science</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>About Us</h4>
+        <p>
+          For further information about the department and its activities, you may visit us during office hours or contact us via email.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academic-policy.html">Academic Policy</a></li>
+          <li><a href="faculty.html">Faculty</a></li>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact & Location</h4>
+        <p>
+          BS Chemistry Department<br />
+          Faculty of Science, Your University<br />
+          City, Country
+        </p>
+        <div class="map-embed">
+          <iframe
+            title="Department Location"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.999150934606!2d2.2944813156749295!3d48.858370079287926!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDjCsDUxJzMwLjEiTiAywrAxNSc0OS4yIkU!5e0!3m2!1sen!2s!4v1616161616161"
+            style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+        <p>&copy; <span id="year"></span> BS Chemistry Department. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

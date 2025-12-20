@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admission Form 2026</title>
+    <link rel="stylesheet" href="apply-2k26.css">
+</head>
+<body>
+    
+    <div class="form-container no-print">
+            <div class="form-header">
+             <div class="logo-div"><img src="logo.png" alt="Logo" style="width: 100px;"></div>
+                <div class="department-name-div">
+                    <h1 style="color: #1e3a8a; margin: 5px 0;">BS Chemistry Department</h1>
+                    <h2>Government Boys Degree College Umerkot</h2>
+                </div>
+            </div>
+        <div class="form-title"><h2>Registration Form 2k26</h2></div>
+        <form id="admissionForm">
+            <div class="input-group">
+                <label>Upload Student Image:</label>
+                <input type="file" id="userImage" accept="image/*" required onchange="previewImage(event)">
+            </div>
+            
+            <div class="photo-preview-container">
+             <img id="student-photo-preview" src="" alt="Preview" style="width: 120px; height: 140px; border: 1px solid #ccc; display: none; margin-top: 10px; object-fit: cover;">
+            </div>
+
+            <fieldset>
+                <legend>Personal Information</legend>
+                <div class="grid-inputs">
+                    <input type="text" id="in-name" placeholder="Name" required>
+                    <input type="text" id="in-fname" placeholder="Father's Name" required>
+                    <input type="text" id="in-caste" placeholder="Caste" required>
+                    <input type="text" id="in-cnic" placeholder="CNIC Number" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" title="Format: 12345-6789012-3">
+                    <input type="text" id="in-domicile" placeholder="Domicile District" required>
+                    <input type="text" id="in-email" placeholder="Email Address" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" title="Enter a valid email address">
+                    <input type="text" id="in-mobile" placeholder="Mobile Number" required pattern="[0-9]{10,15}" title="Enter a valid mobile number">
+                    <textarea id="in-address" placeholder="Address" required></textarea>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Parent or Guardian Information</legend>
+                <div class="grid-inputs">
+                    <input type="text" id="in-gname" placeholder="Guardian's Name" required>
+                    <input type="text" id="in-gjob" placeholder="Occupation" required>
+                    <input type="text" id="in-gjob-addr" placeholder="Occupation Address" required>
+                    <input type="text" id="in-gcontact" placeholder="Contact Number" required>
+                    <input type="text" id="in-gperm-addr" placeholder="Permanent Address" required>
+                </div>
+            </fieldset>
+
+           <fieldset>
+    <legend>Academic Information</legend>
+    <table class="input-table">
+        <thead>
+            <tr>
+                <th>Class</th>
+                <th>Board</th>
+                <th>Year</th>
+                <th>Roll No</th>
+                <th>Group</th>
+                <th>Percentage (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td data-label="Class" style="font-weight: bold; color: #1e3a8a;">Matriculation</td>
+                <td data-label="Board"><input type="text" id="m-board" placeholder="BISE Mirpurkhas"></td>
+                <td data-label="Year"><input type="number" id="m-year" placeholder="2022"></td>
+                <td data-label="Roll No"><input type="text" id="m-roll" placeholder="123456"></td>
+                <td data-label="Group"><input type="text" id="m-group" placeholder="Science"></td>
+                <td data-label="Percentage"><input type="number" id="m-perc" placeholder="85"></td>
+            </tr>
+            <tr>
+                <td data-label="Class" style="font-weight: bold; color: #1e3a8a;">Intermediate</td>
+                <td data-label="Board"><input type="text" id="i-board" placeholder="BISE Mirpurkhas"></td>
+                <td data-label="Year"><input type="number" id="i-year" placeholder="2024"></td>
+                <td data-label="Roll No"><input type="text" id="i-roll" placeholder="654321"></td>
+                <td data-label="Group"><input type="text" id="i-group" placeholder="Pre-Medical"></td>
+                <td data-label="Percentage"><input type="number" id="i-perc" placeholder="80"></td>
+            </tr>
+        </tbody>
+    </table>
+</fieldset>
+
+            <button type="button" class="submit-btn" onclick="processAndPrint()">Submit and Download</button>
+        </form>
+    </div>
+
+    <div id="print-area" class="only-print">
+        <div class="admission-card-page">
+            </div>
+
+        <div class="page-break"></div>
+
+        <div class="challan-page">
+            </div>
+    </div>
+
+    <script src="apply-2k26.js"></script>
+</body>
+</html>

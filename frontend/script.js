@@ -102,11 +102,11 @@ function prevEvent() {
 
 if (eventCards.length) {
   updateEvents();
-  let eventTimer = setInterval(nextEvent, 7000);
+  let eventTimer = setInterval(nextEvent, 6000);
 
   const resetEventTimer = () => {
     clearInterval(eventTimer);
-    eventTimer = setInterval(nextEvent, 7000);
+    eventTimer = setInterval(nextEvent, 6000);
   };
 
   if (eventNext) {

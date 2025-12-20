@@ -104,7 +104,7 @@ img {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #1e3a8a; /* Professional navy blue */
+  background: #1e3a8a;
   backdrop-filter: blur(16px);
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -125,17 +125,17 @@ img {
 }
 
 .brand-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  background: conic-gradient(from 180deg at 50% 50%, #22c55e, #0ea5e9, #6366f1, #22c55e);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.9rem;
   color: #ecfeff;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8), 0 14px 25px rgba(15, 23, 42, 0.7);
+  /* box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8), 0 14px 25px rgba(15, 23, 42, 0.7); */
 }
 
 .brand-text {
@@ -169,7 +169,7 @@ img {
 
 .main-nav a:hover,
 .main-nav a.active {
-  border-bottom-color: #fbbf24; /* Gold accent */
+  border-bottom-color: #fbbf24;
   color: #ffffff;
 }
 
@@ -519,7 +519,7 @@ img {
 /* Footer */
 
 .site-footer {
-  background: #1e3a8a; /* Matching header color */
+  background: #1e3a8a;
   color: #e5e7eb;
   padding: 2.3rem 0 0;
   margin-top: 1.5rem;
@@ -560,11 +560,11 @@ img {
 }
 
 .footer-links a:hover {
-  color: #fbbf24; /* Gold accent */
+  color: #fbbf24; 
 }
 
 .footer-copyright {
-  background: #1e40af; /* Darker blue for copyright bar */
+  background: #1e40af;
   padding: 1rem 0;
   margin-top: 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -878,3 +878,4 @@ img {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+

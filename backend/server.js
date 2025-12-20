@@ -653,6 +653,39 @@ app.get('/api/student/results', verifyStudentToken, (req, res) => {
   }
 });
 
+// ان لائنز کو اپنی موجودہ server.js میں روٹس والے حصے میں شامل کریں
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
+}
+
+// رجسٹریشن ڈیٹا وصول کرنے کا API Route
+app.post('/submit-registration', (req, res) => {
+    const studentData = req.body;
+    const filePath = path.join(dataDir, 'students.json');
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        let json = [];
+        if (!err && data) {
+            json = JSON.parse(data);
+        }
+          // نیا ریکارڈ شامل کرنا
+        json.push({
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            ...studentData
+        });
+
+        fs.writeFile(filePath, JSON.stringify(json, null, 2), (err) => {
+            if (err) return res.status(500).json({ error: "Failed to save data" });
+            res.status(200).json({ message: "Success" });
+        });
+    });
+});
+        // سرور کو بڑی تصاویر قبول کرنے کے قابل بنائیں
+        app.use(express.json({ limit: '50mb' })); 
+        app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 // Serve admin dashboard and student portal routes
 app.get('/admin-dashboard.html', (req, res) => {
   res.sendFile(path.join(frontendDir, 'admin-dashboard.html'));

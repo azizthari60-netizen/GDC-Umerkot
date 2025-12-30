@@ -1,7 +1,5 @@
 // Student Portal JavaScript
-const API_BASE_URL = (window.location.port === '5500' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
-  ? 'http://localhost:3000' 
-  : '';
+const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000' : '/api';
 
 // Check if student is logged in
 document.addEventListener('DOMContentLoaded', () => {

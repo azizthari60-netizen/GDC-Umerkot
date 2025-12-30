@@ -76,7 +76,7 @@ if (heroSlides.length) {
 const eventCards = Array.from(document.querySelectorAll(".event-card"));
 const eventPrev = document.querySelector(".event-prev");
 const eventNext = document.querySelector(".event-next");
-let eventIndex = 0;
+let eventIndex = 1;
 
 function updateEvents() {
   if (!eventCards.length) return;
@@ -174,9 +174,7 @@ if (forgotPasswordBtn && signinModal && recoveryModal) {
 }
 
 // API Base URL - use backend server URL
-const API_BASE_URL = window.location.port === '5500' || window.location.hostname === '127.0.0.1' 
-  ? 'http://localhost:3000' 
-  : '';
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '/api';
 
 // Contact form handler - connect to backend API
 const contactForm = document.getElementById("contact-form");
@@ -218,7 +216,7 @@ if (contactForm) {
     } catch (err) {
       console.error("Contact form error:", err);
       console.error("Error details:", err.message, err.stack);
-      alert(`Network error: ${err.message}. Please make sure the server is running on http://localhost:3000`);
+      alert(`Network error: ${err.message}. Please check your connection and try again.`);
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -277,7 +275,7 @@ if (signinForm) {
     } catch (err) {
       console.error("Login error:", err);
       console.error("Error details:", err.message, err.stack);
-      alert(`Network error: ${err.message}. Please make sure the server is running on http://localhost:3000`);
+      alert(`Network error: ${err.message}. Please try again later.`);
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -325,7 +323,7 @@ if (recoveryForm) {
     } catch (err) {
       console.error("Recovery error:", err);
       console.error("Error details:", err.message, err.stack);
-      alert(`Network error: ${err.message}. Please make sure the server is running on http://localhost:3000`);
+      alert(`Network error: ${err.message}. Please try again later.`);
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

@@ -1,4 +1,6 @@
-require('dotenv').config();
+try {
+    require('dotenv').config();
+} catch (error) {console.log("Dotenv not found but it's okay for production");}
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');

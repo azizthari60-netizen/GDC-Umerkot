@@ -199,7 +199,7 @@ if (contactForm) {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/contact`, {
+      const res = await fetch(`${API_BASE_URL}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -247,7 +247,7 @@ if (signinForm) {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -305,7 +305,7 @@ if (recoveryForm) {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/recovery`, {
+      const res = await fetch(`${API_BASE_URL}/auth/recovery`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

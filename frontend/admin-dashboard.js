@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Admin token:', adminToken ? 'Present' : 'Missing');
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/students`, {
+        const res = await fetch(`${API_BASE_URL}/admin/students`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/students/${data.studentId}/results`, {
+        const res = await fetch(`${API_BASE_URL}/admin/students/${data.studentId}/results`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/students/${data.studentId}/cgpa`, {
+        const res = await fetch(`${API_BASE_URL}/admin/students/${data.studentId}/cgpa`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadStudents() {
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/students`, {
+    const res = await fetch(`${API_BASE_URL}/admin/students`, {
       headers: {
         'Authorization': `Bearer ${adminToken}`
       }
@@ -267,7 +267,7 @@ async function resetPassword(studentId) {
 
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/students/${studentId}/reset-password`, {
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/reset-password`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -291,7 +291,7 @@ async function deleteStudent(studentId) {
 
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/students/${studentId}`, {
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${adminToken}`

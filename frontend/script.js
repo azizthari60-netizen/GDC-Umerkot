@@ -1,3 +1,4 @@
+API_BASE_URL = window.location.origin + "/api";
 // Mobile nav toggle
 const navToggle = document.querySelector(".nav-toggle");
 const mainNav = document.querySelector(".main-nav");

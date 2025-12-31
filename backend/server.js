@@ -1,7 +1,5 @@
-try {
-    require('dotenv').config();
-} catch (error) { console.log("Dotenv not found but it's okay for production"); }
-
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -20,6 +18,7 @@ const crypto = require('crypto');
 const app = express();
 
 // --- Configuration ---
+console.log("Environment Check - Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME ? "Found" : "NOT FOUND");
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,

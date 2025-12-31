@@ -16,9 +16,6 @@
       "dest": "backend/server.js"
     },
     {
-      "src": "/create-admin", "dest": "backend/server.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "frontend/$1"
     }

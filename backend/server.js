@@ -1,4 +1,4 @@
-const dotenv = require('dotenv');
+const dotenv = require('dotenv').config({ path: './backend/ .env' });
 dotenv.config();
 const express = require('express');
 const path = require('path');
@@ -13,8 +13,7 @@ const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
-
+const crypto = require('crypto');   
 const app = express();
 
 // --- Configuration ---
@@ -173,7 +172,7 @@ const contactSchema = new mongoose.Schema({
 const Contact = mongoose.model('Contact', contactSchema);
 
 // Helper function to upload to Cloudinary
-function uploadToCloudinary(buffer, folder = 'chemistry-dept') {
+function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             { folder: folder },

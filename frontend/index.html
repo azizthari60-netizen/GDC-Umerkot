@@ -10,6 +10,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <!-- Loader -->
+  <div class="loader-overlay" id="loader">
+    <div class="loader-container">
+      <div class="loader-logo">
+        <img src="logo.png" alt="Logo">
+      </div>
+    </div>
+  </div>
   <header class="site-header">
     <div class="header-inner container">
       <a href="index.html" class="brand">
@@ -29,7 +37,7 @@
         </ul>
       </nav>
       <div class="auth-buttons">
-        <a href="signup.html" class="btn btn-primary" id="btn-register">Register Now</a>
+        <button class="btn btn-primary" id="btn-register">Register Now</button>
       </div>
       <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -73,51 +81,59 @@
       <div class="hero-dots" aria-hidden="true"></div>
     </section>
 
-    <!-- Event Slider -->
-    <section class="events" aria-label="Department events">
+    <!-- Notification Hero Section -->
+    <section class="notification-hero" aria-label="Latest announcements">
       <div class="container">
-        <div class="section-header">
+        <div class="section-header fade-in-up">
           <h2>Latest Announcements & Events</h2>
           <p>Exam schedules, results, seminars, and departmental activities.</p>
         </div>
-        <div class="event-carousel-wrapper">
-          <button class="event-nav event-prev" aria-label="Previous event">&#10094;</button>
-          <div class="event-carousel">
-            <div class="event-card active" tabindex="0">
-              <h3>Admission 2026 Batch</h3>
-              <p>Apply Online for BS Chemistry (Batch 2026) from 01 January 2026 by clicking on the following button.</p>
-              <a href="apply-2k26.html" class="event-link">Apply Now</a>
+        <div class="notification-hero-inner">
+          <button class="notification-nav notification-prev" aria-label="Previous notification">&#10094;</button>
+          <div class="notification-slides">
+            <div class="notification-slide active">
+              <div class="notification-content">
+                <h3>Admission 2026 Batch</h3>
+                <p>Apply Online for BS Chemistry (Batch 2026) from 01 January 2026 by clicking on the following button.</p>
+                <a href="apply-2k26.html" class="notification-link">Apply Now</a>
+              </div>
             </div>
-            <div class="event-card">
-              <h3>Practical Viva Voce</h3>
-              <p>Practical examinations and viva voce for Analytical Chemistry Lab will be held in the second week of April.</p>
-              <a href="#" class="event-link">View Details</a>
+            <div class="notification-slide">
+              <div class="notification-content">
+                <h3>Practical Viva Voce</h3>
+                <p>Practical examinations and viva voce for Analytical Chemistry Lab will be held in the second week of April.</p>
+                <a href="#" class="notification-link">View Details</a>
+              </div>
             </div>
-            <div class="event-card">
-              <h3>Result Announcement</h3>
-              <p>Final term results for BS Chemistry (Batch 2021) have been uploaded to the student portal.</p>
-              <a href="#" class="event-link">Check Result</a>
+            <div class="notification-slide">
+              <div class="notification-content">
+                <h3>Result Announcement</h3>
+                <p>Final term results for BS Chemistry (Batch 2021) have been uploaded to the student portal.</p>
+                <a href="results.html" class="notification-link">Check Result</a>
+              </div>
             </div>
-            <div class="event-card">
-              <h3>Guest Lecture Series</h3>
-              <p>Renowned industrial chemist will deliver a talk on Green Chemistry and Sustainable Processes.</p>
-              <a href="#" class="event-link">Register Now</a>
+            <div class="notification-slide">
+              <div class="notification-content">
+                <h3>Guest Lecture Series</h3>
+                <p>Renowned industrial chemist will deliver a talk on Green Chemistry and Sustainable Processes.</p>
+                <a href="contact.html" class="notification-link">Register Now</a>
+              </div>
             </div>
           </div>
-          <button class="event-nav event-next" aria-label="Next event">&#10095;</button>
+          <button class="notification-nav notification-next" aria-label="Next notification">&#10095;</button>
         </div>
       </div>
     </section>
 
     <!-- Galleries -->
-    <section class="galleries" aria-label="Department galleries">
+    <section class="galleries animate-on-scroll" aria-label="Department galleries">
       <div class="container">
         <div class="section-header">
           <h2>Department Galleries</h2>
           <p>A glimpse into our academic and co-curricular life.</p>
         </div>
         <div class="gallery-grid">
-          <div class="gallery-box">
+          <div class="gallery-box animate-on-scroll">
             <h3>Laboratory Sessions</h3>
             <div class="gallery-images">
               <div class="gallery-img" style="background-image:url('https://images.pexels.com/photos/3825532/pexels-photo-3825532.jpeg?auto=compress&cs=tinysrgb&w=800');"></div>
@@ -125,7 +141,7 @@
               <div class="gallery-img" style="background-image:url('https://images.pexels.com/photos/256262/pexels-photo-256262.jpeg?auto=compress&cs=tinysrgb&w=800');"></div>
             </div>
           </div>
-          <div class="gallery-box">
+          <div class="gallery-box animate-on-scroll">
             <h3>Seminars & Workshops</h3>
             <div class="gallery-images">
               <div class="gallery-img" style="background-image:url('https://images.pexels.com/photos/1181395/pexels-photo-1181395.jpeg?auto=compress&cs=tinysrgb&w=800');"></div>
@@ -133,7 +149,7 @@
               <div class="gallery-img" style="background-image:url('https://images.pexels.com/photos/256490/pexels-photo-256490.jpeg?auto=compress&cs=tinysrgb&w=800');"></div>
             </div>
           </div>
-          <div class="gallery-box">
+          <div class="gallery-box animate-on-scroll">
             <h3>Student Activities</h3>
             <div class="gallery-images">
               <div class="gallery-img" style="background-image:url('https://images.pexels.com/photos/1181355/pexels-photo-1181355.jpeg?auto=compress&cs=tinysrgb&w=800');"></div>
@@ -145,28 +161,55 @@
       </div>
     </section>
 
-    <!-- Sign In Modal (no self sign-up) -->
+    <!-- Sign Up Modal -->
+    <div class="modal" id="signup-modal" aria-hidden="true" role="dialog" aria-labelledby="signup-title">
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-dialog">
+        <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
+        <h2 id="signup-title">Student Registration</h2>
+        <p class="modal-subtitle">Create your account to access the student portal</p>
+        <form class="auth-form" id="signup-form">
+          <div class="form-group">
+            <label for="signup-fullName">Full Name</label>
+            <input type="text" id="signup-fullName" name="fullName" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-cnic">CNIC Number</label>
+            <input type="text" id="signup-cnic" name="cnic" placeholder="12345-1234567-1" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" />
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" name="password" required minlength="6" />
+          </div>
+          <div class="form-group">
+            <label for="signup-confirmPassword">Confirm Password</label>
+            <input type="password" id="signup-confirmPassword" name="confirmPassword" required minlength="6" />
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Register Now</button>
+          <button type="button" class="link-button" id="switch-to-signin">Already have an account? Sign In</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sign In Modal -->
     <div class="modal" id="signin-modal" aria-hidden="true" role="dialog" aria-labelledby="signin-title">
       <div class="modal-backdrop" data-close-modal></div>
       <div class="modal-dialog">
         <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-        <h2 id="signin-title">Student Login</h2>
-        <p class="modal-subtitle">Use your system-generated username and password provided by the department.</p>
+        <h2 id="signin-title">Login</h2>
+        <p class="modal-subtitle">Sign in with your CNIC/Username and password</p>
         <form class="auth-form" id="signin-form">
           <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" required />
+            <label for="signin-cnic">CNIC Number / Username</label>
+            <input type="text" id="signin-cnic" name="cnic" placeholder="12345-1234567-1 or admin" required />
           </div>
           <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required />
+            <label for="signin-password">Password</label>
+            <input type="password" id="signin-password" name="password" required />
           </div>
           <button type="submit" class="btn btn-primary full-width">Sign In</button>
-          <button type="button" class="link-button" id="forgot-password-btn">Forgot password?</button>
+          <button type="button" class="link-button" id="switch-to-signup">Don't have an account? Register</button>
         </form>
-        <div class="info-note">
-          New students receive their login credentials from the department office after admission confirmation. Self sign-up is not allowed.
-        </div>
       </div>
     </div>
 

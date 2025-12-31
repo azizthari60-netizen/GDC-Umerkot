@@ -180,16 +180,38 @@
         <p>Access your academic information, results, and resources</p>
       </div>
 
+      <!-- Apply Now Section (New Students Only) -->
+      <div class="portal-card" id="apply-section" style="display: none;">
+        <h3><span class="portal-card-icon">📝</span> Admission Form 2026</h3>
+        <div id="apply-status">
+          <p id="form-status-text">Loading status...</p>
+          <button class="btn btn-primary" id="btn-apply-now" style="margin-top: 1rem; display: none;">Apply Now</button>
+          <button class="btn btn-primary" id="btn-generate-challan" style="margin-top: 1rem; display: none;">Generate & Download Challan</button>
+          <button class="btn btn-primary" id="btn-upload-challan" style="margin-top: 1rem; display: none;">Upload Challan</button>
+          <input type="file" id="challan-file-input" accept="image/*" style="display: none;">
+          <div id="challan-status" style="margin-top: 1rem;"></div>
+        </div>
+      </div>
+
       <div class="portal-grid">
         <div class="portal-card">
           <h3><span class="portal-card-icon">👤</span> Student Information</h3>
+          <div id="student-profile-image" style="text-align: center; margin-bottom: 1rem;"></div>
           <div class="info-item">
             <span class="info-label">Name:</span>
             <span class="info-value" id="info-name">-</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Roll Number:</span>
-            <span class="info-value" id="info-roll">-</span>
+            <span class="info-label">CNIC:</span>
+            <span class="info-value" id="info-cnic">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Father's Name:</span>
+            <span class="info-value" id="info-father">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Caste:</span>
+            <span class="info-value" id="info-caste">-</span>
           </div>
           <div class="info-item">
             <span class="info-label">Email:</span>
@@ -200,8 +222,8 @@
             <span class="info-value" id="info-batch">-</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Semester:</span>
-            <span class="info-value" id="info-semester">-</span>
+            <span class="info-label">Registration Status:</span>
+            <span class="info-value" id="info-reg-status">-</span>
           </div>
         </div>
 
@@ -270,7 +292,16 @@
       <div class="portal-card">
         <h3><span class="portal-card-icon">📢</span> Latest Announcements</h3>
         <div id="announcements">
-          <p style="color: #6b7280; padding: 1rem 0;">No announcements at this time.</p>
+          <p style="color: #6b7280; padding: 1rem 0;">Loading announcements...</p>
+        </div>
+      </div>
+
+      <!-- Slip Download Section (For Old Students) -->
+      <div class="portal-card" id="slip-section" style="display: none;">
+        <h3><span class="portal-card-icon">🎫</span> Admission Slip</h3>
+        <div id="slip-status">
+          <p id="slip-status-text">Loading slip status...</p>
+          <button class="btn btn-primary" id="btn-download-slip" style="margin-top: 1rem; display: none;">Download Slip</button>
         </div>
       </div>
     </div>

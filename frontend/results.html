@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Results - BS Chemistry Department</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .results-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .results-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+      margin-bottom: 2rem;
+    }
+    .results-form {
+      margin-bottom: 2rem;
+    }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .results-table th,
+    .results-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .results-table th {
+      background: #f3f4f6;
+      font-weight: 600;
+      color: #1e3a8a;
+    }
+    .notification-banner {
+      background: linear-gradient(135deg, #1e3a8a, #1e40af);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner container">
+      <a href="index.html" class="brand">
+        <div class="brand-logo"><img src="logo.png" alt="Logo"></div>
+        <div class="brand-text">
+          <span class="brand-title">Department of Chemistry</span>
+          <span class="brand-subtitle">Government Boys Degree College Umerkot</span>
+        </div>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="results.html" class="active">Results</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="results-container">
+      <div class="notification-banner">
+        <h1>Check Your Results</h1>
+        <p>Enter your CNIC number to view your results</p>
+      </div>
+
+      <div class="results-card">
+        <form class="results-form" id="results-form">
+          <div class="form-group">
+            <label for="cnic">CNIC Number</label>
+            <input type="text" id="cnic" name="cnic" placeholder="12345-1234567-1" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" />
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Check Results</button>
+        </form>
+
+        <div id="results-display"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-col">
+        <div class="brand footer-brand">
+          <div class="brand-logo"><img src="logo.png" alt="logo"></div>
+          <div class="brand-text">
+            <span class="brand-title">BS Chemistry Department</span>
+            <span class="brand-subtitle">Government Boys Degree College Umerkot</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>About Us</h4>
+        <p>
+          The BS Chemistry program prepares graduates with strong foundations in chemical sciences.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="results.html">Results</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+        <p>&copy; <span id="year"></span> BS Chemistry Department. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
+
+    const resultsForm = document.getElementById('results-form');
+    const resultsDisplay = document.getElementById('results-display');
+
+    if (resultsForm) {
+      resultsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const cnic = document.getElementById('cnic').value;
+        const submitButton = resultsForm.querySelector('button[type="submit"]');
+        const originalText = submitButton ? submitButton.textContent : 'Check Results';
+        
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = 'Loading...';
+        }
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/results/check`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cnic })
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            if (data.results && data.results.length > 0) {
+              resultsDisplay.innerHTML = `
+                <h3 style="margin-bottom: 1rem; color: #1e3a8a;">Your Results</h3>
+                <table class="results-table">
+                  <thead>
+                    <tr>
+                      <th>Course</th>
+                      <th>Marks</th>
+                      <th>Grade</th>
+                      <th>Semester</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${data.results.map(result => `
+                      <tr>
+                        <td>${result.course}</td>
+                        <td>${result.marks}</td>
+                        <td>${result.grade}</td>
+                        <td>${result.semester}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              `;
+            } else {
+              resultsDisplay.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results found for this CNIC.</p>';
+            }
+          } else {
+            resultsDisplay.innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">' + (data.message || 'No results found.') + '</p>';
+          }
+        } catch (err) {
+          console.error('Error checking results:', err);
+          resultsDisplay.innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">Network error. Please try again.</p>';
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+          }
+        }
+      });
+    }
+
+    // Footer year
+    const yearSpan = document.getElementById('year');
+    if (yearSpan) {
+      yearSpan.textContent = new Date().getFullYear();
+    }
+  </script>
+</body>
+</html>
+

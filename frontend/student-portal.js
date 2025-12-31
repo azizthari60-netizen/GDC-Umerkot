@@ -1,5 +1,8 @@
 // Student Portal JavaScript
-const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000' : '/api';
+const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
+
+let currentStudent = null;
+let isOldStudent = false;
 
 // Check if student is logged in
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadStudentData();
   loadAssignments();
   loadResults();
+  loadNotifications();
+  loadSlip();
 
   // Assignment upload form
   const assignmentForm = document.getElementById('assignment-upload-form');
@@ -45,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
           assignmentForm.reset();
           loadAssignments();
         } else {
-          alert(result.error || 'Failed to upload assignment');
+          alert(result.message || 'Failed to upload assignment');
         }
       } catch (err) {
         console.error('Error uploading assignment:', err);
@@ -59,11 +64,101 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Apply Now button
+  const applyNowBtn = document.getElementById('btn-apply-now');
+  if (applyNowBtn) {
+    applyNowBtn.addEventListener('click', () => {
+      window.location.href = 'apply-2k26.html';
+    });
+  }
+
+  // Generate Challan button
+  const generateChallanBtn = document.getElementById('btn-generate-challan');
+  if (generateChallanBtn) {
+    generateChallanBtn.addEventListener('click', () => {
+      if (currentStudent && currentStudent._id) {
+        window.open(`${API_BASE_URL}/student/challan/${currentStudent._id}`, '_blank');
+      }
+    });
+  }
+
+  // Upload Challan button
+  const uploadChallanBtn = document.getElementById('btn-upload-challan');
+  const challanFileInput = document.getElementById('challan-file-input');
+  if (uploadChallanBtn && challanFileInput) {
+    uploadChallanBtn.addEventListener('click', () => {
+      challanFileInput.click();
+    });
+
+    challanFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('challanImage', file);
+
+      const studentToken = localStorage.getItem('studentToken');
+      uploadChallanBtn.disabled = true;
+      uploadChallanBtn.textContent = 'Uploading...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/student/upload-challan`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${studentToken}`
+          },
+          body: formData
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+          alert('Challan uploaded successfully!');
+          loadStudentData(); // Reload to update status
+        } else {
+          alert(result.message || 'Failed to upload challan');
+        }
+      } catch (err) {
+        console.error('Error uploading challan:', err);
+        alert('Network error. Please try again.');
+      } finally {
+        uploadChallanBtn.disabled = false;
+        uploadChallanBtn.textContent = 'Upload Challan';
+        challanFileInput.value = '';
+      }
+    });
+  }
+
+  // Download Slip button
+  const downloadSlipBtn = document.getElementById('btn-download-slip');
+  if (downloadSlipBtn) {
+    downloadSlipBtn.addEventListener('click', async () => {
+      const studentToken = localStorage.getItem('studentToken');
+      try {
+        const res = await fetch(`${API_BASE_URL}/student/slip`, {
+          headers: {
+            'Authorization': `Bearer ${studentToken}`
+          }
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.slip) {
+          window.open(`${API_BASE_URL}/student/slip/pdf/${data.slip._id}`, '_blank');
+        } else {
+          alert(data.message || 'Slip not available');
+        }
+      } catch (err) {
+        console.error('Error loading slip:', err);
+        alert('Network error. Please try again.');
+      }
+    });
+  }
+
   // Logout button
   const logoutBtn = document.getElementById('btn-logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('studentToken');
+      localStorage.removeItem('studentData');
       window.location.href = 'index.html';
     });
   }
@@ -85,21 +180,44 @@ async function loadStudentData() {
     });
 
     const data = await res.json();
-    if (res.ok && data.success && data.student) {
-      const student = data.student;
+    if (res.ok && data.student) {
+      currentStudent = data.student;
+      isOldStudent = data.isOldStudent || false;
       
       // Update welcome banner
-      document.getElementById('student-name').textContent = student.name || 'Student';
+      document.getElementById('student-name').textContent = currentStudent.fullName || 'Student';
       
       // Update student information
-      document.getElementById('info-name').textContent = student.name || '-';
-      document.getElementById('info-roll').textContent = student.rollNumber || '-';
-      document.getElementById('info-email').textContent = student.email || '-';
-      document.getElementById('info-batch').textContent = student.batch ? `Batch ${student.batch}` : '-';
-      document.getElementById('info-semester').textContent = student.semester ? `Semester ${student.semester}` : '-';
-      document.getElementById('info-cgpa').textContent = student.cgpa ? student.cgpa.toFixed(2) : 'N/A';
-      document.getElementById('info-courses').textContent = student.coursesEnrolled || '0';
-      document.getElementById('info-status').textContent = student.status || 'Active';
+      document.getElementById('info-name').textContent = currentStudent.fullName || '-';
+      document.getElementById('info-cnic').textContent = currentStudent.cnic || '-';
+      document.getElementById('info-father').textContent = (currentStudent.formData?.fName || currentStudent.fatherName) || '-';
+      document.getElementById('info-caste').textContent = (currentStudent.formData?.caste || currentStudent.caste) || '-';
+      document.getElementById('info-email').textContent = (currentStudent.formData?.email || currentStudent.email) || '-';
+      document.getElementById('info-batch').textContent = currentStudent.batch ? `Batch ${currentStudent.batch}` : '-';
+      document.getElementById('info-reg-status').textContent = currentStudent.status || 'Active';
+
+      // Profile image
+      const profileImageDiv = document.getElementById('student-profile-image');
+      if (profileImageDiv && currentStudent.profileImage) {
+        profileImageDiv.innerHTML = `<img src="${currentStudent.profileImage}" alt="Profile" style="width: 100px; height: 120px; border-radius: 8px; object-fit: cover; border: 2px solid #1e3a8a;">`;
+      }
+
+      // Show Apply Now section for new students (2026 batch) who haven't filled form
+      if (!isOldStudent && currentStudent.batch === '2026') {
+        const applySection = document.getElementById('apply-section');
+        if (applySection) {
+          applySection.style.display = 'block';
+          updateApplySection();
+        }
+      }
+
+      // Show slip section for old students or students with slip
+      if (isOldStudent || currentStudent.batch !== '2026') {
+        const slipSection = document.getElementById('slip-section');
+        if (slipSection) {
+          slipSection.style.display = 'block';
+        }
+      }
     } else {
       alert('Failed to load student data. Please login again.');
       localStorage.removeItem('studentToken');
@@ -108,6 +226,54 @@ async function loadStudentData() {
   } catch (err) {
     console.error('Error loading student data:', err);
     alert('Network error. Please try again.');
+  }
+}
+
+function updateApplySection() {
+  if (!currentStudent) return;
+
+  const statusText = document.getElementById('form-status-text');
+  const applyNowBtn = document.getElementById('btn-apply-now');
+  const generateChallanBtn = document.getElementById('btn-generate-challan');
+  const uploadChallanBtn = document.getElementById('btn-upload-challan');
+  const challanStatusDiv = document.getElementById('challan-status');
+
+  if (!currentStudent.isFormFilled) {
+    statusText.textContent = 'Please fill out the admission form to proceed.';
+    applyNowBtn.style.display = 'inline-block';
+    generateChallanBtn.style.display = 'none';
+    uploadChallanBtn.style.display = 'none';
+  } else {
+    applyNowBtn.style.display = 'none';
+    
+    if (currentStudent.challanStatus === 'Not Generated' || currentStudent.challanStatus === 'Generated') {
+      statusText.textContent = 'Form submitted successfully! Generate and download your challan.';
+      generateChallanBtn.style.display = 'inline-block';
+      uploadChallanBtn.style.display = 'none';
+    } else if (currentStudent.challanStatus === 'Uploaded') {
+      statusText.textContent = 'Challan uploaded. Waiting for admin verification.';
+      generateChallanBtn.style.display = 'inline-block';
+      uploadChallanBtn.style.display = 'inline-block';
+      
+      if (currentStudent.challanImage) {
+        challanStatusDiv.innerHTML = `<p style="color: #059669;">Challan uploaded: <a href="${currentStudent.challanImage}" target="_blank">View Image</a></p>`;
+      }
+    } else if (currentStudent.challanStatus === 'Verified') {
+      statusText.textContent = 'Registration approved! Your challan has been verified.';
+      generateChallanBtn.style.display = 'inline-block';
+      uploadChallanBtn.style.display = 'none';
+      challanStatusDiv.innerHTML = '<p style="color: #059669;">✓ Challan verified by admin</p>';
+    }
+
+    if (currentStudent.status === 'Pending') {
+      statusText.textContent += ' Registration Status: Pending Approval';
+    } else if (currentStudent.status === 'Approved') {
+      statusText.textContent += ' Registration Status: Approved ✓';
+      challanStatusDiv.innerHTML += '<p style="color: #059669;">✓ Registration Approved</p>';
+    } else if (currentStudent.status === 'Rejected') {
+      statusText.textContent += ' Registration Status: Rejected';
+      challanStatusDiv.innerHTML += '<p style="color: #dc2626;">✗ Registration Rejected</p>';
+    }
   }
 }
 
@@ -197,5 +363,65 @@ async function loadResults() {
   } catch (err) {
     console.error('Error loading results:', err);
     document.getElementById('results-display').innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">Network error. Please refresh.</p>';
+  }
+}
+
+async function loadNotifications() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/student/notifications`);
+    const data = await res.json();
+    const announcementsDiv = document.getElementById('announcements');
+    
+    if (res.ok && data.success && data.notifications && data.notifications.length > 0) {
+      announcementsDiv.innerHTML = data.notifications.map(notif => `
+        <div style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">
+          <strong style="color: #1e3a8a;">${notif.title}</strong>
+          <p style="color: #4b5563; margin-top: 0.5rem;">${notif.message}</p>
+          <small style="color: #9ca3af;">${new Date(notif.createdAt).toLocaleDateString()}</small>
+        </div>
+      `).join('');
+    } else {
+      announcementsDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0;">No announcements at this time.</p>';
+    }
+  } catch (err) {
+    console.error('Error loading notifications:', err);
+    document.getElementById('announcements').innerHTML = '<p style="color: #6b7280; padding: 1rem 0;">Error loading announcements.</p>';
+  }
+}
+
+async function loadSlip() {
+  try {
+    const studentToken = localStorage.getItem('studentToken');
+    const res = await fetch(`${API_BASE_URL}/student/slip`, {
+      headers: {
+        'Authorization': `Bearer ${studentToken}`
+      }
+    });
+
+    const data = await res.json();
+    const slipStatusText = document.getElementById('slip-status-text');
+    const downloadSlipBtn = document.getElementById('btn-download-slip');
+    
+    if (res.ok && data.success && data.slip) {
+      const now = new Date();
+      const availableDate = data.slip.availableDate ? new Date(data.slip.availableDate) : null;
+      
+      if (availableDate && now < availableDate) {
+        slipStatusText.textContent = `Slip will be available from: ${availableDate.toLocaleDateString()}`;
+        downloadSlipBtn.style.display = 'none';
+      } else {
+        slipStatusText.textContent = 'Your admission slip is ready for download.';
+        downloadSlipBtn.style.display = 'inline-block';
+      }
+    } else {
+      slipStatusText.textContent = data.message || 'Slip not available yet.';
+      if (downloadSlipBtn) downloadSlipBtn.style.display = 'none';
+    }
+  } catch (err) {
+    console.error('Error loading slip:', err);
+    const slipStatusText = document.getElementById('slip-status-text');
+    if (slipStatusText) {
+      slipStatusText.textContent = 'Error loading slip status.';
+    }
   }
 }

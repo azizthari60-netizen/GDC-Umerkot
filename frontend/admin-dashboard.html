@@ -78,6 +78,25 @@
     .student-actions {
       display: flex;
       gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .student-info img {
+      width: 50px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 0.5rem;
+    }
+    .modal-reply {
+      margin-top: 1rem;
+    }
+    .modal-reply textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-family: inherit;
     }
     .btn-small {
       padding: 0.35rem 0.75rem;
@@ -175,6 +194,58 @@
         <div class="stat-card">
           <h4 id="pending-requests">0</h4>
           <p>Pending Requests</p>
+        </div>
+      </div>
+
+      <!-- Register Old Student -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>Register Old Student</h3>
+        <form id="register-old-student-form">
+          <div class="form-group">
+            <label for="old-student-name">Full Name</label>
+            <input type="text" id="old-student-name" name="fullName" required />
+          </div>
+          <div class="form-group">
+            <label for="old-student-cnic">CNIC</label>
+            <input type="text" id="old-student-cnic" name="cnic" required />
+          </div>
+          <div class="form-group">
+            <label for="old-student-password">Password (leave empty to use CNIC)</label>
+            <input type="password" id="old-student-password" name="password" />
+          </div>
+          <div class="form-group">
+            <label for="old-student-batch">Batch</label>
+            <input type="text" id="old-student-batch" name="batch" />
+          </div>
+          <div class="form-group">
+            <label for="old-student-roll">Roll Number</label>
+            <input type="text" id="old-student-roll" name="rollNumber" />
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Register Old Student</button>
+        </form>
+      </div>
+
+      <!-- Students List -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>All Students</h3>
+        <div class="students-list" id="students-list">
+          <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading students...</p>
+        </div>
+      </div>
+
+      <!-- Assignments -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>Student Assignments</h3>
+        <div class="students-list" id="assignments-list">
+          <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading assignments...</p>
+        </div>
+      </div>
+
+      <!-- Contact Submissions -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>Contact Form Submissions</h3>
+        <div class="students-list" id="contact-submissions">
+          <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading submissions...</p>
         </div>
       </div>
 

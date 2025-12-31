@@ -72,109 +72,254 @@ if (heroSlides.length) {
   }
 }
 
-// Event carousel (center card clickable, sides visible but dim)
-const eventCards = Array.from(document.querySelectorAll(".event-card"));
-const eventPrev = document.querySelector(".event-prev");
-const eventNext = document.querySelector(".event-next");
-let eventIndex = 1;
+// Notification Hero (like hero slider)
+const notificationSlides = Array.from(document.querySelectorAll(".notification-slide"));
+const notificationPrev = document.querySelector(".notification-prev");
+const notificationNext = document.querySelector(".notification-next");
+let notificationIndex = 0;
 
-function updateEvents() {
-  if (!eventCards.length) return;
-  eventCards.forEach((card, idx) => {
-    card.classList.toggle("active", idx === eventIndex);
-    if (idx === eventIndex) {
-      card.setAttribute("tabindex", "0");
-    } else {
-      card.setAttribute("tabindex", "-1");
-    }
+function updateNotifications() {
+  if (!notificationSlides.length) return;
+  notificationSlides.forEach((slide, idx) => {
+    slide.classList.toggle("active", idx === notificationIndex);
   });
 }
 
-function nextEvent() {
-  eventIndex = (eventIndex + 1) % eventCards.length;
-  updateEvents();
+function nextNotification() {
+  notificationIndex = (notificationIndex + 1) % notificationSlides.length;
+  updateNotifications();
 }
 
-function prevEvent() {
-  eventIndex = (eventIndex - 1 + eventCards.length) % eventCards.length;
-  updateEvents();
+function prevNotification() {
+  notificationIndex = (notificationIndex - 1 + notificationSlides.length) % notificationSlides.length;
+  updateNotifications();
 }
 
-if (eventCards.length) {
-  updateEvents();
-  let eventTimer = setInterval(nextEvent, 6000);
+if (notificationSlides.length) {
+  updateNotifications();
+  let notificationTimer = setInterval(nextNotification, 5000); // Auto-change every 5 seconds
 
-  const resetEventTimer = () => {
-    clearInterval(eventTimer);
-    eventTimer = setInterval(nextEvent, 6000);
+  const resetNotificationTimer = () => {
+    clearInterval(notificationTimer);
+    notificationTimer = setInterval(nextNotification, 5000);
   };
 
-  if (eventNext) {
-    eventNext.addEventListener("click", () => {
-      nextEvent();
-      resetEventTimer();
+  if (notificationNext) {
+    notificationNext.addEventListener("click", () => {
+      nextNotification();
+      resetNotificationTimer();
     });
   }
 
-  if (eventPrev) {
-    eventPrev.addEventListener("click", () => {
-      prevEvent();
-      resetEventTimer();
+  if (notificationPrev) {
+    notificationPrev.addEventListener("click", () => {
+      prevNotification();
+      resetNotificationTimer();
     });
   }
 }
 
+// Loader
+const loader = document.getElementById("loader");
+if (loader) {
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      loader.classList.add("hidden");
+      setTimeout(() => {
+        loader.style.display = "none";
+      }, 400);
+    }, 1200); // Show loader for 1.2 seconds (shorter time)
+  });
+}
+
+// Animations on scroll
+const observerOptions = {
+  threshold: 0.1,
+  rootMargin: "0px 0px -50px 0px"
+};
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add("animated", "fade-in-up");
+    }
+  });
+}, observerOptions);
+
+document.querySelectorAll(".animate-on-scroll").forEach(el => {
+  observer.observe(el);
+});
+
 // Auth modals
+const signupModal = document.getElementById("signup-modal");
 const signinModal = document.getElementById("signin-modal");
-const recoveryModal = document.getElementById("recovery-modal");
-const signInBtn = document.getElementById("btn-signin");
-const forgotPasswordBtn = document.getElementById("forgot-password-btn");
+const registerBtn = document.getElementById("btn-register");
+const switchToSignin = document.getElementById("switch-to-signin");
+const switchToSignup = document.getElementById("switch-to-signup");
 
 function openModal(modal) {
   if (!modal) return;
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
 }
 
 function closeModal(modal) {
   if (!modal) return;
   modal.classList.remove("active");
   modal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
 }
 
-if (signInBtn && signinModal) {
-  signInBtn.addEventListener("click", () => openModal(signinModal));
+// Register button opens signup modal
+if (registerBtn && signupModal) {
+  registerBtn.addEventListener("click", () => openModal(signupModal));
 }
 
-if (signinModal) {
-  signinModal.addEventListener("click", (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.matches("[data-close-modal]")) {
-      closeModal(signinModal);
-    }
+// Switch between signup and signin
+if (switchToSignin && signupModal && signinModal) {
+  switchToSignin.addEventListener("click", () => {
+    closeModal(signupModal);
+    openModal(signinModal);
   });
 }
 
-if (recoveryModal) {
-  recoveryModal.addEventListener("click", (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.matches("[data-close-modal]")) {
-      closeModal(recoveryModal);
-    }
-  });
-}
-
-if (forgotPasswordBtn && signinModal && recoveryModal) {
-  forgotPasswordBtn.addEventListener("click", () => {
+if (switchToSignup && signupModal && signinModal) {
+  switchToSignup.addEventListener("click", () => {
     closeModal(signinModal);
-    openModal(recoveryModal);
+    openModal(signupModal);
   });
 }
 
-// API Base URL - use backend server URL
-const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '/api';
+// Close modals on backdrop/close click
+[signupModal, signinModal].forEach(modal => {
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.matches("[data-close-modal]") || target.classList.contains("modal-backdrop")) {
+        closeModal(modal);
+      }
+    });
+  }
+});
+
+// Sign Up Form Handler
+const signupForm = document.getElementById("signup-form");
+if (signupForm) {
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(signupForm);
+    const payload = {
+      fullName: formData.get("fullName"),
+      cnic: formData.get("cnic"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword")
+    };
+
+    const submitButton = signupForm.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : "Register Now";
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Registering...";
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/student/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.message || "Registration successful! Please sign in.");
+        closeModal(signupModal);
+        openModal(signinModal);
+        signupForm.reset();
+      } else {
+        alert(data.message || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      alert("Network error. Please check your connection and try again.");
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
+
+// Sign In Form Handler (Handles both Student and Admin login)
+const signinForm = document.getElementById("signin-form");
+if (signinForm) {
+  signinForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(signinForm);
+    const userValue = formData.get("cnic");
+    const passwordValue = formData.get("password");
+
+    const submitButton = signinForm.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : "Sign In";
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Signing in...";
+    }
+
+    try {
+      // Check if it's admin login (username is "admin")
+      let apiUrl, payload;
+      if (userValue === "admin" || userValue.toLowerCase() === "admin") {
+        apiUrl = `${API_BASE_URL}/admin/login`;
+        payload = { username: userValue, password: passwordValue };
+      } else {
+        apiUrl = `${API_BASE_URL}/student/login`;
+        payload = { cnic: userValue, password: passwordValue };
+      }
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        if (userValue === "admin" || userValue.toLowerCase() === "admin") {
+          localStorage.setItem("adminToken", data.token);
+          alert("Admin login successful!");
+          closeModal(signinModal);
+          window.location.href = "admin-dashboard.html";
+        } else {
+          localStorage.setItem("studentToken", data.token);
+          localStorage.setItem("studentData", JSON.stringify(data.student));
+          alert("Login successful!");
+          closeModal(signinModal);
+          window.location.href = "student-portal.html";
+        }
+      } else {
+        alert(data.message || "Login failed. Please check your credentials.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Network error. Please check your connection and try again.");
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
+
 
 // Contact form handler - connect to backend API
 const contactForm = document.getElementById("contact-form");
@@ -226,95 +371,6 @@ if (contactForm) {
   });
 }
 
-// Sign in form handler - connect to backend API
-const loginForm = document.getElementById("universal-login-form");
-
-if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const userValue = document.getElementById("loginUser").value;
-        const passValue = document.getElementById("loginPass").value;
-
-        // فیصلہ کریں کہ ایڈمن روٹ استعمال کرنا ہے یا اسٹوڈنٹ
-        let apiUrl = "https://bs-chem.vercel.app/api/student/login";
-        let payload = { cnic: userValue, password: passValue };
-
-        if (userValue === "admin") {
-            apiUrl = "https://bs-chem.vercel.app/api/admin/login";
-            payload = { username: userValue, password: passValue };
-        }
-
-        try {
-            const res = await fetch(apiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                if (userValue === "admin") {
-                    window.location.href = "admin-dashboard.html";
-                } else {
-                    localStorage.setItem("studentToken", data.student._id);
-                    window.location.href = "apply-2k26.html";
-                }
-            } else {
-                alert(data.message);
-            }
-        } catch (err) {
-            alert("Connection error! Please check your internet.");
-        }
-    });
-}
-// Password recovery form handler - connect to backend API
-const recoveryForm = document.getElementById("recovery-form");
-if (recoveryForm) {
-  recoveryForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(recoveryForm);
-    const payload = {
-      "recovery-id": formData.get("recovery-id")
-    };
-
-    const submitButton = recoveryForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : "Request Reset";
-    
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Processing...";
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/recovery`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        alert(data.message || "Password reset request received. The department will verify and send new credentials.");
-        closeModal(recoveryModal);
-        recoveryForm.reset();
-      } else {
-        alert(data.error || "Failed to process request. Please try again.");
-      }
-    } catch (err) {
-      console.error("Recovery error:", err);
-      console.error("Error details:", err.message, err.stack);
-      alert(`Network error: ${err.message}. Please try again later.`);
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
-    }
-  });
-}
 
 // Footer year
 const yearSpan = document.getElementById("year");

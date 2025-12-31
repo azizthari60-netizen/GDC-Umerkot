@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch (err) {
         console.error('Error creating student:', err);
-        alert('Network error: ' + err.message + '\n\nPlease make sure the backend server is running on http://localhost:3000');
+        alert('Network error: ' + err.message + '\n\nPlease check your connection and try again.');
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
@@ -245,7 +245,7 @@ async function loadContactSubmissions() {
 async function loadStats() {
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+    const res = await fetch(`${API_BASE_URL}/admin/stats`, {
       headers: {
         'Authorization': `Bearer ${adminToken}`
       }
@@ -316,7 +316,7 @@ async function deleteStudent(studentId) {
 async function loadAssignments() {
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/assignments`, {
+    const res = await fetch(`${API_BASE_URL}/admin/assignments`, {
       headers: {
         'Authorization': `Bearer ${adminToken}`
       }
@@ -360,7 +360,7 @@ async function loadAssignments() {
 async function populateStudentDropdowns() {
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/students`, {
+    const res = await fetch(`${API_BASE_URL}/admin/students`, {
       headers: {
         'Authorization': `Bearer ${adminToken}`
       }
@@ -393,7 +393,7 @@ async function gradeAssignment(assignmentId) {
 
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/api/admin/assignments/${assignmentId}/grade`, {
+    const res = await fetch(`${API_BASE_URL}/admin/assignments/${assignmentId}/grade`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

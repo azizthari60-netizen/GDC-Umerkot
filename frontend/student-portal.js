@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const studentToken = localStorage.getItem('studentToken');
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/student/assignments/upload`, {
+        const res = await fetch(`${API_BASE_URL}/student/assignments/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${studentToken}`
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadStudentData() {
   try {
     const studentToken = localStorage.getItem('studentToken');
-    const res = await fetch(`${API_BASE_URL}/api/student/profile`, {
+    const res = await fetch(`${API_BASE_URL}/student/profile`, {
       headers: {
         'Authorization': `Bearer ${studentToken}`
       }
@@ -114,7 +114,7 @@ async function loadStudentData() {
 async function loadAssignments() {
   try {
     const studentToken = localStorage.getItem('studentToken');
-    const res = await fetch(`${API_BASE_URL}/api/student/assignments`, {
+    const res = await fetch(`${API_BASE_URL}/student/assignments`, {
       headers: {
         'Authorization': `Bearer ${studentToken}`
       }
@@ -155,7 +155,7 @@ async function loadAssignments() {
 async function loadResults() {
   try {
     const studentToken = localStorage.getItem('studentToken');
-    const res = await fetch(`${API_BASE_URL}/api/student/results`, {
+    const res = await fetch(`${API_BASE_URL}/student/results`, {
       headers: {
         'Authorization': `Bearer ${studentToken}`
       }

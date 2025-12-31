@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="eng">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 80px auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-family: 'Segoe UI', sans-serif; background: #fff; text-align: center; }
+        .auth-container h2 { color: #2c3e50; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .btn-submit:hover { background: #0056b3; }
+        .footer-link { margin-top: 20px; font-size: 14px; color: #666; }
+        .footer-link a { color: #007bff; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>Student Registration</h2>
+        <form id="student-signup-form">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="fullName" placeholder="Enter your name" required>
+            </div>
+            <div class="input-group">
+                <label>CNIC Number</label>
+                <input type="text" id="cnic" placeholder="42101-XXXXXXX-X" required>
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Create a password" required>
+            </div>
+            <button type="submit" class="btn-submit">Register Now</button>
+        </form>
+        
+        <div class="footer-link">
+            Already have an account? <a href="student-portal.html">Sign In here</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

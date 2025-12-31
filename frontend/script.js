@@ -227,64 +227,47 @@ if (contactForm) {
 }
 
 // Sign in form handler - connect to backend API
-const signinForm = document.getElementById("signin-form");
-if (signinForm) {
-  signinForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+const loginForm = document.getElementById("universal-login-form");
 
-    const formData = new FormData(signinForm);
-    const payload = {
-      username: formData.get("username"),
-      password: formData.get("password")
-    };
+if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const userValue = document.getElementById("loginUser").value;
+        const passValue = document.getElementById("loginPass").value;
 
-    const submitButton = signinForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : "Sign In";
-    
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Signing in...";
-    }
+        // فیصلہ کریں کہ ایڈمن روٹ استعمال کرنا ہے یا اسٹوڈنٹ
+        let apiUrl = "https://bs-chem.vercel.app/api/student/login";
+        let payload = { cnic: userValue, password: passValue };
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        // Store token based on role
-        if (data.role === 'admin') {
-          localStorage.setItem('adminToken', data.token);
-          closeModal(signinModal);
-          window.location.href = 'admin-dashboard.html';
-        } else if (data.role === 'student') {
-          localStorage.setItem('studentToken', data.token);
-          closeModal(signinModal);
-          window.location.href = 'student-portal.html';
-        } else {
-          alert(data.message || "Login successful!");
-          closeModal(signinModal);
+        if (userValue === "admin") {
+            apiUrl = "https://bs-chem.vercel.app/api/admin/login";
+            payload = { username: userValue, password: passValue };
         }
-      } else {
-        alert(data.error || "Invalid username or password.");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      console.error("Error details:", err.message, err.stack);
-      alert(`Network error: ${err.message}. Please try again later.`);
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
-    }
-  });
-}
 
+        try {
+            const res = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                if (userValue === "admin") {
+                    window.location.href = "admin-dashboard.html";
+                } else {
+                    localStorage.setItem("studentToken", data.student._id);
+                    window.location.href = "apply-2k26.html";
+                }
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert("Connection error! Please check your internet.");
+        }
+    });
+}
 // Password recovery form handler - connect to backend API
 const recoveryForm = document.getElementById("recovery-form");
 if (recoveryForm) {

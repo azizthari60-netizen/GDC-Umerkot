@@ -36,38 +36,78 @@ const upload = multer({
 });
 
 // --- ڈیٹا بیس ماڈلز (Schemas) ---
-
-// 1. یوزرز (ایڈمن اور اسٹوڈنٹس)
-const UserSchema = new mongoose.Schema({
-    username: { type: String, unique: true, required: true },
+//  Student Schema (Batch 2026 کے لیے)
+const studentSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    cnic: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    name: String,
-    email: String,
-    rollNumber: String,
-    batch: String,
-    semester: String,
-    role: { type: String, enum: ['admin', 'student'], default: 'student' },
-    status: { type: String, default: 'active' },
-    token: String,
-    cgpa: Number,
-    coursesEnrolled: Number,
-    results: [{ course: String, marks: Number, grade: String, semester: Number, addedAt: Date }]
+    batch: { type: String, default: "2026" },
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+    isFormFilled: { type: Boolean, default: false },
+    challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded'], default: 'Not Generated' },
+    profileImage: String,
+    challanImage: String,
+    registrationDate: { type: Date, default: Date.now }
 });
-const User = mongoose.model('User', UserSchema);
 
-// 2. اسائنمنٹس
-const AssignmentSchema = new mongoose.Schema({
-    studentId: mongoose.Schema.Types.ObjectId,
-    title: String,
-    course: String,
-    fileUrl: String, // Cloudinary URL
-    originalFilename: String,
-    status: { type: String, default: 'pending' },
-    grade: String,
-    uploadedAt: { type: Date, default: Date.now },
-    gradedAt: Date
+const Student = mongoose.model('Student', studentSchema);
+
+// 3. Admin Schema
+const adminSchema = new mongoose.Schema({
+    username: { type: String, default: 'admin' },
+    password: { type: String, default: 'admin123' }
 });
-const Assignment = mongoose.model('Assignment', AssignmentSchema);
+const Admin = mongoose.model('Admin', adminSchema);
+
+// --- ROUTES ---
+
+// A. اسٹوڈنٹ سائن اپ (CNIC کی بنیاد پر)
+app.post('/api/student/signup', async (req, res) => {
+    try {
+        const { fullName, cnic, password } = req.body;
+        const exists = await Student.findOne({ cnic });
+        if (exists) return res.status(400).json({ message: "یہ CNIC پہلے سے رجسٹرڈ ہے۔" });
+
+        const newStudent = new Student({ fullName, cnic, password });
+        await newStudent.save();
+        res.status(201).json({ message: "اکاؤنٹ بن گیا! اب لاگ ان کریں۔" });
+    } catch (err) {
+        res.status(500).json({ message: "سائن اپ میں غلطی۔" });
+    }
+});
+
+// B. اسٹوڈنٹ لاگ ان
+app.post('/api/student/login', async (req, res) => {
+    try {
+        const { cnic, password } = req.body;
+        const student = await Student.findOne({ cnic, password });
+        if (!student) return res.status(401).json({ message: "غلط CNIC یا پاسورڈ" });
+        res.status(200).json({ message: "کامیاب لاگ ان", student });
+    } catch (err) {
+        res.status(500).json({ message: "لاگ ان میں غلطی۔" });
+    }
+});
+
+// C. ایڈمن لاگ ان
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    const admin = await Admin.findOne({ username, password });
+    if (admin) res.status(200).json({ message: "ایڈمن لاگ ان کامیاب" });
+    else res.status(401).json({ message: "غلط ایڈمن کریڈنشلز" });
+});
+
+// D. تمام اسٹوڈنٹس کی لسٹ (ایڈمن کے لیے)
+app.get('/api/admin/students', async (req, res) => {
+    const students = await Student.find();
+    res.json(students);
+});
+
+// E. اسٹوڈنٹ اپروول (ایڈمن کے لیے)
+app.put('/api/admin/approve/:id', async (req, res) => {
+    await Student.findByIdAndUpdate(req.params.id, { status: 'Approved' });
+    res.json({ message: "اسٹوڈنٹ اپروو ہو گیا!" });
+});
+
 
 // 3. کانٹیکٹ فارم
 const ContactSchema = new mongoose.Schema({
@@ -75,92 +115,13 @@ const ContactSchema = new mongoose.Schema({
 });
 const Contact = mongoose.model('Contact', ContactSchema);
 
-// --- API روٹس ---
 
-// لاگ ان (Login)
-app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username, password });
-    if (user) {
-        const token = Math.random().toString(36).substring(2);
-        user.token = token;
-        await user.save();
-        return res.json({ success: true, token, role: user.role, user: { username: user.username, name: user.name, role: user.role } });
-    }
-    res.status(401).json({ success: false, error: 'Invalid credentials' });
-});
-
-// ایڈمن: نیا اسٹوڈنٹ بنانا
-app.post('/api/admin/students', async (req, res) => {
-    try {
-        const { name, email, rollNumber, batch, semester } = req.body;
-        const username = `@${name.split(' ')[0].toLowerCase()}_${rollNumber.toLowerCase()}`;
-        const password = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-        const newStudent = new User({ name, email, rollNumber, batch, semester, username, password, role: 'student' });
-        await newStudent.save();
-        res.json({ success: true, username, password, student: newStudent });
-    } catch (err) { res.status(400).json({ success: false, error: 'Student already exists' }); }
-});
-
-// اسٹوڈنٹ: اسائنمنٹ اپلوڈ (Cloudinary)
-app.post('/api/student/assignments/upload', upload.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ success: false, error: 'No file' });
-
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    const student = await User.findOne({ token });
-    if (!student) return res.status(401).send("Unauthorized");
-
-    let stream = cloudinary.uploader.upload_stream(
-        { folder: "assignments", resource_type: "raw" },
-        async (error, result) => {
-            if (result) {
-                const newAsg = new Assignment({
-                    studentId: student._id,
-                    title: req.body.title,
-                    course: req.body.course,
-                    fileUrl: result.secure_url,
-                    originalFilename: req.file.originalname
-                });
-                await newAsg.save();
-                res.json({ success: true, message: "Uploaded to Cloudinary!" });
-            } else { res.status(500).json(error); }
-        }
-    );
-    streamifier.createReadStream(req.file.buffer).pipe(stream);
-});
-
-// ایڈمن: تمام اسائنمنٹس دیکھنا
-app.get('/api/admin/assignments', async (req, res) => {
-    const assignments = await Assignment.find().lean();
-    for (let asg of assignments) {
-        const student = await User.findById(asg.studentId);
-        asg.studentName = student ? student.name : 'Unknown';
-    }
-    res.json({ success: true, assignments });
-});
 
 // کانٹیکٹ فارم
 app.post('/api/contact', async (req, res) => {
     const newContact = new Contact(req.body);
     await newContact.save();
     res.json({ success: true, message: "Message saved in MongoDB!" });
-});
-
-app.get('/create-admin', async (req, res) => {
-    try {
-        const adminExists = await User.findOne({ role: 'admin' });
-        if (adminExists) return res.send("Admin already exists!");
-
-        const firstAdmin = new User({
-            username: 'admin',
-            password: 'admin123', // اسے بعد میں بدل لیجیے گا
-            name: 'Main Admin',
-            role: 'admin'
-        });
-        await firstAdmin.save();
-        res.send("✅ Admin Created! Username: admin, Pass: admin123");
-    } catch (err) { res.send(err.message); }
 });
 
 // --- سرور اسٹارٹ ---

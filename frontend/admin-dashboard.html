@@ -221,8 +221,28 @@
             <label for="old-student-roll">Roll Number</label>
             <input type="text" id="old-student-roll" name="rollNumber" />
           </div>
+          <div class="form-group">
+            <label for="old-student-dob">Date of Birth</label>
+            <input type="date" id="old-student-dob" name="dob" />
+          </div>
+          <div class="form-group">
+            <label for="old-student-gender">Gender</label>
+            <select id="old-student-gender" name="gender">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
           <button type="submit" class="btn btn-primary full-width">Register Old Student</button>
         </form>
+      </div>
+
+      <!-- Challan Management -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>Challan Management & Verification</h3>
+        <div class="students-list" id="challans-list">
+          <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading students with challans...</p>
+        </div>
       </div>
 
       <!-- Students List -->

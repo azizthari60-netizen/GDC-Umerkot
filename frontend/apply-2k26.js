@@ -37,6 +37,8 @@ function preFillForm(student) {
     document.getElementById('in-fname').value = fd.fName || '';
     document.getElementById('in-caste').value = fd.caste || '';
     document.getElementById('in-domicile').value = fd.domicile || '';
+    document.getElementById('in-dob').value = fd.dob || '';
+    document.getElementById('in-gender').value = fd.gender || '';
     document.getElementById('in-email').value = fd.email || '';
     document.getElementById('in-mobile').value = fd.mobile || '';
     document.getElementById('in-address').value = fd.address || '';
@@ -104,6 +106,8 @@ async function processAndPrint() {
     caste: document.getElementById('in-caste').value,
     cnic: document.getElementById('in-cnic').value,
     domicile: document.getElementById('in-domicile').value,
+    dob: document.getElementById('in-dob').value,
+    gender: document.getElementById('in-gender').value,
     email: document.getElementById('in-email').value,
     mobile: document.getElementById('in-mobile').value,
     address: document.getElementById('in-address').value,

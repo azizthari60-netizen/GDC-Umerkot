@@ -72,7 +72,7 @@ const studentSchema = new mongoose.Schema({
     cnic: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     batch: { type: String, default: "2026" },
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+    status: { type: String, enum: ['Pending', 'Challan Verified', 'Approved', 'Rejected'], default: 'Pending' },
     isFormFilled: { type: Boolean, default: false },
     challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded', 'Verified'], default: 'Not Generated' },
     profileImage: String,
@@ -83,6 +83,8 @@ const studentSchema = new mongoose.Schema({
         fName: String,
         caste: String,
         domicile: String,
+        dob: String,
+        gender: String,
         email: String,
         mobile: String,
         address: String,
@@ -110,6 +112,8 @@ const oldStudentSchema = new mongoose.Schema({
     fatherName: String,
     caste: String,
     domicile: String,
+    dob: String,
+    gender: String,
     address: String,
     profileImage: String,
     // All form data
@@ -362,6 +366,8 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
             fName: formData.fName,
             caste: formData.caste,
             domicile: formData.domicile,
+            dob: formData.dob,
+            gender: formData.gender,
             email: formData.email,
             mobile: formData.mobile,
             address: formData.address,
@@ -519,6 +525,54 @@ app.post('/api/student/upload-challan', upload.single('challanImage'), async (re
     } catch (err) {
         console.error("Challan upload error:", err);
         res.status(500).json({ message: "Challan upload error" });
+    }
+});
+
+// 7. Verify Challan (Admin)
+app.post('/api/admin/verify-challan/:studentId', async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.studentId);
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        
+        student.challanStatus = 'Verified';
+        student.status = 'Challan Verified';
+        await student.save();
+        
+        res.status(200).json({ success: true, message: "Challan verified successfully", student });
+    } catch (err) {
+        console.error("Challan verification error:", err);
+        res.status(500).json({ message: "Challan verification error" });
+    }
+});
+
+// 8. Approve Application (Admin)
+app.post('/api/admin/approve-application/:studentId', async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.studentId);
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        
+        student.status = 'Approved';
+        await student.save();
+        
+        res.status(200).json({ success: true, message: "Application approved successfully", student });
+    } catch (err) {
+        console.error("Application approval error:", err);
+        res.status(500).json({ message: "Application approval error" });
+    }
+});
+
+// 9. Get All Students with Challan Details (Admin)
+app.get('/api/admin/students-with-challans', async (req, res) => {
+    try {
+        const students = await Student.find({ isFormFilled: true }).select('fullName cnic challanStatus challanImage status formData profileImage');
+        res.status(200).json({ success: true, students });
+    } catch (err) {
+        console.error("Get students error:", err);
+        res.status(500).json({ message: "Get students error" });
     }
 });
 
@@ -816,7 +870,7 @@ app.put('/api/admin/students/:id/verify-challan', async (req, res) => {
 // 18. Register Old Student (Admin)
 app.post('/api/admin/old-students', async (req, res) => {
     try {
-        const { fullName, cnic, batch, rollNumber, email, mobile, fatherName, caste, domicile, address, formData, password } = req.body;
+        const { fullName, cnic, batch, rollNumber, email, mobile, fatherName, caste, domicile, dob, gender, address, formData, password } = req.body;
         
         const exists = await OldStudent.findOne({ cnic });
         if (exists) {
@@ -835,6 +889,8 @@ app.post('/api/admin/old-students', async (req, res) => {
             fatherName,
             caste,
             domicile,
+            dob,
+            gender,
             address,
             formData: formData || {}
         });
@@ -849,6 +905,42 @@ app.post('/api/admin/old-students', async (req, res) => {
     } catch (err) {
         console.error("Register old student error:", err);
         res.status(500).json({ message: "Register old student error" });
+    }
+});
+
+// 18. Approve Student (Admin)
+app.post('/api/admin/students/:id/approve', async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        
+        student.status = 'Approved';
+        await student.save();
+        
+        res.status(200).json({ success: true, message: "Student approved", student });
+    } catch (err) {
+        console.error("Approve student error:", err);
+        res.status(500).json({ message: "Approve student error" });
+    }
+});
+
+// 18b. Reject Student (Admin)
+app.post('/api/admin/students/:id/reject', async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        
+        student.status = 'Rejected';
+        await student.save();
+        
+        res.status(200).json({ success: true, message: "Student rejected", student });
+    } catch (err) {
+        console.error("Reject student error:", err);
+        res.status(500).json({ message: "Reject student error" });
     }
 });
 

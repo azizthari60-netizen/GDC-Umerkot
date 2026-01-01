@@ -181,12 +181,18 @@
       </div>
       <div class="portal-card">
         <h3><span class="portal-card-icon">📝</span> Admission Form 2026</h3>
+        <div id="student-profile-image" style="text-align: center; margin-bottom: 1rem;"></div>
         <div id="apply-status">
           <p id="form-status-text">Loading status...</p>
-          <button class="btn btn-primary" id="btn-apply-now" style="margin-top: 1rem; display: none;">Apply Now</button>
-          <button class="btn btn-primary" id="btn-generate-challan" style="margin-top: 1rem; display: none;">Generate & Download Challan</button>
-          <button class="btn btn-primary" id="btn-upload-challan" style="margin-top: 1rem; display: none;">Upload Challan</button>
-          <input type="file" id="challan-file-input" accept="image/*" style="display: none;">
+          <div style="margin-top: 1rem;">
+            <button class="btn btn-primary" id="btn-apply-now" style="display: none;">Apply Now</button>
+            <button class="btn btn-primary" id="btn-generate-challan" style="display: none;">Generate & Download Challan</button>
+          </div>
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+            <button class="btn btn-primary" id="btn-upload-challan" style="display: none;">Upload Challan</button>
+            <input type="file" id="challan-file-input" accept="image/*" style="display: none;">
+            <button class="btn btn-primary" id="btn-download-slip" style="display: none;">Download Slip</button>
+          </div>
           <div id="challan-status" style="margin-top: 1rem;"></div>
         </div>
       </div>

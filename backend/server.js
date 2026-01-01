@@ -483,6 +483,11 @@ app.post('/api/student/upload-challan', upload.single('challanImage'), async (re
         if (!req.file) {
             return res.status(400).json({ message: "File missing" });
         }
+
+        // Server-side validation: only accept image files for challan
+        if (!req.file.mimetype || !req.file.mimetype.startsWith('image/')) {
+            return res.status(400).json({ message: "Invalid file type. Please upload an image (jpg, png)." });
+        }
         
         const decoded = jwt.verify(token, JWT_SECRET);
         let student = await Student.findById(decoded.id);

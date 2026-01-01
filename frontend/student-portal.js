@@ -94,6 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const file = e.target.files[0];
       if (!file) return;
 
+      // Client-side validation: only accept image files
+      if (!file.type || !file.type.startsWith('image/')) {
+        alert('Please upload an image file (jpg, png).');
+        challanFileInput.value = '';
+        return;
+      }
+
       const formData = new FormData();
       formData.append('challanImage', file);
 

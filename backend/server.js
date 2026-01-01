@@ -1268,9 +1268,12 @@ app.use((err, req, res, next) => {
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;
-if (process.env.VERCEL) {
-  // Export Express app for serverless platform (Vercel)
-  module.exports = app;
-} else {
-  app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+// Export the Express app for serverless platforms and tests
+module.exports = app;
+
+// If this file is run directly (node server.js), start the HTTP server.
+if (require.main === module) {
+    if (!process.env.VERCEL) {
+        app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+    }
 }

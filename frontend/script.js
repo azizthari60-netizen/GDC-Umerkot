@@ -228,13 +228,47 @@ if (signupForm) {
     }
 
     try {
+      // Validate form data before sending
+      if (!payload.fullName || !payload.cnic || !payload.password || !payload.confirmPassword) {
+        alert("Please fill in all fields");
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+        return;
+      }
+
+      if (payload.password !== payload.confirmPassword) {
+        alert("Passwords do not match");
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+        return;
+      }
+
+      if (payload.password.length < 6) {
+        alert("Password must be at least 6 characters long");
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+        return;
+      }
+
       const res = await fetch(`${API_BASE_URL}/student/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error("JSON parse error:", jsonErr);
+        throw new Error("Invalid response from server");
+      }
 
       if (res.ok) {
         alert(data.message || "Registration successful! Please sign in.");
@@ -246,7 +280,7 @@ if (signupForm) {
       }
     } catch (err) {
       console.error("Signup error:", err);
-      alert("Network error. Please check your connection and try again.");
+      alert(err.message || "Network error. Please check your connection and try again.");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

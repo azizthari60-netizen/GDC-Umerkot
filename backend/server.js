@@ -208,12 +208,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// Input validation middleware
+// Input validation middleware - Only check for dangerous patterns, not common characters
 const validateInput = (req, res, next) => {
-    // Check for SQL injection patterns
-    const sqlPattern = /('|"|;|--|\/\*|\*\/|xp_|sp_|exec|execute)/gi;
+    // Only check for actual SQL injection patterns, not common characters like quotes
+    const dangerousPattern = /(;\s*(drop|delete|truncate|alter|create|exec|execute|xp_|sp_)|--\s|\/\*|\*\/)/gi;
     const checkValue = (val) => {
-        if (typeof val === 'string' && sqlPattern.test(val)) {
+        if (typeof val === 'string' && dangerousPattern.test(val)) {
             return false;
         }
         return true;
@@ -222,7 +222,7 @@ const validateInput = (req, res, next) => {
     // Check body
     if (req.body && typeof req.body === 'object') {
         for (let key in req.body) {
-            if (!checkValue(req.body[key])) {
+            if (req.body[key] && !checkValue(req.body[key])) {
                 return res.status(400).json({ message: "Invalid input detected" });
             }
         }
@@ -231,7 +231,7 @@ const validateInput = (req, res, next) => {
     // Check query
     if (req.query && typeof req.query === 'object') {
         for (let key in req.query) {
-            if (!checkValue(req.query[key])) {
+            if (req.query[key] && !checkValue(req.query[key])) {
                 return res.status(400).json({ message: "Invalid input detected" });
             }
         }
@@ -261,7 +261,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 // Helper middleware to ensure DB is connected when required
 function ensureDb(req, res, next) {
     if (!isDbConnected) {
-        return res.status(503).json({ message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI in your environment.' });
+        console.error('Database not connected - MONGODB_URI may be missing or invalid');
+        return res.status(503).json({ 
+            success: false,
+            message: 'Service temporarily unavailable: database not connected. Please check server configuration.' 
+        });
     }
     next();
 }
@@ -337,27 +341,57 @@ app.post('/api/student/signup', ensureDb, async (req, res) => {
     try {
         const { fullName, cnic, password, confirmPassword } = req.body;
         
+        // Validate required fields
+        if (!fullName || !cnic || !password || !confirmPassword) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+        
+        // Validate password match
         if (password !== confirmPassword) {
             return res.status(400).json({ message: "Passwords do not match" });
         }
         
-        const exists = await Student.findOne({ cnic });
-        if (exists) {
-            return res.status(400).json({ message: "CNIC already registered" });
+        // Validate password length
+        if (password.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters long" });
         }
         
+        // Validate CNIC format (basic check)
+        if (cnic.length < 5) {
+            return res.status(400).json({ message: "Invalid CNIC format" });
+        }
+        
+        // Check if CNIC already exists
+        const exists = await Student.findOne({ cnic });
+        if (exists) {
+            return res.status(400).json({ message: "CNIC already registered. Please sign in instead." });
+        }
+        
+        // Hash password and create student
         const hashedPassword = await bcrypt.hash(password, 10);
         const newStudent = new Student({ 
-            fullName, 
-            cnic, 
-            password: hashedPassword 
+            fullName: fullName.trim(), 
+            cnic: cnic.trim(), 
+            password: hashedPassword,
+            batch: '2026' // Set default batch for new registrations
         });
         await newStudent.save();
         
-        res.status(201).json({ message: "Account created successfully! Please sign in." });
+        res.status(201).json({ 
+            success: true,
+            message: "Account created successfully! Please sign in." 
+        });
     } catch (err) {
         console.error("Signup error:", err);
-        res.status(500).json({ message: "Sign up error" });
+        // Handle duplicate key error (MongoDB unique constraint)
+        if (err.code === 11000) {
+            return res.status(400).json({ message: "CNIC already registered. Please sign in instead." });
+        }
+        // Handle validation errors
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: err.message || "Validation error" });
+        }
+        res.status(500).json({ message: "Registration failed. Please try again." });
     }
 });
 

@@ -25,7 +25,112 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Connect to MongoDB asynchronously (non-blocking)
+// --- Define Schemas and Models FIRST (before using them) ---
+// Student Schema
+const studentSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    cnic: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    email: String,
+    phone: String,
+    dob: String,
+    gender: String,
+    batch: String,
+    fatherName: String,
+    isFormFilled: { type: Boolean, default: false },
+    formData: mongoose.Schema.Types.Mixed,
+    uniqueId: String,
+    isOldStudent: { type: Boolean, default: false }
+});
+
+// Old Student Schema
+const oldStudentSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    cnic: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    batch: String,
+    rollNumber: String,
+    dob: String,
+    gender: String,
+    email: String,
+    mobile: String,
+    fatherName: String,
+    profileImage: String,
+    formData: mongoose.Schema.Types.Mixed,
+    registrationDate: { type: Date, default: Date.now },
+    isOldStudent: { type: Boolean, default: true }
+});
+
+// Admin Schema
+const adminSchema = new mongoose.Schema({
+    username: { type: String, default: 'admin' },
+    password: { type: String, default: 'admin123' }
+});
+
+// Assignment Schema
+const assignmentSchema = new mongoose.Schema({
+    studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    studentCnic: String,
+    title: String,
+    course: String,
+    fileUrl: String,
+    uploadedAt: { type: Date, default: Date.now },
+    status: { type: String, enum: ['pending', 'graded'], default: 'pending' },
+    grade: String
+});
+
+// Result Schema
+const resultSchema = new mongoose.Schema({
+    studentCnic: { type: String, required: true },
+    course: String,
+    marks: Number,
+    grade: String,
+    semester: Number,
+    createdAt: { type: Date, default: Date.now }
+});
+
+// Slip Schema
+const slipSchema = new mongoose.Schema({
+    studentCnic: { type: String, required: true },
+    studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    rollNumber: String,
+    qrCode: String,
+    testDate: Date,
+    testVenue: { type: String, default: 'Chemistry Lab' },
+    availableDate: Date,
+    isAvailable: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+});
+
+// Notification Schema
+const notificationSchema = new mongoose.Schema({
+    title: String,
+    message: String,
+    createdAt: { type: Date, default: Date.now },
+    isActive: { type: Boolean, default: true }
+});
+
+// Contact Schema
+const contactSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    subject: String,
+    message: String,
+    submittedAt: { type: Date, default: Date.now },
+    replied: { type: Boolean, default: false }
+});
+
+// Create Models
+const Student = mongoose.model('Student', studentSchema);
+const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
+const Assignment = mongoose.model('Assignment', assignmentSchema);
+const Result = mongoose.model('Result', resultSchema);
+const Slip = mongoose.model('Slip', slipSchema);
+const Notification = mongoose.model('Notification', notificationSchema);
+const Admin = mongoose.model('Admin', adminSchema);
+const Contact = mongoose.model('Contact', contactSchema);
+
+// NOW connect to MongoDB (models are already defined)
 if (process.env.MONGODB_URI) {
     mongoose.connect(process.env.MONGODB_URI, {
         useNewUrlParser: true,
@@ -130,132 +235,6 @@ const upload = multer({
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-
-// --- Database Models ---
-
-// Student Schema (New Students - Batch 2026)
-const studentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    cnic: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    batch: { type: String, default: "2026" },
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
-    isFormFilled: { type: Boolean, default: false },
-    challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded', 'Verified'], default: 'Not Generated' },
-    profileImage: String,
-    challanImage: String,
-    registrationDate: { type: Date, default: Date.now },
-    // Form data
-    formData: {
-        fName: String,
-        dob: String,
-        gender: String,
-        caste: String,
-        domicile: String,
-        email: String,
-        mobile: String,
-        address: String,
-        gName: String,
-        gOcc: String,
-        gJobAddr: String,
-        gContact: String,
-        gAddress: String,
-        matric: { brd: String, yr: String, roll: String, grp: String, per: String },
-        inter: { brd: String, yr: String, roll: String, grp: String, per: String }
-    },
-    uniqueId: String, // For challan
-    isOldStudent: { type: Boolean, default: false }
-});
-
-// Old Student Schema (Registered by Admin)
-const oldStudentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    cnic: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    batch: String,
-    rollNumber: String,
-    dob: String,
-    gender: String,
-    email: String,
-    mobile: String,
-    fatherName: String,
-    caste: String,
-    domicile: String,
-    address: String,
-    profileImage: String,
-    // All form data
-    formData: mongoose.Schema.Types.Mixed,
-    registrationDate: { type: Date, default: Date.now },
-    isOldStudent: { type: Boolean, default: true }
-});
-
-// Assignment Schema
-const assignmentSchema = new mongoose.Schema({
-    studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    studentCnic: String,
-    title: String,
-    course: String,
-    fileUrl: String,
-    uploadedAt: { type: Date, default: Date.now },
-    status: { type: String, enum: ['pending', 'graded'], default: 'pending' },
-    grade: String
-});
-
-// Result Schema
-const resultSchema = new mongoose.Schema({
-    studentCnic: { type: String, required: true },
-    course: String,
-    marks: Number,
-    grade: String,
-    semester: Number,
-    createdAt: { type: Date, default: Date.now }
-});
-
-// Slip Schema
-const slipSchema = new mongoose.Schema({
-    studentCnic: { type: String, required: true },
-    studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    rollNumber: String,
-    qrCode: String,
-    testDate: Date,
-    testVenue: { type: String, default: 'Chemistry Lab' },
-    availableDate: Date, // Date when slip becomes downloadable
-    isAvailable: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
-});
-
-// Notification Schema
-const notificationSchema = new mongoose.Schema({
-    title: String,
-    message: String,
-    createdAt: { type: Date, default: Date.now },
-    isActive: { type: Boolean, default: true }
-});
-
-const Student = mongoose.model('Student', studentSchema);
-const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
-const Assignment = mongoose.model('Assignment', assignmentSchema);
-const Result = mongoose.model('Result', resultSchema);
-const Slip = mongoose.model('Slip', slipSchema);
-const Notification = mongoose.model('Notification', notificationSchema);
-
-// Admin Schema
-const adminSchema = new mongoose.Schema({
-    username: { type: String, default: 'admin' },
-    password: { type: String, default: 'admin123' }
-});
-const Admin = mongoose.model('Admin', adminSchema);
-
-// Contact Schema
-const contactSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    subject: String,
-    message: String,
-    submittedAt: { type: Date, default: Date.now },
-    replied: { type: Boolean, default: false }
-});
-const Contact = mongoose.model('Contact', contactSchema);
 
 // Helper function to upload to Cloudinary
 function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {

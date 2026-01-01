@@ -150,6 +150,11 @@ async function loadChallans() {
             ? `<button class="btn btn-primary btn-small" onclick="approveApplication('${student._id}')">Approve App</button>`
             : `<span style="color: #059669;">✓ Approved</span>`;
           
+          // Upload Slip button for approved students
+          const uploadSlipBtn = (student.status === 'Approved' || student.status === 'Challan Verified')
+            ? `<button class="btn btn-primary btn-small" onclick="uploadSlip('${student._id}')">Upload Slip</button>`
+            : '';
+          
           return `
             <div class="student-item">
               <div style="flex: 1;">
@@ -160,6 +165,7 @@ async function loadChallans() {
               <div class="student-actions">
                 ${verifyChallanBtn}
                 ${student.challanStatus === 'Verified' ? approvAppBtn : ''}
+                ${uploadSlipBtn}
               </div>
             </div>
           `;
@@ -383,4 +389,57 @@ function replyToContact(submissionId) {
 
 function gradeAssignment(assignmentId) {
   alert('Grading functionality will be added soon!');
+}
+
+async function uploadSlip(studentId) {
+  try {
+    // First prompt: Test Date
+    const testDateInput = prompt('Enter Test Date (YYYY-MM-DD):');
+    if (!testDateInput) {
+      return; // User cancelled
+    }
+    
+    // Validate date format
+    const testDate = new Date(testDateInput);
+    if (isNaN(testDate.getTime())) {
+      alert('Invalid date format. Please use YYYY-MM-DD format.');
+      return;
+    }
+    
+    // Second prompt: Roll Number Suffix (last part: 001, 002, etc.)
+    const rollNumberSuffix = prompt('Enter Roll Number Suffix (e.g., 001, 002, 003...):');
+    if (!rollNumberSuffix) {
+      return; // User cancelled
+    }
+    
+    // Validate roll number suffix (should be numeric)
+    if (!/^\d+$/.test(rollNumberSuffix)) {
+      alert('Invalid roll number suffix. Please enter numbers only (e.g., 001, 002).');
+      return;
+    }
+    
+    const adminToken = localStorage.getItem('adminToken');
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/slip`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      },
+      body: JSON.stringify({
+        testDate: testDateInput,
+        rollNumberSuffix: rollNumberSuffix
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert('Slip created successfully! The student can now download their admit card.');
+      loadChallans();
+    } else {
+      alert(data.message || 'Failed to create slip');
+    }
+  } catch (err) {
+    console.error('Error uploading slip:', err);
+    alert('Network error. Please try again.');
+  }
 }

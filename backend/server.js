@@ -13,7 +13,9 @@ const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');   
+const crypto = require('crypto');
+const https = require('https');
+const http = require('http');
 const app = express();
 
 // --- Configuration ---
@@ -150,8 +152,9 @@ const slipSchema = new mongoose.Schema({
     studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
     qrCode: String,
     testDate: Date,
+    rollNumber: String, // Format: Chem/batch/2026/001
     availableDate: Date, // Date when slip becomes downloadable
-    isAvailable: { type: Boolean, default: false },
+    isAvailable: { type: Boolean, default: true }, // Default to true for immediate availability
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -715,9 +718,9 @@ app.get('/api/student/slip', async (req, res) => {
             return res.status(404).json({ message: "Slip not found" });
         }
         
-        const now = new Date();
-        if (slip.availableDate && now < slip.availableDate) {
-            return res.status(403).json({ message: "Slip is not available yet. Available from: " + slip.availableDate.toLocaleDateString() });
+        // Slip is immediately available when created (no date restriction)
+        if (!slip.isAvailable) {
+            return res.status(403).json({ message: "Slip is not available yet." });
         }
         
         res.status(200).json({ success: true, slip });
@@ -735,8 +738,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             return res.status(404).json({ message: "Slip not found" });
         }
         
-        const now = new Date();
-        if (slip.availableDate && now < slip.availableDate) {
+        if (!slip.isAvailable) {
             return res.status(403).json({ message: "Slip is not available yet" });
         }
         
@@ -745,43 +747,253 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             student = await OldStudent.findById(slip.studentId);
         }
         
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=slip-${slip.studentCnic}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=admit-card-${slip.studentCnic}.pdf`);
         
         doc.pipe(res);
         
-        // Header
-        doc.fontSize(20).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', { align: 'center' });
-        doc.fontSize(14).font('Helvetica').text('Govt. Boys Degree College Umerkot', { align: 'center' });
-        doc.moveDown();
+        // Header Section
+        doc.fontSize(18).font('Helvetica-Bold').text('UNIVERSITY OF SINDH', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(14).font('Helvetica-Bold').text('ANNUAL EXAMINATIONS OF 2024', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(16).font('Helvetica-Bold').text('ADMIT CARD', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(12).font('Helvetica').text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', { align: 'center' });
+        doc.moveDown(0.5);
         
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-        doc.moveDown();
-        
-        // Student Info
-        doc.fontSize(14).font('Helvetica-Bold').text('Admission Slip', { align: 'center' });
-        doc.moveDown();
-        
-        doc.fontSize(12).font('Helvetica');
-        doc.text(`Name: ${student.fullName}`, 50, doc.y);
-        doc.text(`CNIC: ${student.cnic}`, 50, doc.y + 20);
-        doc.text(`Batch: ${student.batch}`, 50, doc.y + 20);
-        if (slip.testDate) {
-            doc.text(`Test Date: ${slip.testDate.toLocaleDateString()}`, 50, doc.y + 20);
-        }
-        
-        doc.moveDown(2);
-        
-        // QR Code (as base64 image)
+        // QR Code on top right
+        let qrY = 40;
         if (slip.qrCode) {
-            doc.image(Buffer.from(slip.qrCode, 'base64'), 400, doc.y - 100, { width: 100, height: 100 });
+            doc.image(Buffer.from(slip.qrCode, 'base64'), 450, qrY, { width: 80, height: 80 });
+            if (slip.rollNumber) {
+                const rollParts = slip.rollNumber.split('/');
+                const rollSuffix = rollParts[rollParts.length - 1];
+                doc.fontSize(10).font('Helvetica').text(rollSuffix, 450, qrY + 85, { width: 80, align: 'center' });
+            }
         }
         
-        doc.moveDown(2);
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+        doc.moveDown(1);
         
-        doc.fontSize(10).text('This slip is required for the test. Please bring a printed copy.', { align: 'center' });
+        // Candidate Information Section
+        const startY = doc.y;
+        let currentY = startY;
+        
+        doc.fontSize(11).font('Helvetica-Bold');
+        doc.text('CANDIDATE INFORMATION', 40, currentY);
+        currentY += 25;
+        
+        doc.fontSize(10).font('Helvetica');
+        const labelWidth = 150;
+        const valueWidth = 300;
+        let xPos = 40;
+        
+        // Name
+        doc.font('Helvetica-Bold').text('NAME:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text(student.fullName || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Father's Name
+        doc.font('Helvetica-Bold').text('FATHER\'S NAME:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text(student.formData?.fName || student.fatherName || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Surname/Caste
+        doc.font('Helvetica-Bold').text('SURNAME:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text(student.formData?.caste || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // CNIC
+        doc.font('Helvetica-Bold').text('CNIC:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text(student.cnic || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Program
+        doc.font('Helvetica-Bold').text('PROGRAM:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text('BS CHEMISTRY', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Degree Type
+        doc.font('Helvetica-Bold').text('DEGREE TYPE:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text('REGULAR', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Seat No / Roll Number
+        doc.font('Helvetica-Bold').text('SEAT NO:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Exam Part
+        doc.font('Helvetica-Bold').text('EXAM PART:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text('1-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Exam Type
+        doc.font('Helvetica-Bold').text('EXAM TYPE:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text('REGULAR', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Exam Year
+        doc.font('Helvetica-Bold').text('EXAM YEAR:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').text('2024', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 18;
+        
+        // Held In
+        doc.font('Helvetica-Bold').text('HELD IN:', xPos, currentY, { width: labelWidth });
+        const testDate = slip.testDate ? new Date(slip.testDate) : new Date();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const heldIn = `${monthNames[testDate.getMonth()]}: ${testDate.getFullYear()}`;
+        doc.font('Helvetica').text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 25;
+        
+        // Photo (right side) - try to load student photo if available
+        const photoX = 400;
+        const photoY = startY + 20;
+        const photoWidth = 80;
+        const photoHeight = 100;
+        
+        // Helper function to fetch image
+        const fetchImage = (url) => {
+            return new Promise((resolve) => {
+                const protocol = url.startsWith('https') ? https : http;
+                protocol.get(url, (response) => {
+                    if (response.statusCode === 200) {
+                        const chunks = [];
+                        response.on('data', (chunk) => chunks.push(chunk));
+                        response.on('end', () => {
+                            resolve(Buffer.concat(chunks));
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                }).on('error', () => {
+                    resolve(null);
+                });
+            });
+        };
+        
+        if (student.profileImage) {
+            try {
+                const imageBuffer = await fetchImage(student.profileImage);
+                if (imageBuffer) {
+                    doc.image(imageBuffer, photoX, photoY, { width: photoWidth, height: photoHeight, fit: [photoWidth, photoHeight] });
+                } else {
+                    // Fallback to placeholder
+                    doc.rect(photoX, photoY, photoWidth, photoHeight).stroke();
+                    doc.fontSize(8).font('Helvetica').text('PHOTO', photoX + 25, photoY + 45, { width: 30, align: 'center' });
+                }
+            } catch (err) {
+                console.error('Error loading profile image:', err);
+                doc.rect(photoX, photoY, photoWidth, photoHeight).stroke();
+                doc.fontSize(8).font('Helvetica').text('PHOTO', photoX + 25, photoY + 45, { width: 30, align: 'center' });
+            }
+        } else {
+            // No photo available, show placeholder
+            doc.rect(photoX, photoY, photoWidth, photoHeight).stroke();
+            doc.fontSize(8).font('Helvetica').text('PHOTO', photoX + 25, photoY + 45, { width: 30, align: 'center' });
+        }
+        
+        // Exam Centre
+        doc.fontSize(11).font('Helvetica-Bold');
+        doc.text('EXAM CENTRE:', xPos, currentY);
+        doc.fontSize(10).font('Helvetica');
+        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 100, currentY);
+        currentY += 30;
+        
+        // Selected Subjects Table
+        doc.fontSize(11).font('Helvetica-Bold');
+        doc.text('SELECTED SUBJECTS', xPos, currentY);
+        currentY += 20;
+        
+        // Table Header
+        const tableStartY = currentY;
+        const colWidths = [30, 100, 150, 100, 100, 80];
+        const headers = ['SNO', 'Subject Type', 'Subject Title', 'Exam Date', 'Exam Time', 'Session'];
+        
+        doc.fontSize(9).font('Helvetica-Bold');
+        let tableX = xPos;
+        headers.forEach((header, i) => {
+            doc.text(header, tableX, tableStartY, { width: colWidths[i] });
+            tableX += colWidths[i];
+        });
+        
+        currentY += 15;
+        doc.moveTo(xPos, currentY).lineTo(xPos + colWidths.reduce((a, b) => a + b, 0), currentY).stroke();
+        currentY += 5;
+        
+        // Sample subjects (you can customize this)
+        const subjects = [
+            { type: 'Compulsory', title: 'ENGLISH (COMPULSORY)', date: slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-', time: '02:00 pm to 05:00 pm', session: 'Evening' },
+            { type: 'Compulsory', title: 'ISLAMIC STUDIES (COMPULSORY)', date: slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-', time: '02:30 pm to 04:30 pm', session: 'Evening' },
+            { type: 'Compulsory', title: 'PAKISTAN STUDIES (COMPULSORY)', date: slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-', time: '02:00 pm to 05:00 pm', session: 'Evening' }
+        ];
+        
+        doc.fontSize(8).font('Helvetica');
+        subjects.forEach((subject, idx) => {
+            tableX = xPos;
+            doc.text(String(idx + 1), tableX, currentY, { width: colWidths[0] });
+            tableX += colWidths[0];
+            doc.text(subject.type, tableX, currentY, { width: colWidths[1] });
+            tableX += colWidths[1];
+            doc.text(subject.title, tableX, currentY, { width: colWidths[2] });
+            tableX += colWidths[2];
+            doc.text(subject.date, tableX, currentY, { width: colWidths[3] });
+            tableX += colWidths[3];
+            doc.text(subject.time, tableX, currentY, { width: colWidths[4] });
+            tableX += colWidths[4];
+            doc.text(subject.session, tableX, currentY, { width: colWidths[5] });
+            currentY += 15;
+        });
+        
+        currentY += 15;
+        
+        // Declaration
+        doc.fontSize(9).font('Helvetica');
+        doc.text('I wish to appear in the above Subject(s) and shall answer the questions paper(s) in \'ENGLISH\' Language.', xPos, currentY, { width: 500 });
+        currentY += 20;
+        
+        // Notes
+        doc.fontSize(9).font('Helvetica-Bold');
+        doc.text('NOTE:', xPos, currentY);
+        doc.font('Helvetica');
+        doc.text('The University of Sindh reserves the right of cancellation of examination, if Exam form/documents are found to be incomplete/incorrect at any stage.', xPos + 30, currentY, { width: 470 });
+        currentY += 25;
+        
+        // Instructions
+        doc.fontSize(9).font('Helvetica-Bold');
+        doc.text('INSTRUCTIONS:', xPos, currentY);
+        currentY += 15;
+        doc.fontSize(8).font('Helvetica');
+        doc.text('(i) Mobile Phone / calculator or any other electronic device is not allowed.', xPos + 20, currentY, { width: 480 });
+        currentY += 12;
+        doc.text('(ii) You are required to bring this admit card/Slip along with your original Computerized National Identity Card (CNIC).', xPos + 20, currentY, { width: 480 });
+        currentY += 12;
+        doc.text('(iii) Wearing mask is mandatory as per COVID-19 SOPs. No candidate will be allowed to enter in the examination center without mask.', xPos + 20, currentY, { width: 480 });
+        currentY += 12;
+        doc.text('(iv) Paste your CNIC copy on the back of this Admit Card/Slip.', xPos + 20, currentY, { width: 480 });
+        currentY += 30;
+        
+        // Signatures
+        doc.fontSize(9).font('Helvetica');
+        doc.text('STUDENT SIGNATURE', xPos, currentY);
+        doc.text('CONTROLLER OF EXAMINATIONS', xPos + 300, currentY);
+        currentY += 20;
+        doc.moveTo(xPos, currentY).lineTo(xPos + 150, currentY).stroke();
+        doc.moveTo(xPos + 300, currentY).lineTo(xPos + 500, currentY).stroke();
+        
+        // Footer
+        const footerY = 750;
+        doc.fontSize(8).font('Helvetica');
+        doc.text('POWERED BY: IT SERVICES CENTRE - UNIVERSITY OF SINDH', 40, footerY);
+        doc.text('Page 1', 280, footerY, { align: 'center' });
+        const printDate = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        doc.text(`(Print Date: ${printDate})`, 400, footerY, { align: 'right' });
         
         doc.end();
     } catch (err) {
@@ -1013,29 +1225,61 @@ app.post('/api/admin/assignments/:id/grade', async (req, res) => {
 // 22. Upload Slip for Student
 app.post('/api/admin/students/:id/slip', async (req, res) => {
     try {
-        const { testDate, availableDate } = req.body;
+        const { testDate, rollNumberSuffix } = req.body; // rollNumberSuffix is the last part (001, 002, etc.)
         const studentId = req.params.id;
-        
-        // Generate QR code
-        const qrData = JSON.stringify({ studentId, testDate, timestamp: Date.now() });
-        const qrCodeBuffer = await QRCode.toBuffer(qrData);
-        const qrCodeBase64 = qrCodeBuffer.toString('base64');
         
         let student = await Student.findById(studentId);
         if (!student) {
             student = await OldStudent.findById(studentId);
         }
         
-        const slip = new Slip({
-            studentId,
-            studentCnic: student.cnic,
-            qrCode: qrCodeBase64,
-            testDate: testDate ? new Date(testDate) : null,
-            availableDate: availableDate ? new Date(availableDate) : new Date(Date.now() - 24 * 60 * 60 * 1000) // Default: 1 day ago (available)
-        });
-        await slip.save();
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
         
-        res.status(201).json({ success: true, message: "Slip created", slip });
+        // Generate roll number in format: Chem/batch/2026/001
+        const batch = student.batch || "2026";
+        const currentYear = new Date().getFullYear();
+        const suffix = rollNumberSuffix ? String(rollNumberSuffix).padStart(3, '0') : '001';
+        const rollNumber = `Chem/${batch}/${currentYear}/${suffix}`;
+        
+        // Generate QR code with student registration information
+        const qrData = JSON.stringify({
+            studentId: student._id.toString(),
+            name: student.fullName,
+            cnic: student.cnic,
+            batch: student.batch,
+            rollNumber: rollNumber,
+            testDate: testDate,
+            registrationDate: student.registrationDate,
+            timestamp: Date.now()
+        });
+        const qrCodeBuffer = await QRCode.toBuffer(qrData);
+        const qrCodeBase64 = qrCodeBuffer.toString('base64');
+        
+        // Check if slip already exists, update it or create new
+        let slip = await Slip.findOne({ studentId });
+        if (slip) {
+            slip.qrCode = qrCodeBase64;
+            slip.testDate = testDate ? new Date(testDate) : null;
+            slip.rollNumber = rollNumber;
+            slip.isAvailable = true;
+            slip.availableDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // Make available immediately
+            await slip.save();
+        } else {
+            slip = new Slip({
+                studentId,
+                studentCnic: student.cnic,
+                qrCode: qrCodeBase64,
+                testDate: testDate ? new Date(testDate) : null,
+                rollNumber: rollNumber,
+                isAvailable: true,
+                availableDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Make available immediately
+            });
+            await slip.save();
+        }
+        
+        res.status(201).json({ success: true, message: "Slip created successfully", slip });
     } catch (err) {
         console.error("Create slip error:", err);
         res.status(500).json({ message: "Create slip error" });

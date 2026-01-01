@@ -335,14 +335,17 @@ if (signinForm) {
     }
 
     try {
-      // Check if it's admin login (username is "admin")
+      // Check if it's admin login (username is "admin" - case insensitive)
       let apiUrl, payload;
-      if (userValue === "admin" || userValue.toLowerCase() === "admin") {
+      const normalizedUserValue = userValue.trim().toLowerCase();
+      if (normalizedUserValue === "admin") {
         apiUrl = `${API_BASE_URL}/admin/login`;
-        payload = { username: userValue, password: passwordValue };
+        payload = { username: userValue.trim(), password: passwordValue };
+        console.log('Detected admin login attempt');
       } else {
         apiUrl = `${API_BASE_URL}/student/login`;
-        payload = { cnic: userValue, password: passwordValue };
+        payload = { cnic: userValue.trim(), password: passwordValue };
+        console.log('Detected student login attempt');
       }
 
       console.log('Sending login request to:', apiUrl);
@@ -382,11 +385,13 @@ if (signinForm) {
           window.location.href = "student-portal.html";
         }
       } else {
+        console.error('Login failed:', data);
         alert(data.message || "Login failed. Please check your credentials.");
       }
     } catch (err) {
       console.error("Login error:", err);
-      alert("Network error. Please check your connection and try again.");
+      console.error("Error details:", err.message, err.stack);
+      alert(err.message || "Network error. Please check your connection and try again.");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -394,6 +399,8 @@ if (signinForm) {
       }
     }
   });
+} else {
+  console.warn('Signin form not found!');
 }
 
 

@@ -196,9 +196,13 @@ const transporter = nodemailer.createTransport({
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Type'],
+    credentials: false // Set to false when using wildcard origin
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -481,32 +485,55 @@ app.post('/api/admin/login', async (req, res) => {
             });
         }
 
-        const admin = await Admin.findOne({ username: username.trim() });
+        // Find admin - try exact match first, then case-insensitive
+        const trimmedUsername = username.trim();
+        let admin = await Admin.findOne({ username: trimmedUsername });
+        
+        // If not found, try case-insensitive search
         if (!admin) {
+            admin = await Admin.findOne({ 
+                username: { $regex: new RegExp(`^${trimmedUsername}$`, 'i') }
+            });
+        }
+        
+        if (!admin) {
+            console.log('Admin not found for username:', trimmedUsername);
+            console.log('Available admins in DB:', await Admin.find().select('username -_id'));
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+        
+        console.log('Admin found:', admin.username);
 
         // Check if password is hashed or plain text
         let isPasswordValid = false;
         try {
+            // Try bcrypt comparison first
             isPasswordValid = await bcrypt.compare(password, admin.password);
         } catch (bcryptError) {
-            // If bcrypt fails, check if it's plain text
+            // If bcrypt fails (password might be plain text), check direct comparison
             isPasswordValid = admin.password === password;
         }
 
-        if (!isPasswordValid && admin.password !== password) {
+        // Also check direct comparison in case password is plain text
+        if (!isPasswordValid) {
+            isPasswordValid = admin.password === password;
+        }
+
+        if (!isPasswordValid) {
+            console.log('Password mismatch for admin:', admin.username);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // If password is plain text, hash it for future use
-        if (admin.password === password && password !== 'admin123') {
+        // If password is plain text (not hashed), hash it for future use
+        if (admin.password === password && password.length < 60) {
             const hashedPassword = await bcrypt.hash(password, 10);
             admin.password = hashedPassword;
             await admin.save();
+            console.log('Admin password hashed for future use');
         }
 
         const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
+        console.log('Admin login successful for:', admin.username);
         res.status(200).json({ 
             success: true,
             message: 'Admin login successful', 

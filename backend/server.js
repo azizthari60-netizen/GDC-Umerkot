@@ -192,7 +192,13 @@ const transporter = nodemailer.createTransport({
 });
 
 // --- Middleware ---
-app.use(cors());
+// CORS configuration - allow all origins for now (can be restricted in production)
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -400,13 +406,20 @@ app.post('/api/student/login', ensureDb, async (req, res) => {
     try {
         const { cnic, password } = req.body;
         
-        // Check new students
-        let student = await Student.findOne({ cnic });
+        if (!cnic || !password) {
+            return res.status(400).json({ message: "CNIC and password are required" });
+        }
+        
+        // Trim and normalize CNIC
+        const normalizedCnic = cnic.trim();
+        
+        // Check new students first
+        let student = await Student.findOne({ cnic: normalizedCnic });
         let isOld = false;
         
         // If not found, check old students
         if (!student) {
-            student = await OldStudent.findOne({ cnic });
+            student = await OldStudent.findOne({ cnic: normalizedCnic });
             isOld = true;
         }
         
@@ -414,14 +427,17 @@ app.post('/api/student/login', ensureDb, async (req, res) => {
             return res.status(401).json({ message: "Invalid CNIC or password" });
         }
         
+        // Verify password
         const isPasswordValid = await bcrypt.compare(password, student.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid CNIC or password" });
         }
         
+        // Generate token
         const token = jwt.sign({ id: student._id, cnic: student.cnic }, JWT_SECRET, { expiresIn: '7d' });
         
         res.status(200).json({ 
+            success: true,
             message: "Login successful", 
             token,
             student: {
@@ -434,7 +450,7 @@ app.post('/api/student/login', ensureDb, async (req, res) => {
         });
     } catch (err) {
         console.error("Login error:", err);
-        res.status(500).json({ message: "Login error" });
+        res.status(500).json({ message: "Login error. Please try again." });
     }
 });
 
@@ -443,18 +459,29 @@ app.post('/api/admin/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username and password are required' });
+        }
+
         // If DB is not connected, allow fallback to environment-provided admin credentials
         if (!isDbConnected) {
             const envAdminUser = process.env.ADMIN_USER || 'admin';
             const envAdminPass = process.env.ADMIN_PASS || 'admin123';
             if (username === envAdminUser && password === envAdminPass) {
                 const token = jwt.sign({ id: null, username: envAdminUser }, JWT_SECRET, { expiresIn: '7d' });
-                return res.status(200).json({ message: 'Admin login successful (env fallback)', token });
+                return res.status(200).json({ 
+                    success: true,
+                    message: 'Admin login successful (env fallback)', 
+                    token 
+                });
             }
-            return res.status(503).json({ message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI or set ADMIN_USER and ADMIN_PASS environment variables.' });
+            return res.status(503).json({ 
+                success: false,
+                message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI or set ADMIN_USER and ADMIN_PASS environment variables.' 
+            });
         }
 
-        const admin = await Admin.findOne({ username });
+        const admin = await Admin.findOne({ username: username.trim() });
         if (!admin) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -464,6 +491,7 @@ app.post('/api/admin/login', async (req, res) => {
         try {
             isPasswordValid = await bcrypt.compare(password, admin.password);
         } catch (bcryptError) {
+            // If bcrypt fails, check if it's plain text
             isPasswordValid = admin.password === password;
         }
 
@@ -479,10 +507,14 @@ app.post('/api/admin/login', async (req, res) => {
         }
 
         const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ message: 'Admin login successful', token });
+        res.status(200).json({ 
+            success: true,
+            message: 'Admin login successful', 
+            token 
+        });
     } catch (err) {
         console.error('Admin login error:', err);
-        res.status(500).json({ message: 'Login error' });
+        res.status(500).json({ message: 'Login error. Please try again.' });
     }
 });
 

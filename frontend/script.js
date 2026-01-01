@@ -1,4 +1,21 @@
-const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
+// API Base URL - detect environment correctly
+const API_BASE_URL = (() => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  const port = window.location.port;
+  
+  // Local development
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3000/api';
+  }
+  
+  // Production - use relative path
+  return '/api';
+})();
+
+// Debug logging
+console.log('API Base URL:', API_BASE_URL);
+console.log('Current URL:', window.location.href);
 // Mobile nav toggle
 const navToggle = document.querySelector(".nav-toggle");
 const mainNav = document.querySelector(".main-nav");
@@ -256,11 +273,20 @@ if (signupForm) {
         return;
       }
 
+      console.log('Sending signup request to:', `${API_BASE_URL}/student/signup`);
+      console.log('Payload:', { ...payload, password: '***' });
+      
       const res = await fetch(`${API_BASE_URL}/student/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(payload)
       });
+      
+      console.log('Response status:', res.status);
+      console.log('Response ok:', res.ok);
 
       let data;
       try {
@@ -319,13 +345,28 @@ if (signinForm) {
         payload = { cnic: userValue, password: passwordValue };
       }
 
+      console.log('Sending login request to:', apiUrl);
+      console.log('Login type:', userValue === "admin" || userValue.toLowerCase() === "admin" ? 'Admin' : 'Student');
+      
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(payload)
       });
+      
+      console.log('Response status:', res.status);
+      console.log('Response ok:', res.ok);
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error("JSON parse error:", jsonErr);
+        throw new Error("Invalid response from server");
+      }
 
       if (res.ok && data.token) {
         if (userValue === "admin" || userValue.toLowerCase() === "admin") {
@@ -334,7 +375,9 @@ if (signinForm) {
           window.location.href = "admin-dashboard.html";
         } else {
           localStorage.setItem("studentToken", data.token);
-          localStorage.setItem("studentData", JSON.stringify(data.student));
+          if (data.student) {
+            localStorage.setItem("studentData", JSON.stringify(data.student));
+          }
           closeModal(signinModal);
           window.location.href = "student-portal.html";
         }

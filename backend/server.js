@@ -192,29 +192,37 @@ const transporter = nodemailer.createTransport({
 });
 
 // --- Middleware ---
-// CORS configuration - allow all origins for now (can be restricted in production)
+// CORS configuration - properly configured for API responses
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     exposedHeaders: ['Content-Type'],
-    credentials: false // Set to false when using wildcard origin
+    credentials: false
 }));
 
 // Handle preflight requests
 app.options('*', cors());
+
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// Security headers middleware
+// Security headers middleware - simplified to prevent CORB issues
 app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://res.cloudinary.com;");
+    // Only set security headers for HTML pages, not API responses
+    if (!req.path.startsWith('/api')) {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    }
+    // For API responses, ensure proper Content-Type
+    if (req.path.startsWith('/api')) {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    }
     next();
 });
 
@@ -408,6 +416,10 @@ app.post('/api/student/signup', ensureDb, async (req, res) => {
 // 2. Student Login (New & Old)
 app.post('/api/student/login', ensureDb, async (req, res) => {
     try {
+        // Set proper headers immediately to prevent CORB
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        
         const { cnic, password } = req.body;
         
         if (!cnic || !password) {
@@ -461,79 +473,61 @@ app.post('/api/student/login', ensureDb, async (req, res) => {
 // 3. Admin Login
 app.post('/api/admin/login', async (req, res) => {
     try {
+        // Set proper headers immediately to prevent CORB
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        
         const { username, password } = req.body;
 
         if (!username || !password) {
-            return res.status(400).json({ message: 'Username and password are required' });
+            return res.status(400).json({ success: false, message: 'Username and password are required' });
         }
 
         // If DB is not connected, allow fallback to environment-provided admin credentials
         if (!isDbConnected) {
             const envAdminUser = process.env.ADMIN_USER || 'admin';
             const envAdminPass = process.env.ADMIN_PASS || 'admin123';
-            if (username === envAdminUser && password === envAdminPass) {
+            if (username.trim().toLowerCase() === envAdminUser.toLowerCase() && password === envAdminPass) {
                 const token = jwt.sign({ id: null, username: envAdminUser }, JWT_SECRET, { expiresIn: '7d' });
                 return res.status(200).json({ 
                     success: true,
-                    message: 'Admin login successful (env fallback)', 
+                    message: 'Admin login successful', 
                     token 
                 });
             }
-            return res.status(503).json({ 
+            return res.status(401).json({ 
                 success: false,
-                message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI or set ADMIN_USER and ADMIN_PASS environment variables.' 
+                message: 'Invalid credentials' 
             });
         }
 
-        // Find admin - try exact match first, then case-insensitive
-        const trimmedUsername = username.trim();
-        let admin = await Admin.findOne({ username: trimmedUsername });
-        
-        // If not found, try case-insensitive search
-        if (!admin) {
-            admin = await Admin.findOne({ 
-                username: { $regex: new RegExp(`^${trimmedUsername}$`, 'i') }
-            });
-        }
+        // Find admin - case insensitive
+        const trimmedUsername = username.trim().toLowerCase();
+        let admin = await Admin.findOne({ 
+            username: { $regex: new RegExp(`^${trimmedUsername}$`, 'i') }
+        });
         
         if (!admin) {
-            console.log('Admin not found for username:', trimmedUsername);
-            console.log('Available admins in DB:', await Admin.find().select('username -_id'));
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-        
-        console.log('Admin found:', admin.username);
-
-        // Check if password is hashed or plain text
-        let isPasswordValid = false;
-        try {
-            // Try bcrypt comparison first
-            isPasswordValid = await bcrypt.compare(password, admin.password);
-        } catch (bcryptError) {
-            // If bcrypt fails (password might be plain text), check direct comparison
-            isPasswordValid = admin.password === password;
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // Also check direct comparison in case password is plain text
+        // Check password - try bcrypt first, then plain text
+        let isPasswordValid = await bcrypt.compare(password, admin.password);
         if (!isPasswordValid) {
             isPasswordValid = admin.password === password;
         }
 
         if (!isPasswordValid) {
-            console.log('Password mismatch for admin:', admin.username);
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // If password is plain text (not hashed), hash it for future use
+        // If password is plain text, hash it for future use
         if (admin.password === password && password.length < 60) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            admin.password = hashedPassword;
+            admin.password = await bcrypt.hash(password, 10);
             await admin.save();
-            console.log('Admin password hashed for future use');
         }
 
         const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
-        console.log('Admin login successful for:', admin.username);
         res.status(200).json({ 
             success: true,
             message: 'Admin login successful', 
@@ -541,7 +535,11 @@ app.post('/api/admin/login', async (req, res) => {
         });
     } catch (err) {
         console.error('Admin login error:', err);
-        res.status(500).json({ message: 'Login error. Please try again.' });
+        if (!res.headersSent) {
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+        }
+        res.status(500).json({ success: false, message: 'Login error. Please try again.' });
     }
 });
 
@@ -1447,7 +1445,12 @@ app.get('*', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(500).json({ message: 'Internal server error', error: err.message });
+    // Ensure proper headers for error responses to prevent CORB
+    if (!res.headersSent) {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
 });
 
 // --- Server Start ---

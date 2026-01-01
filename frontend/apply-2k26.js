@@ -35,6 +35,8 @@ function preFillForm(student) {
   if (student.isFormFilled && student.formData) {
     const fd = student.formData;
     document.getElementById('in-fname').value = fd.fName || '';
+    document.getElementById('in-dob').value = fd.dob || '';
+    document.getElementById('in-gender').value = fd.gender || '';
     document.getElementById('in-caste').value = fd.caste || '';
     document.getElementById('in-domicile').value = fd.domicile || '';
     document.getElementById('in-email').value = fd.email || '';
@@ -101,6 +103,8 @@ async function processAndPrint() {
   const formData = {
     name: document.getElementById('in-name').value,
     fName: document.getElementById('in-fname').value,
+    dob: document.getElementById('in-dob').value,
+    gender: document.getElementById('in-gender').value,
     caste: document.getElementById('in-caste').value,
     cnic: document.getElementById('in-cnic').value,
     domicile: document.getElementById('in-domicile').value,

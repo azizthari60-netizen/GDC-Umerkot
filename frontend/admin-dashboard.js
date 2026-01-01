@@ -114,8 +114,8 @@ async function loadStudents() {
           actions += `<button class="btn btn-primary btn-small" onclick="approveStudent('${student._id}')">Approve</button>`;
           actions += `<button class="btn btn-danger btn-small" onclick="rejectStudent('${student._id}')">Reject</button>`;
         }
-        if (!isOld && challanStatus === 'Uploaded') {
-          actions += `<button class="btn btn-primary btn-small" onclick="verifyChallan('${student._id}')">Verify Challan</button>`;
+        if (!isOld && challanStatus === 'Uploaded' && student.challanImage) {
+          actions += `<button class="btn btn-primary btn-small" onclick="viewChallan('${student._id}', '${student.challanImage}')">View Challan</button>`;
         }
         actions += `<button class="btn btn-primary btn-small" onclick="uploadSlip('${student._id}')">Upload Slip</button>`;
         actions += `<button class="btn btn-danger btn-small" onclick="deleteStudent('${student._id}', ${isOld})">Delete</button>`;
@@ -126,7 +126,8 @@ async function loadStudents() {
               ${student.profileImage ? `<img src="${student.profileImage}" alt="Profile">` : ''}
               <div>
                 <strong>${student.fullName}</strong><br>
-                <small style="color: #6b7280;">CNIC: ${student.cnic} | Batch: ${student.batch || 'N/A'} ${isOld ? '| Old Student' : ''}</small><br>
+                <small style="color: #6b7280;">CNIC: ${student.cnic} | Gender: ${student.formData?.gender || student.gender || 'N/A'} | DOB: ${student.formData?.dob || student.dob || 'N/A'}</small><br>
+                <small style="color: #6b7280;">Batch: ${student.batch || 'N/A'} ${isOld ? '| Old Student' : ''}</small><br>
                 <span class="${statusClass}" style="margin-top: 0.25rem; display: inline-block;">Status: ${student.status || 'Active'}</span>
                 ${!isOld ? `<br><small style="color: #6b7280;">Challan: ${challanStatus}</small>` : ''}
               </div>
@@ -228,8 +229,11 @@ async function verifyChallan(studentId) {
 }
 
 async function uploadSlip(studentId) {
-  const testDate = prompt('Enter test date (YYYY-MM-DD) or leave empty:');
-  const availableDate = prompt('Enter available date (YYYY-MM-DD) or leave empty for immediate availability:');
+  const rollNo = prompt('Enter Roll Number for this student:');
+  if (!rollNo) return;
+  
+  const testDate = prompt('Enter Test Date (YYYY-MM-DD):');
+  if (!testDate) return;
   
   try {
     const adminToken = localStorage.getItem('adminToken');
@@ -241,15 +245,56 @@ async function uploadSlip(studentId) {
       },
       body: JSON.stringify({
         testDate: testDate || null,
-        availableDate: availableDate || null
+        rollNumber: rollNo,
+        availableDate: null
       })
     });
 
     const data = await res.json();
     if (res.ok && data.success) {
-      alert('Slip created successfully!');
+      alert(`Slip created successfully!\nRoll No: ${rollNo}`);
+      loadStudents();
     } else {
       alert(data.message || 'Failed to create slip');
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('Network error. Please try again.');
+  }
+}
+
+function viewChallan(studentId, challanImageUrl) {
+  const modal = document.getElementById('challan-modal');
+  const img = document.getElementById('challan-preview-img');
+  const verifyBtn = document.getElementById('verify-challan-confirm-btn');
+  
+  img.src = challanImageUrl;
+  modal.style.display = 'block';
+  
+  verifyBtn.onclick = () => verifyChallan(studentId);
+}
+
+function closeChallanModal() {
+  document.getElementById('challan-modal').style.display = 'none';
+}
+
+async function verifyChallan(studentId) {
+  try {
+    const adminToken = localStorage.getItem('adminToken');
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/verify-challan`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert('Challan verified successfully!');
+      closeChallanModal();
+      loadStudents();
+    } else {
+      alert(data.message || 'Failed to verify challan');
     }
   } catch (err) {
     console.error('Error:', err);

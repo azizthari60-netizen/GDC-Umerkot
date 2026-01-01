@@ -57,9 +57,62 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
+// Security headers middleware
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://res.cloudinary.com;");
+    next();
+});
+
+// Input validation middleware
+const validateInput = (req, res, next) => {
+    // Check for SQL injection patterns
+    const sqlPattern = /('|"|;|--|\/\*|\*\/|xp_|sp_|exec|execute)/gi;
+    const checkValue = (val) => {
+        if (typeof val === 'string' && sqlPattern.test(val)) {
+            return false;
+        }
+        return true;
+    };
+    
+    // Check body
+    if (req.body && typeof req.body === 'object') {
+        for (let key in req.body) {
+            if (!checkValue(req.body[key])) {
+                return res.status(400).json({ message: "Invalid input detected" });
+            }
+        }
+    }
+    
+    // Check query
+    if (req.query && typeof req.query === 'object') {
+        for (let key in req.query) {
+            if (!checkValue(req.query[key])) {
+                return res.status(400).json({ message: "Invalid input detected" });
+            }
+        }
+    }
+    
+    next();
+};
+
+app.use(validateInput);
+
 const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } 
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        // Only allow safe file types
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type'));
+        }
+    }
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -81,6 +134,8 @@ const studentSchema = new mongoose.Schema({
     // Form data
     formData: {
         fName: String,
+        dob: String,
+        gender: String,
         caste: String,
         domicile: String,
         email: String,
@@ -105,6 +160,8 @@ const oldStudentSchema = new mongoose.Schema({
     password: { type: String, required: true },
     batch: String,
     rollNumber: String,
+    dob: String,
+    gender: String,
     email: String,
     mobile: String,
     fatherName: String,
@@ -144,8 +201,10 @@ const resultSchema = new mongoose.Schema({
 const slipSchema = new mongoose.Schema({
     studentCnic: { type: String, required: true },
     studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    rollNumber: String,
     qrCode: String,
     testDate: Date,
+    testVenue: { type: String, default: 'Chemistry Lab' },
     availableDate: Date, // Date when slip becomes downloadable
     isAvailable: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
@@ -360,6 +419,8 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
         // Update student with form data
         student.formData = {
             fName: formData.fName,
+            dob: formData.dob,
+            gender: formData.gender,
             caste: formData.caste,
             domicile: formData.domicile,
             email: formData.email,
@@ -409,7 +470,7 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
     }
 });
 
-// 5. Generate Challan PDF
+// 5. Generate Challan PDF (Professional Format)
 app.get('/api/student/challan/:studentId', async (req, res) => {
     try {
         const student = await Student.findById(req.params.studentId);
@@ -419,8 +480,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         
         const doc = new PDFDocument({ 
             size: 'A4', 
-            layout: 'landscape',
-            margin: 20
+            layout: 'portrait',
+            margin: 15
         });
         
         res.setHeader('Content-Type', 'application/pdf');
@@ -428,42 +489,75 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         
         doc.pipe(res);
         
-        // Helper function to draw a single challan
-        const drawChallan = (x, y, copyText) => {
-            doc.fontSize(10);
+        // Helper function to draw a professional challan copy
+        const drawChallan = (copyText) => {
+            // Header background color (blue)
+            doc.rect(15, 15, 565, 80).fill('#1e3a8a').stroke();
+            doc.fillColor('white').fontSize(18).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', 30, 25);
+            doc.fontSize(11).text('Government Boys Degree College Umerkot', 30, 48);
+            doc.fontSize(10).font('Helvetica').text('Sindh, Pakistan', 30, 63);
             
-            // Header with logo placeholder
-            doc.rect(x, y, 240, 160).stroke();
-            doc.fontSize(12).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', x + 10, y + 5, { align: 'center', width: 220 });
-            doc.fontSize(10).font('Helvetica').text('Govt. Boys Degree College Umerkot', x + 10, y + 20, { align: 'center', width: 220 });
-            doc.fontSize(9).font('Helvetica-Bold').text(copyText, x + 10, y + 35, { align: 'center', width: 220 });
+            // Copy type badge
+            doc.rect(470, 25, 90, 30).fill('#dc2626').stroke();
+            doc.fillColor('white').fontSize(12).font('Helvetica-Bold').text(copyText, 475, 32, { width: 80, align: 'center' });
             
-            doc.moveTo(x + 10, y + 45).lineTo(x + 230, y + 45).stroke();
+            // Content box
+            doc.moveTo(15, 100).lineTo(580, 100).stroke();
+            doc.fillColor('black').fontSize(9);
             
-            // Content
-            doc.fontSize(8).font('Helvetica');
-            doc.text(`Unique ID: ${student.uniqueId}`, x + 15, y + 50);
-            doc.text(`Name: ${student.fullName}`, x + 15, y + 60);
-            doc.text(`Father's Name: ${student.formData?.fName || 'N/A'}`, x + 15, y + 70);
-            doc.text(`CNIC: ${student.cnic}`, x + 15, y + 80);
-            doc.text(`Apply For: BS Chemistry (Batch 2026)`, x + 15, y + 90);
-            doc.text(`Fees: Rs. 2000/-`, x + 15, y + 100);
-            doc.text(`Last Date: 15-01-2026`, x + 15, y + 110);
+            doc.fontSize(10).font('Helvetica-Bold').text('ADMISSION FEE CHALLAN', 20, 110);
             
-            doc.moveTo(x + 10, y + 125).lineTo(x + 230, y + 125).stroke();
+            doc.moveTo(15, 130).lineTo(580, 130).stroke();
             
-            doc.fontSize(8).text('Bank: JS BANK UMERKOT', x + 15, y + 130);
-            doc.text('Account: BS CHEMISTRY GBDC UMERKOT', x + 15, y + 140);
-            doc.text('Account No: 1234567890', x + 15, y + 150);
+            // Student Details
+            doc.fontSize(9).font('Helvetica');
+            doc.text(`Unique ID: ${student.uniqueId}`, 20, 140);
+            doc.text(`Student Name: ${student.fullName}`, 20, 155);
+            doc.text(`Father's Name: ${student.formData?.fName || 'N/A'}`, 20, 170);
+            doc.text(`CNIC: ${student.cnic}`, 20, 185);
+            doc.text(`Program: BS Chemistry (Batch 2026)`, 20, 200);
             
-            doc.moveTo(x + 100, y + 155).lineTo(x + 180, y + 155).stroke();
-            doc.fontSize(7).text('Signature', x + 130, y + 157, { align: 'center', width: 50 });
+            doc.moveTo(15, 215).lineTo(580, 215).stroke();
+            
+            // Fee Details
+            doc.fontSize(10).font('Helvetica-Bold').text('FEE DETAILS', 20, 225);
+            doc.fontSize(9).font('Helvetica');
+            doc.text(`Admission Fee: Rs. 2,000/-`, 20, 242);
+            doc.text(`Due Date: 15-01-2026`, 20, 257);
+            
+            doc.moveTo(15, 270).lineTo(580, 270).stroke();
+            
+            // Bank Details
+            doc.fontSize(10).font('Helvetica-Bold').text('DEPOSIT TO:', 20, 280);
+            doc.fontSize(9).font('Helvetica');
+            doc.text(`Bank Name: JS BANK`, 20, 297);
+            doc.text(`Branch: Umerkot`, 20, 312);
+            doc.text(`Account Title: BS Chemistry Department`, 20, 327);
+            doc.text(`Account Number: 1234567890`, 20, 342);
+            
+            doc.moveTo(15, 360).lineTo(580, 360).stroke();
+            
+            // Signature line
+            doc.fontSize(8).text('Student Signature', 50, 375);
+            doc.moveTo(20, 370).lineTo(150, 370).stroke();
+            
+            doc.fontSize(8).text('Bank Officer', 250, 375);
+            doc.moveTo(220, 370).lineTo(350, 370).stroke();
+            
+            doc.fontSize(8).text('College Seal', 420, 375);
+            doc.moveTo(400, 370).lineTo(530, 370).stroke();
+            
+            // Footer notes
+            doc.fontSize(7).fillColor('#666').text('Note: This challan is valid for 30 days from the issue date.', 20, 400);
+            doc.text('Please attach this challan with your admission form and upload the paid challan image online.', 20, 412);
+            
+            doc.addPage();
         };
         
-        // Draw three copies
-        drawChallan(20, 20, 'BANK COPY');
-        drawChallan(280, 20, 'OFFICE COPY');
-        drawChallan(540, 20, 'STUDENT COPY');
+        // Draw three copies: Bank, Office, Student
+        drawChallan('BANK COPY');
+        drawChallan('OFFICE COPY');
+        drawChallan('STUDENT COPY');
         
         doc.end();
     } catch (err) {
@@ -678,7 +772,7 @@ app.get('/api/student/slip', async (req, res) => {
     }
 });
 
-// 13. Generate Slip PDF
+// 13. Generate Slip PDF (Professional Format)
 app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
     try {
         const slip = await Slip.findById(req.params.slipId);
@@ -696,43 +790,82 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             student = await OldStudent.findById(slip.studentId);
         }
         
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const doc = new PDFDocument({ size: 'A4', margin: 30 });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=slip-${slip.studentCnic}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=slip-${slip.rollNumber || slip.studentCnic}.pdf`);
         
         doc.pipe(res);
         
-        // Header
-        doc.fontSize(20).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', { align: 'center' });
-        doc.fontSize(14).font('Helvetica').text('Govt. Boys Degree College Umerkot', { align: 'center' });
-        doc.moveDown();
+        // Header with blue background
+        doc.rect(30, 30, 535, 90).fill('#1e3a8a').stroke();
+        doc.fillColor('white').fontSize(20).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', 50, 40);
+        doc.fontSize(12).text('Government Boys Degree College Umerkot', 50, 65);
+        doc.fontSize(11).text('Sindh, Pakistan', 50, 83);
         
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-        doc.moveDown();
+        doc.fillColor('black').fontSize(18).font('Helvetica-Bold').text('ENTRY TEST SLIP', 40, 135, { align: 'center' });
         
-        // Student Info
-        doc.fontSize(14).font('Helvetica-Bold').text('Admission Slip', { align: 'center' });
-        doc.moveDown();
+        doc.moveTo(40, 160).lineTo(565, 160).stroke();
         
-        doc.fontSize(12).font('Helvetica');
-        doc.text(`Name: ${student.fullName}`, 50, doc.y);
-        doc.text(`CNIC: ${student.cnic}`, 50, doc.y + 20);
-        doc.text(`Batch: ${student.batch}`, 50, doc.y + 20);
-        if (slip.testDate) {
-            doc.text(`Test Date: ${slip.testDate.toLocaleDateString()}`, 50, doc.y + 20);
+        // Student Photo (if available) and Info side by side
+        const photoX = 400;
+        if (student.profileImage) {
+            try {
+                const photoResponse = await fetch(student.profileImage);
+                if (photoResponse.ok) {
+                    const photoBuffer = await photoResponse.buffer();
+                    doc.image(photoBuffer, photoX, 175, { width: 120, height: 140 });
+                }
+            } catch (photoErr) {
+                console.log('Could not fetch student photo');
+            }
+        } else {
+            doc.rect(photoX, 175, 120, 140).stroke();
+            doc.fontSize(10).text('Photo', photoX + 35, 300, { width: 50, align: 'center' });
         }
         
-        doc.moveDown(2);
+        // Student Information (left side)
+        doc.fontSize(10).font('Helvetica-Bold');
+        doc.fillColor('black').fontSize(9);
+        doc.text('STUDENT INFORMATION', 40, 175);
         
-        // QR Code (as base64 image)
+        doc.fontSize(8).font('Helvetica');
+        doc.text(`Roll Number: ${slip.rollNumber || 'N/A'}`, 40, 195);
+        doc.text(`Name: ${student.fullName}`, 40, 210);
+        doc.text(`Father's Name: ${student.fatherName || student.formData?.fName || 'N/A'}`, 40, 225);
+        doc.text(`CNIC: ${student.cnic}`, 40, 240);
+        doc.text(`Date of Birth: ${student.dob || 'Not provided'}`, 40, 255);
+        doc.text(`Batch: ${student.batch || 'N/A'}`, 40, 270);
+        
+        doc.moveTo(40, 290).lineTo(565, 290).stroke();
+        
+        // Test Information
+        doc.fontSize(10).font('Helvetica-Bold').text('TEST INFORMATION', 40, 305);
+        doc.fontSize(9).font('Helvetica');
+        doc.text(`Test Date: ${slip.testDate ? slip.testDate.toLocaleDateString() : 'To be announced'}`, 40, 325);
+        doc.text(`Test Time: 10:00 AM - 01:00 PM`, 40, 340);
+        doc.text(`Test Venue: ${slip.testVenue || 'Chemistry Lab'}`, 40, 355);
+        
+        doc.moveTo(40, 375).lineTo(565, 375).stroke();
+        
+        // Instructions
+        doc.fontSize(10).font('Helvetica-Bold').text('INSTRUCTIONS', 40, 390);
+        doc.fontSize(8).font('Helvetica');
+        doc.text('• This slip is mandatory for entry to the test center.', 50, 410);
+        doc.text('• Report 15 minutes before the test starts.', 50, 423);
+        doc.text('• Bring valid CNIC and this printed slip.', 50, 436);
+        doc.text('• No electronic devices are allowed in the test center.', 50, 449);
+        doc.text('• Maintain silence during the test. Any malpractice will result in disqualification.', 50, 462);
+        
+        doc.moveTo(40, 480).lineTo(565, 480).stroke();
+        
+        // QR Code
         if (slip.qrCode) {
-            doc.image(Buffer.from(slip.qrCode, 'base64'), 400, doc.y - 100, { width: 100, height: 100 });
+            doc.text('QR Code (For verification):', 40, 495);
+            doc.image(Buffer.from(slip.qrCode, 'base64'), 450, 495, { width: 80, height: 80 });
         }
         
-        doc.moveDown(2);
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-        
-        doc.fontSize(10).text('This slip is required for the test. Please bring a printed copy.', { align: 'center' });
+        doc.fontSize(7).fillColor('#666').text('This is an electronically generated slip. No signature is required.', 40, 585);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 40, 598);
         
         doc.end();
     } catch (err) {
@@ -926,11 +1059,15 @@ app.post('/api/admin/assignments/:id/grade', async (req, res) => {
 // 22. Upload Slip for Student
 app.post('/api/admin/students/:id/slip', async (req, res) => {
     try {
-        const { testDate, availableDate } = req.body;
+        const { testDate, rollNumber, availableDate } = req.body;
         const studentId = req.params.id;
         
+        if (!rollNumber) {
+            return res.status(400).json({ message: "Roll Number is required" });
+        }
+        
         // Generate QR code
-        const qrData = JSON.stringify({ studentId, testDate, timestamp: Date.now() });
+        const qrData = JSON.stringify({ studentId, rollNumber, testDate, timestamp: Date.now() });
         const qrCodeBuffer = await QRCode.toBuffer(qrData);
         const qrCodeBase64 = qrCodeBuffer.toString('base64');
         
@@ -942,9 +1079,11 @@ app.post('/api/admin/students/:id/slip', async (req, res) => {
         const slip = new Slip({
             studentId,
             studentCnic: student.cnic,
+            rollNumber,
             qrCode: qrCodeBase64,
             testDate: testDate ? new Date(testDate) : null,
-            availableDate: availableDate ? new Date(availableDate) : new Date(Date.now() - 24 * 60 * 60 * 1000) // Default: 1 day ago (available)
+            testVenue: 'Chemistry Lab',
+            availableDate: availableDate ? new Date(availableDate) : new Date()
         });
         await slip.save();
         
@@ -1054,4 +1193,9 @@ app.post('/api/contact', async (req, res) => {
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+if (process.env.VERCEL) {
+  // Export Express app for serverless platform (Vercel)
+  module.exports = app;
+} else {
+  app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+}

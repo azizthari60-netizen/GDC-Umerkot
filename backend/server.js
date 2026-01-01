@@ -24,19 +24,28 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-mongoose.connect(process.env.MONGODB_URI)
+// Connect to MongoDB asynchronously (non-blocking)
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000
+})
     .then(async () => {
         console.log("🚀 MongoDB Connected Successfully");
         // Initialize admin if not exists
-        const adminCount = await Admin.countDocuments();
-        if (adminCount === 0) {
-            const hashedPassword = await bcrypt.hash('admin123', 10);
-            const defaultAdmin = new Admin({
-                username: 'admin',
-                password: hashedPassword
-            });
-            await defaultAdmin.save();
-            console.log("✅ Default admin created (username: admin, password: admin123)");
+        try {
+            const adminCount = await Admin.countDocuments();
+            if (adminCount === 0) {
+                const hashedPassword = await bcrypt.hash('admin123', 10);
+                const defaultAdmin = new Admin({
+                    username: 'admin',
+                    password: hashedPassword
+                });
+                await defaultAdmin.save();
+                console.log("✅ Default admin created (username: admin, password: admin123)");
+            }
+        } catch (adminErr) {
+            console.error("Admin init error:", adminErr);
         }
     })
     .catch(err => console.error("❌ DB Connection Error:", err));

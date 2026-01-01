@@ -18,6 +18,7 @@ const app = express();
 
 // --- Configuration ---
 console.log("Environment Check - Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME ? "Found" : "NOT FOUND");
+console.log("Environment Check - MongoDB URI:", process.env.MONGODB_URI ? "Found" : "NOT FOUND");
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -25,30 +26,34 @@ cloudinary.config({
 });
 
 // Connect to MongoDB asynchronously (non-blocking)
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000
-})
-    .then(async () => {
-        console.log("🚀 MongoDB Connected Successfully");
-        // Initialize admin if not exists
-        try {
-            const adminCount = await Admin.countDocuments();
-            if (adminCount === 0) {
-                const hashedPassword = await bcrypt.hash('admin123', 10);
-                const defaultAdmin = new Admin({
-                    username: 'admin',
-                    password: hashedPassword
-                });
-                await defaultAdmin.save();
-                console.log("✅ Default admin created (username: admin, password: admin123)");
-            }
-        } catch (adminErr) {
-            console.error("Admin init error:", adminErr);
-        }
+if (process.env.MONGODB_URI) {
+    mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000
     })
-    .catch(err => console.error("❌ DB Connection Error:", err));
+        .then(async () => {
+            console.log("🚀 MongoDB Connected Successfully");
+            // Initialize admin if not exists
+            try {
+                const adminCount = await Admin.countDocuments();
+                if (adminCount === 0) {
+                    const hashedPassword = await bcrypt.hash('admin123', 10);
+                    const defaultAdmin = new Admin({
+                        username: 'admin',
+                        password: hashedPassword
+                    });
+                    await defaultAdmin.save();
+                    console.log("✅ Default admin created (username: admin, password: admin123)");
+                }
+            } catch (adminErr) {
+                console.error("Admin init error:", adminErr);
+            }
+        })
+        .catch(err => console.error("❌ DB Connection Error:", err));
+} else {
+    console.warn("⚠️  MONGODB_URI not configured - database features will not work");
+}
 
 // Email transporter
 const transporter = nodemailer.createTransport({
@@ -1264,6 +1269,22 @@ app.post('/api/contact', async (req, res) => {
         console.error("Contact form error:", err);
         res.status(500).json({ message: "Contact form error" });
     }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Catch-all for unmapped routes - serve index.html for SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
 });
 
 // --- Server Start ---

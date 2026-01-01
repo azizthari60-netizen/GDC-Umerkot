@@ -202,6 +202,19 @@ async function loadStudentData() {
       if (document.getElementById('info-email')) {
         document.getElementById('info-email').textContent = (currentStudent.formData?.email || currentStudent.email) || '-';
       }
+      if (document.getElementById('info-dob')) {
+        const dob = currentStudent.formData?.dob || currentStudent.dob;
+        document.getElementById('info-dob').textContent = dob ? new Date(dob).toLocaleDateString() : '-';
+      }
+      if (document.getElementById('info-gender')) {
+        document.getElementById('info-gender').textContent = currentStudent.formData?.gender || currentStudent.gender || '-';
+      }
+      if (document.getElementById('info-address')) {
+        document.getElementById('info-address').textContent = currentStudent.formData?.address || currentStudent.address || '-';
+      }
+      if (document.getElementById('info-district')) {
+        document.getElementById('info-district').textContent = currentStudent.formData?.district || currentStudent.district || '-';
+      }
       if (document.getElementById('info-batch')) {
         document.getElementById('info-batch').textContent = currentStudent.batch ? `Batch ${currentStudent.batch}` : '-';
       }

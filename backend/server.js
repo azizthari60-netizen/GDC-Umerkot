@@ -131,14 +131,26 @@ const Admin = mongoose.model('Admin', adminSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 
 // NOW connect to MongoDB (models are already defined)
-if (process.env.MONGODB_URI) {
-    mongoose.connect(process.env.MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000
-    })
-        .then(async () => {
-            console.log("🚀 MongoDB Connected Successfully");
+let isDbConnected = false;
+async function initMongo() {
+    if (process.env.MONGODB_URI) {
+        try {
+            // Reuse existing connection in serverless environments to avoid multiple connections
+            if (global._mongoose && global._mongoose.conn) {
+                mongoose.connection = global._mongoose.conn;
+                isDbConnected = true;
+                console.log('🚀 Reusing existing MongoDB connection');
+            } else {
+                const conn = await mongoose.connect(process.env.MONGODB_URI, {
+                    useNewUrlParser: true,
+                    useUnifiedTopology: true,
+                    serverSelectionTimeoutMS: 5000
+                });
+                isDbConnected = true;
+                console.log("🚀 MongoDB Connected Successfully");
+                global._mongoose = { conn };
+            }
+
             // Initialize admin if not exists
             try {
                 const adminCount = await Admin.countDocuments();
@@ -154,11 +166,16 @@ if (process.env.MONGODB_URI) {
             } catch (adminErr) {
                 console.error("Admin init error:", adminErr);
             }
-        })
-        .catch(err => console.error("❌ DB Connection Error:", err));
-} else {
-    console.warn("⚠️  MONGODB_URI not configured - database features will not work");
+        } catch (err) {
+            isDbConnected = false;
+            console.error("❌ DB Connection Error:", err);
+        }
+    } else {
+        isDbConnected = false;
+        console.warn("⚠️  MONGODB_URI not configured - database features will not work");
+    }
 }
+initMongo();
 
 // Email transporter
 const transporter = nodemailer.createTransport({
@@ -236,6 +253,14 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+// Helper middleware to ensure DB is connected when required
+function ensureDb(req, res, next) {
+    if (!isDbConnected) {
+        return res.status(503).json({ message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI in your environment.' });
+    }
+    next();
+}
+
 // Helper function to upload to Cloudinary
 function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
     return new Promise((resolve, reject) => {
@@ -267,7 +292,7 @@ function generateUniqueId() {
 // --- ROUTES ---
 
 // 1. Student Sign Up
-app.post('/api/student/signup', async (req, res) => {
+app.post('/api/student/signup', ensureDb, async (req, res) => {
     try {
         const { fullName, cnic, password, confirmPassword } = req.body;
         
@@ -296,7 +321,7 @@ app.post('/api/student/signup', async (req, res) => {
 });
 
 // 2. Student Login (New & Old)
-app.post('/api/student/login', async (req, res) => {
+app.post('/api/student/login', ensureDb, async (req, res) => {
     try {
         const { cnic, password } = req.body;
         
@@ -342,38 +367,47 @@ app.post('/api/student/login', async (req, res) => {
 app.post('/api/admin/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const admin = await Admin.findOne({ username });
-        
-        if (!admin) {
-            return res.status(401).json({ message: "Invalid credentials" });
+
+        // If DB is not connected, allow fallback to environment-provided admin credentials
+        if (!isDbConnected) {
+            const envAdminUser = process.env.ADMIN_USER || 'admin';
+            const envAdminPass = process.env.ADMIN_PASS || 'admin123';
+            if (username === envAdminUser && password === envAdminPass) {
+                const token = jwt.sign({ id: null, username: envAdminUser }, JWT_SECRET, { expiresIn: '7d' });
+                return res.status(200).json({ message: 'Admin login successful (env fallback)', token });
+            }
+            return res.status(503).json({ message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI or set ADMIN_USER and ADMIN_PASS environment variables.' });
         }
-        
+
+        const admin = await Admin.findOne({ username });
+        if (!admin) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
         // Check if password is hashed or plain text
         let isPasswordValid = false;
         try {
             isPasswordValid = await bcrypt.compare(password, admin.password);
         } catch (bcryptError) {
-            // If bcrypt compare fails, might be plain text
             isPasswordValid = admin.password === password;
         }
-        
-        // Also check plain text for migration purposes
+
         if (!isPasswordValid && admin.password !== password) {
-            return res.status(401).json({ message: "Invalid credentials" });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
-        
+
         // If password is plain text, hash it for future use
         if (admin.password === password && password !== 'admin123') {
             const hashedPassword = await bcrypt.hash(password, 10);
             admin.password = hashedPassword;
             await admin.save();
         }
-        
+
         const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ message: "Admin login successful", token });
+        res.status(200).json({ message: 'Admin login successful', token });
     } catch (err) {
-        console.error("Admin login error:", err);
-        res.status(500).json({ message: "Login error" });
+        console.error('Admin login error:', err);
+        res.status(500).json({ message: 'Login error' });
     }
 });
 

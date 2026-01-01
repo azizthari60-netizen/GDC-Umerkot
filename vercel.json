@@ -15,6 +15,17 @@
       "src": "/api/(.*)",
       "dest": "backend/api.js"
     },
-    
+    {
+      "src": "/(.*)\\.html$",
+      "dest": "frontend/$1.html"
+    },
+    {
+      "src": "^/(?!api/|.*\\.)(.*)$",
+      "dest": "frontend/$1.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
+    }
   ]
 }

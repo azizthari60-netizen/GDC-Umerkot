@@ -203,8 +203,8 @@ async function rejectStudent(studentId) {
   }
 }
 
-async function verifyChallan(studentId) {
-  if (!confirm('Verify this challan?')) return;
+async function verifyChallan(studentId, showConfirm = true) {
+  if (showConfirm && !confirm('Verify this challan?')) return;
   
   try {
     const adminToken = localStorage.getItem('adminToken');
@@ -218,6 +218,7 @@ async function verifyChallan(studentId) {
     const data = await res.json();
     if (res.ok && data.success) {
       alert('Challan verified successfully!');
+      closeChallanModal();
       loadStudents();
     } else {
       alert(data.message || 'Failed to verify challan');
@@ -268,38 +269,17 @@ function viewChallan(studentId, challanImageUrl) {
   const img = document.getElementById('challan-preview-img');
   const verifyBtn = document.getElementById('verify-challan-confirm-btn');
   
-  img.src = challanImageUrl;
-  modal.style.display = 'block';
+  if (img) img.src = challanImageUrl;
+  if (modal) modal.style.display = 'block';
   
-  verifyBtn.onclick = () => verifyChallan(studentId);
+  if (verifyBtn) {
+    verifyBtn.onclick = () => verifyChallan(studentId, false);
+  }
 }
 
 function closeChallanModal() {
-  document.getElementById('challan-modal').style.display = 'none';
-}
-
-async function verifyChallan(studentId) {
-  try {
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/verify-challan`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Challan verified successfully!');
-      closeChallanModal();
-      loadStudents();
-    } else {
-      alert(data.message || 'Failed to verify challan');
-    }
-  } catch (err) {
-    console.error('Error:', err);
-    alert('Network error. Please try again.');
-  }
+  const modal = document.getElementById('challan-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 async function deleteStudent(studentId, isOldStudent) {

@@ -40,7 +40,12 @@ const studentSchema = new mongoose.Schema({
     isFormFilled: { type: Boolean, default: false },
     formData: mongoose.Schema.Types.Mixed,
     uniqueId: String,
-    isOldStudent: { type: Boolean, default: false }
+    isOldStudent: { type: Boolean, default: false },
+    registrationDate: { type: Date, default: Date.now },
+    challanStatus: String,
+    challanImage: String,
+    profileImage: String,
+    status: { type: String, default: 'Pending' }
 });
 
 // Old Student Schema
@@ -259,6 +264,42 @@ function ensureDb(req, res, next) {
         return res.status(503).json({ message: 'Service temporarily unavailable: database not connected. Please configure MONGODB_URI in your environment.' });
     }
     next();
+}
+
+// Authentication middleware for students
+function authenticateStudent(req, res, next) {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.studentId = decoded.id;
+        req.studentCnic = decoded.cnic;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+    }
+}
+
+// Authentication middleware for admin
+function authenticateAdmin(req, res, next) {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const decoded = jwt.verify(token, JWT_SECRET);
+        // Check if it's an admin token (has username field)
+        if (!decoded.username) {
+            return res.status(403).json({ message: "Access denied. Admin privileges required." });
+        }
+        req.adminId = decoded.id;
+        req.adminUsername = decoded.username;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+    }
 }
 
 // Helper function to upload to Cloudinary
@@ -888,13 +929,29 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         if (student.profileImage) {
             try {
-                const photoResponse = await fetch(student.profileImage);
-                if (photoResponse.ok) {
-                    const photoBuffer = await photoResponse.buffer();
-                    doc.image(photoBuffer, photoX + 2, photoY + 2, { width: photoW - 4, height: photoH - 4, fit: [photoW - 4, photoH - 4] });
-                }
+                // Use https/http module to fetch image
+                const url = require('url');
+                const https = require('https');
+                const http = require('http');
+                const parsedUrl = url.parse(student.profileImage);
+                const client = parsedUrl.protocol === 'https:' ? https : http;
+                
+                const photoBuffer = await new Promise((resolve, reject) => {
+                    client.get(student.profileImage, (res) => {
+                        if (res.statusCode !== 200) {
+                            reject(new Error(`Failed to fetch image: ${res.statusCode}`));
+                            return;
+                        }
+                        const chunks = [];
+                        res.on('data', chunk => chunks.push(chunk));
+                        res.on('end', () => resolve(Buffer.concat(chunks)));
+                        res.on('error', reject);
+                    }).on('error', reject);
+                });
+                
+                doc.image(photoBuffer, photoX + 2, photoY + 2, { width: photoW - 4, height: photoH - 4, fit: [photoW - 4, photoH - 4] });
             } catch (photoErr) {
-                console.log('Could not fetch student photo');
+                console.log('Could not fetch student photo:', photoErr.message);
                 doc.fontSize(10).fillColor('#999').text('Photo', photoX, photoY + 70, { width: photoW, align: 'center' });
             }
         } else {
@@ -982,7 +1039,7 @@ app.post('/api/results/check', async (req, res) => {
 // --- ADMIN ROUTES ---
 
 // 15. Get All Students (Admin)
-app.get('/api/admin/students', async (req, res) => {
+app.get('/api/admin/students', authenticateAdmin, async (req, res) => {
     try {
         const newStudents = await Student.find().sort({ registrationDate: -1 });
         const oldStudents = await OldStudent.find().sort({ registrationDate: -1 });
@@ -997,7 +1054,7 @@ app.get('/api/admin/students', async (req, res) => {
 });
 
 // 16. Approve/Reject Student Registration
-app.put('/api/admin/students/:id/approve', async (req, res) => {
+app.put('/api/admin/students/:id/approve', authenticateAdmin, async (req, res) => {
     try {
         const { status } = req.body;
         const student = await Student.findByIdAndUpdate(req.params.id, { status }, { new: true });
@@ -1027,7 +1084,7 @@ app.put('/api/admin/students/:id/approve', async (req, res) => {
 });
 
 // 17. Verify Challan
-app.put('/api/admin/students/:id/verify-challan', async (req, res) => {
+app.put('/api/admin/students/:id/verify-challan', authenticateAdmin, async (req, res) => {
     try {
         const student = await Student.findByIdAndUpdate(
             req.params.id, 
@@ -1045,7 +1102,7 @@ app.put('/api/admin/students/:id/verify-challan', async (req, res) => {
 });
 
 // 18. Register Old Student (Admin)
-app.post('/api/admin/old-students', async (req, res) => {
+app.post('/api/admin/old-students', authenticateAdmin, async (req, res) => {
     try {
         const { fullName, cnic, batch, rollNumber, email, mobile, fatherName, caste, domicile, address, formData, password } = req.body;
         
@@ -1084,7 +1141,7 @@ app.post('/api/admin/old-students', async (req, res) => {
 });
 
 // 19. Delete Student
-app.delete('/api/admin/students/:id', async (req, res) => {
+app.delete('/api/admin/students/:id', authenticateAdmin, async (req, res) => {
     try {
         const { oldStudent } = req.query;
         
@@ -1102,7 +1159,7 @@ app.delete('/api/admin/students/:id', async (req, res) => {
 });
 
 // 20. Get All Assignments (Admin)
-app.get('/api/admin/assignments', async (req, res) => {
+app.get('/api/admin/assignments', authenticateAdmin, async (req, res) => {
   try {
     const assignments = await Assignment.find().sort({ uploadedAt: -1 });
     
@@ -1131,7 +1188,7 @@ app.get('/api/admin/assignments', async (req, res) => {
 });
 
 // 21. Grade Assignment
-app.post('/api/admin/assignments/:id/grade', async (req, res) => {
+app.post('/api/admin/assignments/:id/grade', authenticateAdmin, async (req, res) => {
     try {
         const { grade } = req.body;
         const assignment = await Assignment.findByIdAndUpdate(
@@ -1150,7 +1207,7 @@ app.post('/api/admin/assignments/:id/grade', async (req, res) => {
 });
 
 // 22. Upload Slip for Student
-app.post('/api/admin/students/:id/slip', async (req, res) => {
+app.post('/api/admin/students/:id/slip', authenticateAdmin, async (req, res) => {
     try {
         const { testDate, rollNumber, availableDate } = req.body;
         const studentId = req.params.id;
@@ -1188,7 +1245,7 @@ app.post('/api/admin/students/:id/slip', async (req, res) => {
 });
 
 // 23. Add Result
-app.post('/api/admin/students/:id/results', async (req, res) => {
+app.post('/api/admin/students/:id/results', authenticateAdmin, async (req, res) => {
     try {
         let student = await Student.findById(req.params.id);
         if (!student) {
@@ -1216,7 +1273,7 @@ app.post('/api/admin/students/:id/results', async (req, res) => {
 });
 
 // 24. Get Contact Submissions
-app.get('/api/admin/contact-submissions', async (req, res) => {
+app.get('/api/admin/contact-submissions', authenticateAdmin, async (req, res) => {
     try {
         const submissions = await Contact.find().sort({ submittedAt: -1 });
         res.status(200).json({ success: true, submissions });
@@ -1227,7 +1284,7 @@ app.get('/api/admin/contact-submissions', async (req, res) => {
 });
 
 // 25. Reply to Contact
-app.post('/api/admin/contact/:id/reply', async (req, res) => {
+app.post('/api/admin/contact/:id/reply', authenticateAdmin, async (req, res) => {
     try {
         const { replyMessage } = req.body;
         const contact = await Contact.findById(req.params.id);
@@ -1254,7 +1311,7 @@ app.post('/api/admin/contact/:id/reply', async (req, res) => {
 });
 
 // 26. Get Admin Stats
-app.get('/api/admin/stats', async (req, res) => {
+app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
     try {
         const totalStudents = await Student.countDocuments() + await OldStudent.countDocuments();
         const activeStudents = await Student.countDocuments({ status: 'Approved' }) + await OldStudent.countDocuments();

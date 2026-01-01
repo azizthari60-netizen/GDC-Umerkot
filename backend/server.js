@@ -25,7 +25,20 @@ cloudinary.config({
 });
 
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("🚀 MongoDB Connected Successfully"))
+    .then(async () => {
+        console.log("🚀 MongoDB Connected Successfully");
+        // Initialize admin if not exists
+        const adminCount = await Admin.countDocuments();
+        if (adminCount === 0) {
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            const defaultAdmin = new Admin({
+                username: 'admin',
+                password: hashedPassword
+            });
+            await defaultAdmin.save();
+            console.log("✅ Default admin created (username: admin, password: admin123)");
+        }
+    })
     .catch(err => console.error("❌ DB Connection Error:", err));
 
 // Email transporter
@@ -174,11 +187,20 @@ const Contact = mongoose.model('Contact', contactSchema);
 // Helper function to upload to Cloudinary
 function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
     return new Promise((resolve, reject) => {
+        // Check if Cloudinary is configured
+        if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+            return reject(new Error('Cloudinary is not configured. Please check your environment variables.'));
+        }
+        
         const uploadStream = cloudinary.uploader.upload_stream(
             { folder: folder },
             (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
+                if (error) {
+                    console.error('Cloudinary upload error:', error);
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
             }
         );
         streamifier.createReadStream(buffer).pipe(uploadStream);
@@ -274,9 +296,25 @@ app.post('/api/admin/login', async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" });
         }
         
-        const isPasswordValid = await bcrypt.compare(password, admin.password);
-        if (!isPasswordValid && admin.password !== password) { // Support both hashed and plain for migration
+        // Check if password is hashed or plain text
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await bcrypt.compare(password, admin.password);
+        } catch (bcryptError) {
+            // If bcrypt compare fails, might be plain text
+            isPasswordValid = admin.password === password;
+        }
+        
+        // Also check plain text for migration purposes
+        if (!isPasswordValid && admin.password !== password) {
             return res.status(401).json({ message: "Invalid credentials" });
+        }
+        
+        // If password is plain text, hash it for future use
+        if (admin.password === password && password !== 'admin123') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            admin.password = hashedPassword;
+            await admin.save();
         }
         
         const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
@@ -307,8 +345,13 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
         // Upload profile image to Cloudinary
         let profileImageUrl = student.profileImage;
         if (req.file) {
-            const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/profiles');
-            profileImageUrl = uploadResult.secure_url;
+            try {
+                const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/profiles');
+                profileImageUrl = uploadResult.secure_url;
+            } catch (uploadError) {
+                console.error('Profile image upload error:', uploadError);
+                return res.status(500).json({ message: "Failed to upload profile image. Please check Cloudinary configuration." });
+            }
         }
         
         // Generate unique ID for challan
@@ -437,19 +480,42 @@ app.post('/api/student/upload-challan', upload.single('challanImage'), async (re
             return res.status(401).json({ message: "Unauthorized" });
         }
         
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const student = await Student.findById(decoded.id);
-        
-        if (!student || !req.file) {
-            return res.status(400).json({ message: "Student not found or file missing" });
+        if (!req.file) {
+            return res.status(400).json({ message: "File missing" });
         }
         
-        const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/challans');
-        student.challanImage = uploadResult.secure_url;
-        student.challanStatus = 'Uploaded';
-        await student.save();
+        const decoded = jwt.verify(token, JWT_SECRET);
+        let student = await Student.findById(decoded.id);
+        let isOld = false;
         
-        res.status(200).json({ message: "Challan uploaded successfully", challanImage: uploadResult.secure_url });
+        if (!student) {
+            student = await OldStudent.findById(decoded.id);
+            isOld = true;
+        }
+        
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        
+        try {
+            const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/challans');
+            
+            // Only new students have challanStatus field
+            if (!isOld && student.challanStatus !== undefined) {
+                student.challanImage = uploadResult.secure_url;
+                student.challanStatus = 'Uploaded';
+            } else {
+                // For old students, just save the image URL
+                student.challanImage = uploadResult.secure_url;
+            }
+            
+            await student.save();
+            
+            res.status(200).json({ message: "Challan uploaded successfully", challanImage: uploadResult.secure_url });
+        } catch (uploadError) {
+            console.error("Challan upload error:", uploadError);
+            return res.status(500).json({ message: "Failed to upload challan image. Please check Cloudinary configuration." });
+        }
     } catch (err) {
         console.error("Challan upload error:", err);
         res.status(500).json({ message: "Challan upload error" });
@@ -502,18 +568,23 @@ app.post('/api/student/assignments/upload', upload.single('file'), async (req, r
             return res.status(400).json({ message: "Student not found or file missing" });
         }
         
-        const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/assignments');
-        
-        const assignment = new Assignment({
-            studentId: student._id,
-            studentCnic: student.cnic,
-            title: req.body.title,
-            course: req.body.course,
-            fileUrl: uploadResult.secure_url
-        });
-        await assignment.save();
-        
-        res.status(200).json({ success: true, message: "Assignment uploaded successfully" });
+        try {
+            const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/assignments');
+            
+            const assignment = new Assignment({
+                studentId: student._id,
+                studentCnic: student.cnic,
+                title: req.body.title,
+                course: req.body.course,
+                fileUrl: uploadResult.secure_url
+            });
+            await assignment.save();
+            
+            res.status(200).json({ success: true, message: "Assignment uploaded successfully" });
+        } catch (uploadError) {
+            console.error("Assignment upload error:", uploadError);
+            return res.status(500).json({ message: "Failed to upload assignment. Please check Cloudinary configuration." });
+        }
     } catch (err) {
         console.error("Assignment upload error:", err);
         res.status(500).json({ message: "Assignment upload error" });

@@ -211,12 +211,10 @@ async function loadStudentData() {
         }
       }
 
-      // Show slip section for old students or students with slip
-      if (isOldStudent || currentStudent.batch !== '2026') {
-        const slipSection = document.getElementById('slip-section');
-        if (slipSection) {
-          slipSection.style.display = 'block';
-        }
+      // Show slip section for all students (will show slip if available)
+      const slipSection = document.getElementById('slip-section');
+      if (slipSection) {
+        slipSection.style.display = 'block';
       }
     } else {
       alert('Failed to load student data. Please login again.');
@@ -247,9 +245,9 @@ function updateApplySection() {
     applyNowBtn.style.display = 'none';
     
     if (currentStudent.challanStatus === 'Not Generated' || currentStudent.challanStatus === 'Generated') {
-      statusText.textContent = 'Form submitted successfully! Generate and download your challan.';
+      statusText.textContent = 'Form submitted successfully! Generate and download your challan, then upload the paid challan image.';
       generateChallanBtn.style.display = 'inline-block';
-      uploadChallanBtn.style.display = 'none';
+      uploadChallanBtn.style.display = 'inline-block';
     } else if (currentStudent.challanStatus === 'Uploaded') {
       statusText.textContent = 'Challan uploaded. Waiting for admin verification.';
       generateChallanBtn.style.display = 'inline-block';

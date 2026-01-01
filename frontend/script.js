@@ -1,4 +1,4 @@
-API_BASE_URL = window.location.origin + "/api";
+const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
 // Mobile nav toggle
 const navToggle = document.querySelector(".nav-toggle");
 const mainNav = document.querySelector(".main-nav");
@@ -296,13 +296,11 @@ if (signinForm) {
       if (res.ok && data.token) {
         if (userValue === "admin" || userValue.toLowerCase() === "admin") {
           localStorage.setItem("adminToken", data.token);
-          alert("Admin login successful!");
           closeModal(signinModal);
           window.location.href = "admin-dashboard.html";
         } else {
           localStorage.setItem("studentToken", data.token);
           localStorage.setItem("studentData", JSON.stringify(data.student));
-          alert("Login successful!");
           closeModal(signinModal);
           window.location.href = "student-portal.html";
         }

@@ -772,7 +772,7 @@ app.get('/api/student/slip', async (req, res) => {
     }
 });
 
-// 13. Generate Slip PDF (Professional Format)
+// 13. Generate Slip PDF (Professional Format - University Style)
 app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
     try {
         const slip = await Slip.findById(req.params.slipId);
@@ -790,82 +790,148 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             student = await OldStudent.findById(slip.studentId);
         }
         
-        const doc = new PDFDocument({ size: 'A4', margin: 30 });
+        const doc = new PDFDocument({ size: 'A4', margin: 20 });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=slip-${slip.rollNumber || slip.studentCnic}.pdf`);
         
         doc.pipe(res);
         
-        // Header with blue background
-        doc.rect(30, 30, 535, 90).fill('#1e3a8a').stroke();
-        doc.fillColor('white').fontSize(20).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', 50, 40);
-        doc.fontSize(12).text('Government Boys Degree College Umerkot', 50, 65);
-        doc.fontSize(11).text('Sindh, Pakistan', 50, 83);
+        // White background
+        doc.rect(0, 0, 595, 842).fill('white');
         
-        doc.fillColor('black').fontSize(18).font('Helvetica-Bold').text('ENTRY TEST SLIP', 40, 135, { align: 'center' });
+        // TOP SECTION: Logo (left), Department/College info (center), QR Code (right)
+        const logoX = 30;
+        const logoY = 30;
         
-        doc.moveTo(40, 160).lineTo(565, 160).stroke();
+        // Logo placeholder - "Chem"
+        doc.rect(logoX, logoY, 60, 60).stroke();
+        doc.font('Helvetica-Bold').fontSize(28).fillColor('#1e3a8a').text('Chem', logoX + 5, logoY + 15, { width: 50, align: 'center' });
         
-        // Student Photo (if available) and Info side by side
-        const photoX = 400;
+        // Department and College Name (Center top)
+        const centerX = 200;
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000').text('Department of Chemistry', centerX, logoY + 10, { align: 'center', width: 180 });
+        doc.fontSize(11).font('Helvetica').text('Government Boys Degree College Umerkot', centerX, logoY + 35, { align: 'center', width: 180 });
+        
+        // QR Code (Right side, top)
+        if (slip.qrCode) {
+            doc.image(Buffer.from(slip.qrCode, 'base64'), 500, logoY, { width: 65, height: 65 });
+        } else {
+            doc.rect(500, logoY, 65, 65).stroke();
+        }
+        
+        // Red banner with "ENTRY TEST SLIP"
+        const bannerY = 110;
+        doc.rect(30, bannerY, 535, 45).fill('#dc2626');
+        doc.fontSize(24).font('Helvetica-Bold').fillColor('white').text('ENTRY TEST SLIP', 30, bannerY + 8, { width: 535, align: 'center' });
+        
+        // MAIN CONTENT AREA
+        let contentY = bannerY + 60;
+        
+        // Left side: Student Info (in one div, no lines between fields)
+        const infoX = 30;
+        const infoWidth = 300;
+        
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e3a8a').text('STUDENT INFORMATION', infoX, contentY);
+        contentY += 20;
+        
+        doc.fontSize(9).font('Helvetica').fillColor('#000');
+        const infoLines = [
+            `Roll Number:  ${slip.rollNumber || 'N/A'}`,
+            `Name:  ${student.fullName || 'N/A'}`,
+            `Father's Name:  ${student.fatherName || student.formData?.fName || 'N/A'}`,
+            `CNIC:  ${student.cnic || 'N/A'}`,
+            `Date of Birth:  ${student.dob || 'N/A'}`,
+            `Email:  ${student.email || 'N/A'}`,
+            `Phone:  ${student.phone || student.formData?.phone || 'N/A'}`
+        ];
+        
+        infoLines.forEach(line => {
+            doc.text(line, infoX, contentY, { width: infoWidth });
+            contentY += 15;
+        });
+        
+        // Right side: Student Photo in border
+        const photoX = 380;
+        const photoY = bannerY + 60;
+        const photoW = 140;
+        const photoH = 170;
+        
+        // Photo border
+        doc.rect(photoX, photoY, photoW, photoH).stroke('#999');
+        
         if (student.profileImage) {
             try {
                 const photoResponse = await fetch(student.profileImage);
                 if (photoResponse.ok) {
                     const photoBuffer = await photoResponse.buffer();
-                    doc.image(photoBuffer, photoX, 175, { width: 120, height: 140 });
+                    doc.image(photoBuffer, photoX + 2, photoY + 2, { width: photoW - 4, height: photoH - 4, fit: [photoW - 4, photoH - 4] });
                 }
             } catch (photoErr) {
                 console.log('Could not fetch student photo');
+                doc.fontSize(10).fillColor('#999').text('Photo', photoX, photoY + 70, { width: photoW, align: 'center' });
             }
         } else {
-            doc.rect(photoX, 175, 120, 140).stroke();
-            doc.fontSize(10).text('Photo', photoX + 35, 300, { width: 50, align: 'center' });
+            doc.fontSize(10).fillColor('#999').text('Photo', photoX, photoY + 70, { width: photoW, align: 'center' });
         }
         
-        // Student Information (left side)
-        doc.fontSize(10).font('Helvetica-Bold');
-        doc.fillColor('black').fontSize(9);
-        doc.text('STUDENT INFORMATION', 40, 175);
+        // Divider line
+        const dividerY = contentY;
+        doc.moveTo(30, dividerY).lineTo(565, dividerY).stroke('#ccc');
         
-        doc.fontSize(8).font('Helvetica');
-        doc.text(`Roll Number: ${slip.rollNumber || 'N/A'}`, 40, 195);
-        doc.text(`Name: ${student.fullName}`, 40, 210);
-        doc.text(`Father's Name: ${student.fatherName || student.formData?.fName || 'N/A'}`, 40, 225);
-        doc.text(`CNIC: ${student.cnic}`, 40, 240);
-        doc.text(`Date of Birth: ${student.dob || 'Not provided'}`, 40, 255);
-        doc.text(`Batch: ${student.batch || 'N/A'}`, 40, 270);
+        contentY = dividerY + 20;
         
-        doc.moveTo(40, 290).lineTo(565, 290).stroke();
+        // Test Details Section
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e3a8a').text('TEST DETAILS', 30, contentY);
+        contentY += 18;
         
-        // Test Information
-        doc.fontSize(10).font('Helvetica-Bold').text('TEST INFORMATION', 40, 305);
-        doc.fontSize(9).font('Helvetica');
-        doc.text(`Test Date: ${slip.testDate ? slip.testDate.toLocaleDateString() : 'To be announced'}`, 40, 325);
-        doc.text(`Test Time: 10:00 AM - 01:00 PM`, 40, 340);
-        doc.text(`Test Venue: ${slip.testVenue || 'Chemistry Lab'}`, 40, 355);
+        doc.fontSize(9).font('Helvetica').fillColor('#000');
+        const testLines = [
+            `Test Date:  ${slip.testDate ? slip.testDate.toLocaleDateString() : 'To be announced'}`,
+            `Test Time:  10:00 AM - 01:00 PM`,
+            `Test Venue:  ${slip.testVenue || 'Chemistry Lab, Chemistry Department'}`,
+            `Duration:  3 Hours`,
+            `Total Marks:  100`
+        ];
         
-        doc.moveTo(40, 375).lineTo(565, 375).stroke();
+        testLines.forEach(line => {
+            doc.text(line, 30, contentY);
+            contentY += 15;
+        });
         
-        // Instructions
-        doc.fontSize(10).font('Helvetica-Bold').text('INSTRUCTIONS', 40, 390);
-        doc.fontSize(8).font('Helvetica');
-        doc.text('• This slip is mandatory for entry to the test center.', 50, 410);
-        doc.text('• Report 15 minutes before the test starts.', 50, 423);
-        doc.text('• Bring valid CNIC and this printed slip.', 50, 436);
-        doc.text('• No electronic devices are allowed in the test center.', 50, 449);
-        doc.text('• Maintain silence during the test. Any malpractice will result in disqualification.', 50, 462);
+        // Divider line
+        contentY += 5;
+        doc.moveTo(30, contentY).lineTo(565, contentY).stroke('#ccc');
+        contentY += 15;
         
-        doc.moveTo(40, 480).lineTo(565, 480).stroke();
+        // Important Instructions
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#dc2626').text('⚠ IMPORTANT INSTRUCTIONS', 30, contentY);
+        contentY += 16;
         
-        // QR Code
-        if (slip.qrCode) {
-            doc.text('QR Code (For verification):', 40, 495);
-            doc.image(Buffer.from(slip.qrCode, 'base64'), 450, 495, { width: 80, height: 80 });
-        }
+        doc.fontSize(8).font('Helvetica').fillColor('#000');
+        const instructions = [
+            '• This slip is mandatory for entry to the test center. Bring original printed copy.',
+            '• Report 15 minutes before the scheduled test time. Gates close at test start time.',
+            '• Bring valid CNIC/Passport and this printed slip as proof of identity.',
+            '• No electronic devices (mobile phones, calculators, smartwatches) allowed inside the test center.',
+            '• No unauthorized materials, notes, or books permitted. Violators will be disqualified.',
+            '• Maintain complete silence and follow invigilator instructions at all times.',
+            '• Use only black/blue ballpoint pen for marking answers. Pencil marks may not be recognized.',
+            '• Any form of cheating or malpractice will result in immediate disqualification.'
+        ];
         
-        doc.fontSize(7).fillColor('#666').text('This is an electronically generated slip. No signature is required.', 40, 585);
-        doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 40, 598);
+        instructions.forEach(instruction => {
+            doc.text(instruction, 30, contentY, { width: 535 });
+            contentY += 13;
+        });
+        
+        // Footer
+        contentY += 10;
+        doc.moveTo(30, contentY).lineTo(565, contentY).stroke('#ccc');
+        contentY += 12;
+        
+        doc.fontSize(7).fillColor('#666').font('Helvetica').text('This is an electronically generated slip. For any discrepancies in the details, contact the Chemistry Department office immediately.', 30, contentY, { width: 535 });
+        contentY += 12;
+        doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Slip ID: ${slip._id.toString().substring(0, 8).toUpperCase()}`, 30, contentY);
         
         doc.end();
     } catch (err) {

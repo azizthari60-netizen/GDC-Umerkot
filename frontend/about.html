@@ -75,6 +75,78 @@
     </div>
   </main>
 
+  <!-- Sign Up Modal -->
+  <div class="modal" id="signup-modal" aria-hidden="true" role="dialog" aria-labelledby="signup-title">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog">
+      <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
+      <h2 id="signup-title">Student Registration</h2>
+      <p class="modal-subtitle">Create your account to access the student portal</p>
+      <form class="auth-form" id="signup-form">
+        <div class="form-group">
+          <label for="signup-fullName">Full Name</label>
+          <input type="text" id="signup-fullName" name="fullName" required />
+        </div>
+        <div class="form-group">
+          <label for="signup-cnic">CNIC Number</label>
+          <input type="text" id="signup-cnic" name="cnic" placeholder="12345-1234567-1" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" />
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" name="password" required minlength="6" />
+        </div>
+        <div class="form-group">
+          <label for="signup-confirmPassword">Confirm Password</label>
+          <input type="password" id="signup-confirmPassword" name="confirmPassword" required minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-primary full-width">Register Now</button>
+        <button type="button" class="link-button" id="switch-to-signin">Already have an account? Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sign In Modal -->
+  <div class="modal" id="signin-modal" aria-hidden="true" role="dialog" aria-labelledby="signin-title">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog">
+      <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
+      <h2 id="signin-title">Login</h2>
+      <p class="modal-subtitle">Sign in with your CNIC/Username and password</p>
+      <form class="auth-form" id="signin-form">
+        <div class="form-group">
+          <label for="signin-cnic">CNIC Number / Username</label>
+          <input type="text" id="signin-cnic" name="cnic" placeholder="12345-1234567-1 or admin" required />
+        </div>
+        <div class="form-group">
+          <label for="signin-password">Password</label>
+          <input type="password" id="signin-password" name="password" required />
+        </div>
+        <button type="submit" class="btn btn-primary full-width">Sign In</button>
+        <button type="button" class="link-button" id="switch-to-signup">Don't have an account? Register</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Password Recovery Modal -->
+  <div class="modal" id="recovery-modal" aria-hidden="true" role="dialog" aria-labelledby="recovery-title">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog">
+      <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
+      <h2 id="recovery-title">Password Recovery</h2>
+      <p class="modal-subtitle">Enter your registered email or roll number. The department will verify and reset your password.</p>
+      <form class="auth-form" id="recovery-form">
+        <div class="form-group">
+          <label for="recovery-id">Email / Roll Number</label>
+          <input type="text" id="recovery-id" name="recovery-id" required />
+        </div>
+        <button type="submit" class="btn btn-primary full-width">Request Reset</button>
+      </form>
+      <div class="info-note">
+        An email/SMS will be sent with your new credentials after verification by the department office.
+      </div>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="container footer-grid">
         <div class="footer-col">

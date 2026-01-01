@@ -114,8 +114,8 @@ async function loadStudents() {
           actions += `<button class="btn btn-primary btn-small" onclick="approveStudent('${student._id}')">Approve</button>`;
           actions += `<button class="btn btn-danger btn-small" onclick="rejectStudent('${student._id}')">Reject</button>`;
         }
-        if (!isOld && challanStatus === 'Uploaded' && student.challanImage) {
-          actions += `<button class="btn btn-primary btn-small" onclick="viewChallan('${student._id}', '${student.challanImage}')">View Challan</button>`;
+        if (!isOld && challanStatus === 'Uploaded') {
+          actions += `<button class="btn btn-primary btn-small" onclick="verifyChallan('${student._id}')">Verify Challan</button>`;
         }
         actions += `<button class="btn btn-primary btn-small" onclick="uploadSlip('${student._id}')">Upload Slip</button>`;
         actions += `<button class="btn btn-danger btn-small" onclick="deleteStudent('${student._id}', ${isOld})">Delete</button>`;
@@ -126,8 +126,7 @@ async function loadStudents() {
               ${student.profileImage ? `<img src="${student.profileImage}" alt="Profile">` : ''}
               <div>
                 <strong>${student.fullName}</strong><br>
-                <small style="color: #6b7280;">CNIC: ${student.cnic} | Gender: ${student.formData?.gender || student.gender || 'N/A'} | DOB: ${student.formData?.dob || student.dob || 'N/A'}</small><br>
-                <small style="color: #6b7280;">Batch: ${student.batch || 'N/A'} ${isOld ? '| Old Student' : ''}</small><br>
+                <small style="color: #6b7280;">CNIC: ${student.cnic} | Batch: ${student.batch || 'N/A'} ${isOld ? '| Old Student' : ''}</small><br>
                 <span class="${statusClass}" style="margin-top: 0.25rem; display: inline-block;">Status: ${student.status || 'Active'}</span>
                 ${!isOld ? `<br><small style="color: #6b7280;">Challan: ${challanStatus}</small>` : ''}
               </div>
@@ -203,8 +202,8 @@ async function rejectStudent(studentId) {
   }
 }
 
-async function verifyChallan(studentId, showConfirm = true) {
-  if (showConfirm && !confirm('Verify this challan?')) return;
+async function verifyChallan(studentId) {
+  if (!confirm('Verify this challan?')) return;
   
   try {
     const adminToken = localStorage.getItem('adminToken');
@@ -218,7 +217,6 @@ async function verifyChallan(studentId, showConfirm = true) {
     const data = await res.json();
     if (res.ok && data.success) {
       alert('Challan verified successfully!');
-      closeChallanModal();
       loadStudents();
     } else {
       alert(data.message || 'Failed to verify challan');
@@ -230,11 +228,8 @@ async function verifyChallan(studentId, showConfirm = true) {
 }
 
 async function uploadSlip(studentId) {
-  const rollNo = prompt('Enter Roll Number for this student:');
-  if (!rollNo) return;
-  
-  const testDate = prompt('Enter Test Date (YYYY-MM-DD):');
-  if (!testDate) return;
+  const testDate = prompt('Enter test date (YYYY-MM-DD) or leave empty:');
+  const availableDate = prompt('Enter available date (YYYY-MM-DD) or leave empty for immediate availability:');
   
   try {
     const adminToken = localStorage.getItem('adminToken');
@@ -246,15 +241,13 @@ async function uploadSlip(studentId) {
       },
       body: JSON.stringify({
         testDate: testDate || null,
-        rollNumber: rollNo,
-        availableDate: null
+        availableDate: availableDate || null
       })
     });
 
     const data = await res.json();
     if (res.ok && data.success) {
-      alert(`Slip created successfully!\nRoll No: ${rollNo}`);
-      loadStudents();
+      alert('Slip created successfully!');
     } else {
       alert(data.message || 'Failed to create slip');
     }
@@ -262,24 +255,6 @@ async function uploadSlip(studentId) {
     console.error('Error:', err);
     alert('Network error. Please try again.');
   }
-}
-
-function viewChallan(studentId, challanImageUrl) {
-  const modal = document.getElementById('challan-modal');
-  const img = document.getElementById('challan-preview-img');
-  const verifyBtn = document.getElementById('verify-challan-confirm-btn');
-  
-  if (img) img.src = challanImageUrl;
-  if (modal) modal.style.display = 'block';
-  
-  if (verifyBtn) {
-    verifyBtn.onclick = () => verifyChallan(studentId, false);
-  }
-}
-
-function closeChallanModal() {
-  const modal = document.getElementById('challan-modal');
-  if (modal) modal.style.display = 'none';
 }
 
 async function deleteStudent(studentId, isOldStudent) {

@@ -13,10 +13,10 @@
   <header class="site-header">
     <div class="header-inner container">
       <a href="index.html" class="brand">
-        <div class="brand-logo"> <img src="logo.png" alt="Logo"></div>
+        <div class="brand-logo">Chem</div>
         <div class="brand-text">
-          <span class="brand-title">Department of Chemistry</span>
-          <span class="brand-subtitle">Government Boys Degree College Umerkot</span>
+          <span class="brand-title">BS Chemistry Department</span>
+          <span class="brand-subtitle">Faculty of Science</span>
         </div>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
@@ -29,7 +29,7 @@
         </ul>
       </nav>
       <div class="auth-buttons">
-        <button class="btn btn-primary" id="btn-register">Register Now</button>
+        <button class="btn btn-outline" id="btn-signin">Sign In</button>
       </div>
       <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -94,93 +94,21 @@
     </div>
   </main>
 
-  <!-- Sign Up Modal -->
-  <div class="modal" id="signup-modal" aria-hidden="true" role="dialog" aria-labelledby="signup-title">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-dialog">
-      <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-      <h2 id="signup-title">Student Registration</h2>
-      <p class="modal-subtitle">Create your account to access the student portal</p>
-      <form class="auth-form" id="signup-form">
-        <div class="form-group">
-          <label for="signup-fullName">Full Name</label>
-          <input type="text" id="signup-fullName" name="fullName" required />
-        </div>
-        <div class="form-group">
-          <label for="signup-cnic">CNIC Number</label>
-          <input type="text" id="signup-cnic" name="cnic" placeholder="12345-1234567-1" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" />
-        </div>
-        <div class="form-group">
-          <label for="signup-password">Password</label>
-          <input type="password" id="signup-password" name="password" required minlength="6" />
-        </div>
-        <div class="form-group">
-          <label for="signup-confirmPassword">Confirm Password</label>
-          <input type="password" id="signup-confirmPassword" name="confirmPassword" required minlength="6" />
-        </div>
-        <button type="submit" class="btn btn-primary full-width">Register Now</button>
-        <button type="button" class="link-button" id="switch-to-signin">Already have an account? Sign In</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Sign In Modal -->
-  <div class="modal" id="signin-modal" aria-hidden="true" role="dialog" aria-labelledby="signin-title">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-dialog">
-      <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-      <h2 id="signin-title">Login</h2>
-      <p class="modal-subtitle">Sign in with your CNIC/Username and password</p>
-      <form class="auth-form" id="signin-form">
-        <div class="form-group">
-          <label for="signin-cnic">CNIC Number / Username</label>
-          <input type="text" id="signin-cnic" name="cnic" placeholder="12345-1234567-1 or admin" required />
-        </div>
-        <div class="form-group">
-          <label for="signin-password">Password</label>
-          <input type="password" id="signin-password" name="password" required />
-        </div>
-        <button type="submit" class="btn btn-primary full-width">Sign In</button>
-        <button type="button" class="link-button" id="switch-to-signup">Don't have an account? Register</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Password Recovery Modal -->
-  <div class="modal" id="recovery-modal" aria-hidden="true" role="dialog" aria-labelledby="recovery-title">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-dialog">
-      <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-      <h2 id="recovery-title">Password Recovery</h2>
-      <p class="modal-subtitle">Enter your registered email or roll number. The department will verify and reset your password.</p>
-      <form class="auth-form" id="recovery-form">
-        <div class="form-group">
-          <label for="recovery-id">Email / Roll Number</label>
-          <input type="text" id="recovery-id" name="recovery-id" required />
-        </div>
-        <button type="submit" class="btn btn-primary full-width">Request Reset</button>
-      </form>
-      <div class="info-note">
-        An email/SMS will be sent with your new credentials after verification by the department office.
-      </div>
-    </div>
-  </div>
-
   <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
         <div class="brand footer-brand">
-          <div class="brand-logo"><img src="logo.png" alt="logo"></div>
+          <div class="brand-logo">Chem</div>
           <div class="brand-text">
-            <span class="brand-title">Department of Chemistry</span>
-            <span class="brand-subtitle">Government Boys Degree College Umerkot</span>
+            <span class="brand-title">BS Chemistry Department</span>
+            <span class="brand-subtitle">Faculty of Science</span>
           </div>
         </div>
       </div>
       <div class="footer-col">
         <h4>About Us</h4>
         <p>
-          The BS Chemistry program prepares graduates with strong foundations in physical, organic, inorganic, analytical, and environmental chemistry, along with practical laboratory skills.
+          The BS Chemistry program prepares graduates with strong foundations in all major branches of chemistry, emphasizing both theory and laboratory practice.
         </p>
       </div>
       <div class="footer-col">
@@ -196,21 +124,21 @@
       <div class="footer-col">
         <h4>Contact & Location</h4>
         <p>
-          Department of Chemistry<br />
-          Government Boys Degree College Umerkot<br />
-          Sindh, Pakistan
+          BS Chemistry Department<br />
+          Faculty of Science, Your University<br />
+          City, Country
         </p>
         <div class="map-embed">
           <iframe
             title="Department Location"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.999150934606!2d2.2944813156749295!3d48.858370079287926!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDjCsDUxJzMwLjEiTiAywrAxNSc0OS4yIkU!5e0!3m2!1sen!2s!4v1616161616161"
             style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
       </div>
     </div>
     <div class="footer-copyright">
       <div class="container">
-        <p>&copy; <span id="year"></span> IT team Department of Chemistry. All rights reserved.</p>
+        <p>&copy; <span id="year"></span> BS Chemistry Department. All rights reserved.</p>
       </div>
     </div>
   </footer>

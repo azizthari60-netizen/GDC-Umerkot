@@ -94,13 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const file = e.target.files[0];
       if (!file) return;
 
-      // Client-side validation: only accept image files
-      if (!file.type || !file.type.startsWith('image/')) {
-        alert('Please upload an image file (jpg, png).');
-        challanFileInput.value = '';
-        return;
-      }
-
       const formData = new FormData();
       formData.append('challanImage', file);
 
@@ -198,8 +191,6 @@ async function loadStudentData() {
       document.getElementById('info-name').textContent = currentStudent.fullName || '-';
       document.getElementById('info-cnic').textContent = currentStudent.cnic || '-';
       document.getElementById('info-father').textContent = (currentStudent.formData?.fName || currentStudent.fatherName) || '-';
-      document.getElementById('info-dob').textContent = (currentStudent.formData?.dob || currentStudent.dob) || '-';
-      document.getElementById('info-gender').textContent = (currentStudent.formData?.gender || currentStudent.gender) || '-';
       document.getElementById('info-caste').textContent = (currentStudent.formData?.caste || currentStudent.caste) || '-';
       document.getElementById('info-email').textContent = (currentStudent.formData?.email || currentStudent.email) || '-';
       document.getElementById('info-batch').textContent = currentStudent.batch ? `Batch ${currentStudent.batch}` : '-';
@@ -258,16 +249,16 @@ function updateApplySection() {
       generateChallanBtn.style.display = 'inline-block';
       uploadChallanBtn.style.display = 'inline-block';
     } else if (currentStudent.challanStatus === 'Uploaded') {
-      statusText.textContent = 'Challan uploaded successfully! Waiting for admin verification.';
-      generateChallanBtn.style.display = 'none';
-      uploadChallanBtn.style.display = 'none';
+      statusText.textContent = 'Challan uploaded. Waiting for admin verification.';
+      generateChallanBtn.style.display = 'inline-block';
+      uploadChallanBtn.style.display = 'inline-block';
       
       if (currentStudent.challanImage) {
-        challanStatusDiv.innerHTML = `<p style="color: #059669;">✓ Challan uploaded: <a href="${currentStudent.challanImage}" target="_blank">View Image</a></p>`;
+        challanStatusDiv.innerHTML = `<p style="color: #059669;">Challan uploaded: <a href="${currentStudent.challanImage}" target="_blank">View Image</a></p>`;
       }
     } else if (currentStudent.challanStatus === 'Verified') {
-      statusText.textContent = 'Registration approved! Your challan has been verified. Your admission slip is ready.';
-      generateChallanBtn.style.display = 'none';
+      statusText.textContent = 'Registration approved! Your challan has been verified.';
+      generateChallanBtn.style.display = 'inline-block';
       uploadChallanBtn.style.display = 'none';
       challanStatusDiv.innerHTML = '<p style="color: #059669;">✓ Challan verified by admin</p>';
     }

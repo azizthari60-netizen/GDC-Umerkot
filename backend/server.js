@@ -18,58 +18,104 @@ const app = express();
 
 // --- Configuration ---
 console.log("Environment Check - Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME ? "Found" : "NOT FOUND");
-console.log("Environment Check - MongoDB URI:", process.env.MONGODB_URI ? "Found" : "NOT FOUND");
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// --- Define Schemas and Models FIRST (before using them) ---
-// Student Schema
+mongoose.connect(process.env.MONGODB_URI)
+    .then(async () => {
+        console.log("🚀 MongoDB Connected Successfully");
+        // Initialize admin if not exists
+        const adminCount = await Admin.countDocuments();
+        if (adminCount === 0) {
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            const defaultAdmin = new Admin({
+                username: 'admin',
+                password: hashedPassword
+            });
+            await defaultAdmin.save();
+            console.log("✅ Default admin created (username: admin, password: admin123)");
+        }
+    })
+    .catch(err => console.error("❌ DB Connection Error:", err));
+
+// Email transporter
+const transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// --- Middleware ---
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } 
+});
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// --- Database Models ---
+
+// Student Schema (New Students - Batch 2026)
 const studentSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     cnic: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    email: String,
-    phone: String,
-    dob: String,
-    gender: String,
-    batch: String,
-    fatherName: String,
+    batch: { type: String, default: "2026" },
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
     isFormFilled: { type: Boolean, default: false },
-    formData: mongoose.Schema.Types.Mixed,
-    uniqueId: String,
-    isOldStudent: { type: Boolean, default: false },
-    registrationDate: { type: Date, default: Date.now },
-    challanStatus: String,
-    challanImage: String,
+    challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded', 'Verified'], default: 'Not Generated' },
     profileImage: String,
-    status: { type: String, default: 'Pending' }
+    challanImage: String,
+    registrationDate: { type: Date, default: Date.now },
+    // Form data
+    formData: {
+        fName: String,
+        caste: String,
+        domicile: String,
+        email: String,
+        mobile: String,
+        address: String,
+        gName: String,
+        gOcc: String,
+        gJobAddr: String,
+        gContact: String,
+        gAddress: String,
+        matric: { brd: String, yr: String, roll: String, grp: String, per: String },
+        inter: { brd: String, yr: String, roll: String, grp: String, per: String }
+    },
+    uniqueId: String, // For challan
+    isOldStudent: { type: Boolean, default: false }
 });
 
-// Old Student Schema
+// Old Student Schema (Registered by Admin)
 const oldStudentSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     cnic: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     batch: String,
     rollNumber: String,
-    dob: String,
-    gender: String,
     email: String,
     mobile: String,
     fatherName: String,
+    caste: String,
+    domicile: String,
+    address: String,
     profileImage: String,
+    // All form data
     formData: mongoose.Schema.Types.Mixed,
     registrationDate: { type: Date, default: Date.now },
     isOldStudent: { type: Boolean, default: true }
-});
-
-// Admin Schema
-const adminSchema = new mongoose.Schema({
-    username: { type: String, default: 'admin' },
-    password: { type: String, default: 'admin123' }
 });
 
 // Assignment Schema
@@ -98,11 +144,9 @@ const resultSchema = new mongoose.Schema({
 const slipSchema = new mongoose.Schema({
     studentCnic: { type: String, required: true },
     studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    rollNumber: String,
     qrCode: String,
     testDate: Date,
-    testVenue: { type: String, default: 'Chemistry Lab' },
-    availableDate: Date,
+    availableDate: Date, // Date when slip becomes downloadable
     isAvailable: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
@@ -115,6 +159,20 @@ const notificationSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true }
 });
 
+const Student = mongoose.model('Student', studentSchema);
+const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
+const Assignment = mongoose.model('Assignment', assignmentSchema);
+const Result = mongoose.model('Result', resultSchema);
+const Slip = mongoose.model('Slip', slipSchema);
+const Notification = mongoose.model('Notification', notificationSchema);
+
+// Admin Schema
+const adminSchema = new mongoose.Schema({
+    username: { type: String, default: 'admin' },
+    password: { type: String, default: 'admin123' }
+});
+const Admin = mongoose.model('Admin', adminSchema);
+
 // Contact Schema
 const contactSchema = new mongoose.Schema({
     name: String,
@@ -124,205 +182,7 @@ const contactSchema = new mongoose.Schema({
     submittedAt: { type: Date, default: Date.now },
     replied: { type: Boolean, default: false }
 });
-
-// Create Models
-const Student = mongoose.model('Student', studentSchema);
-const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
-const Assignment = mongoose.model('Assignment', assignmentSchema);
-const Result = mongoose.model('Result', resultSchema);
-const Slip = mongoose.model('Slip', slipSchema);
-const Notification = mongoose.model('Notification', notificationSchema);
-const Admin = mongoose.model('Admin', adminSchema);
 const Contact = mongoose.model('Contact', contactSchema);
-
-// NOW connect to MongoDB (models are already defined)
-let isDbConnected = false;
-async function initMongo() {
-    if (process.env.MONGODB_URI) {
-        try {
-            // Reuse existing connection in serverless environments to avoid multiple connections
-            if (global._mongoose && global._mongoose.conn) {
-                mongoose.connection = global._mongoose.conn;
-                isDbConnected = true;
-                console.log('🚀 Reusing existing MongoDB connection');
-            } else {
-                const conn = await mongoose.connect(process.env.MONGODB_URI, {
-                    useNewUrlParser: true,
-                    useUnifiedTopology: true,
-                    serverSelectionTimeoutMS: 5000
-                });
-                isDbConnected = true;
-                console.log("🚀 MongoDB Connected Successfully");
-                global._mongoose = { conn };
-            }
-
-            // Initialize admin if not exists
-            try {
-                const adminCount = await Admin.countDocuments();
-                if (adminCount === 0) {
-                    const hashedPassword = await bcrypt.hash('admin123', 10);
-                    const defaultAdmin = new Admin({
-                        username: 'admin',
-                        password: hashedPassword
-                    });
-                    await defaultAdmin.save();
-                    console.log("✅ Default admin created (username: admin, password: admin123)");
-                }
-            } catch (adminErr) {
-                console.error("Admin init error:", adminErr);
-            }
-        } catch (err) {
-            isDbConnected = false;
-            console.error("❌ DB Connection Error:", err);
-        }
-    } else {
-        isDbConnected = false;
-        console.warn("⚠️  MONGODB_URI not configured - database features will not work");
-    }
-}
-initMongo();
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
-
-// --- Middleware ---
-// CORS configuration - properly configured for API responses
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Content-Type'],
-    credentials: false
-}));
-
-// Handle preflight requests
-app.options('*', cors());
-
-app.use(morgan('dev'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
-
-// Security headers middleware - simplified to prevent CORB issues
-app.use((req, res, next) => {
-    // Only set security headers for HTML pages, not API responses
-    if (!req.path.startsWith('/api')) {
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    }
-    // For API responses, ensure proper Content-Type
-    if (req.path.startsWith('/api')) {
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-    }
-    next();
-});
-
-// Input validation middleware - Only check for dangerous patterns, not common characters
-const validateInput = (req, res, next) => {
-    // Only check for actual SQL injection patterns, not common characters like quotes
-    const dangerousPattern = /(;\s*(drop|delete|truncate|alter|create|exec|execute|xp_|sp_)|--\s|\/\*|\*\/)/gi;
-    const checkValue = (val) => {
-        if (typeof val === 'string' && dangerousPattern.test(val)) {
-            return false;
-        }
-        return true;
-    };
-    
-    // Check body
-    if (req.body && typeof req.body === 'object') {
-        for (let key in req.body) {
-            if (req.body[key] && !checkValue(req.body[key])) {
-                return res.status(400).json({ message: "Invalid input detected" });
-            }
-        }
-    }
-    
-    // Check query
-    if (req.query && typeof req.query === 'object') {
-        for (let key in req.query) {
-            if (req.query[key] && !checkValue(req.query[key])) {
-                return res.status(400).json({ message: "Invalid input detected" });
-            }
-        }
-    }
-    
-    next();
-};
-
-app.use(validateInput);
-
-const upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        // Only allow safe file types
-        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-        if (allowedMimes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Invalid file type'));
-        }
-    }
-});
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-
-// Helper middleware to ensure DB is connected when required
-function ensureDb(req, res, next) {
-    if (!isDbConnected) {
-        console.error('Database not connected - MONGODB_URI may be missing or invalid');
-        return res.status(503).json({ 
-            success: false,
-            message: 'Service temporarily unavailable: database not connected. Please check server configuration.' 
-        });
-    }
-    next();
-}
-
-// Authentication middleware for students
-function authenticateStudent(req, res, next) {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.studentId = decoded.id;
-        req.studentCnic = decoded.cnic;
-        next();
-    } catch (err) {
-        return res.status(401).json({ message: "Invalid or expired token" });
-    }
-}
-
-// Authentication middleware for admin
-function authenticateAdmin(req, res, next) {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET);
-        // Check if it's an admin token (has username field)
-        if (!decoded.username) {
-            return res.status(403).json({ message: "Access denied. Admin privileges required." });
-        }
-        req.adminId = decoded.id;
-        req.adminUsername = decoded.username;
-        next();
-    } catch (err) {
-        return res.status(401).json({ message: "Invalid or expired token" });
-    }
-}
 
 // Helper function to upload to Cloudinary
 function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
@@ -355,87 +215,46 @@ function generateUniqueId() {
 // --- ROUTES ---
 
 // 1. Student Sign Up
-app.post('/api/student/signup', ensureDb, async (req, res) => {
+app.post('/api/student/signup', async (req, res) => {
     try {
         const { fullName, cnic, password, confirmPassword } = req.body;
         
-        // Validate required fields
-        if (!fullName || !cnic || !password || !confirmPassword) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
-        
-        // Validate password match
         if (password !== confirmPassword) {
             return res.status(400).json({ message: "Passwords do not match" });
         }
         
-        // Validate password length
-        if (password.length < 6) {
-            return res.status(400).json({ message: "Password must be at least 6 characters long" });
-        }
-        
-        // Validate CNIC format (basic check)
-        if (cnic.length < 5) {
-            return res.status(400).json({ message: "Invalid CNIC format" });
-        }
-        
-        // Check if CNIC already exists
         const exists = await Student.findOne({ cnic });
         if (exists) {
-            return res.status(400).json({ message: "CNIC already registered. Please sign in instead." });
+            return res.status(400).json({ message: "CNIC already registered" });
         }
         
-        // Hash password and create student
         const hashedPassword = await bcrypt.hash(password, 10);
         const newStudent = new Student({ 
-            fullName: fullName.trim(), 
-            cnic: cnic.trim(), 
-            password: hashedPassword,
-            batch: '2026' // Set default batch for new registrations
+            fullName, 
+            cnic, 
+            password: hashedPassword 
         });
         await newStudent.save();
         
-        res.status(201).json({ 
-            success: true,
-            message: "Account created successfully! Please sign in." 
-        });
+        res.status(201).json({ message: "Account created successfully! Please sign in." });
     } catch (err) {
         console.error("Signup error:", err);
-        // Handle duplicate key error (MongoDB unique constraint)
-        if (err.code === 11000) {
-            return res.status(400).json({ message: "CNIC already registered. Please sign in instead." });
-        }
-        // Handle validation errors
-        if (err.name === 'ValidationError') {
-            return res.status(400).json({ message: err.message || "Validation error" });
-        }
-        res.status(500).json({ message: "Registration failed. Please try again." });
+        res.status(500).json({ message: "Sign up error" });
     }
 });
 
 // 2. Student Login (New & Old)
-app.post('/api/student/login', ensureDb, async (req, res) => {
+app.post('/api/student/login', async (req, res) => {
     try {
-        // Set proper headers immediately to prevent CORB
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        
         const { cnic, password } = req.body;
         
-        if (!cnic || !password) {
-            return res.status(400).json({ message: "CNIC and password are required" });
-        }
-        
-        // Trim and normalize CNIC
-        const normalizedCnic = cnic.trim();
-        
-        // Check new students first
-        let student = await Student.findOne({ cnic: normalizedCnic });
+        // Check new students
+        let student = await Student.findOne({ cnic });
         let isOld = false;
         
         // If not found, check old students
         if (!student) {
-            student = await OldStudent.findOne({ cnic: normalizedCnic });
+            student = await OldStudent.findOne({ cnic });
             isOld = true;
         }
         
@@ -443,17 +262,14 @@ app.post('/api/student/login', ensureDb, async (req, res) => {
             return res.status(401).json({ message: "Invalid CNIC or password" });
         }
         
-        // Verify password
         const isPasswordValid = await bcrypt.compare(password, student.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid CNIC or password" });
         }
         
-        // Generate token
         const token = jwt.sign({ id: student._id, cnic: student.cnic }, JWT_SECRET, { expiresIn: '7d' });
         
         res.status(200).json({ 
-            success: true,
             message: "Login successful", 
             token,
             student: {
@@ -466,80 +282,46 @@ app.post('/api/student/login', ensureDb, async (req, res) => {
         });
     } catch (err) {
         console.error("Login error:", err);
-        res.status(500).json({ message: "Login error. Please try again." });
+        res.status(500).json({ message: "Login error" });
     }
 });
 
 // 3. Admin Login
 app.post('/api/admin/login', async (req, res) => {
     try {
-        // Set proper headers immediately to prevent CORB
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        
         const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({ success: false, message: 'Username and password are required' });
-        }
-
-        // If DB is not connected, allow fallback to environment-provided admin credentials
-        if (!isDbConnected) {
-            const envAdminUser = process.env.ADMIN_USER || 'admin';
-            const envAdminPass = process.env.ADMIN_PASS || 'admin123';
-            if (username.trim().toLowerCase() === envAdminUser.toLowerCase() && password === envAdminPass) {
-                const token = jwt.sign({ id: null, username: envAdminUser }, JWT_SECRET, { expiresIn: '7d' });
-                return res.status(200).json({ 
-                    success: true,
-                    message: 'Admin login successful', 
-                    token 
-                });
-            }
-            return res.status(401).json({ 
-                success: false,
-                message: 'Invalid credentials' 
-            });
-        }
-
-        // Find admin - case insensitive
-        const trimmedUsername = username.trim().toLowerCase();
-        let admin = await Admin.findOne({ 
-            username: { $regex: new RegExp(`^${trimmedUsername}$`, 'i') }
-        });
+        const admin = await Admin.findOne({ username });
         
         if (!admin) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ message: "Invalid credentials" });
         }
-
-        // Check password - try bcrypt first, then plain text
-        let isPasswordValid = await bcrypt.compare(password, admin.password);
-        if (!isPasswordValid) {
+        
+        // Check if password is hashed or plain text
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await bcrypt.compare(password, admin.password);
+        } catch (bcryptError) {
+            // If bcrypt compare fails, might be plain text
             isPasswordValid = admin.password === password;
         }
-
-        if (!isPasswordValid) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        
+        // Also check plain text for migration purposes
+        if (!isPasswordValid && admin.password !== password) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
-
+        
         // If password is plain text, hash it for future use
-        if (admin.password === password && password.length < 60) {
-            admin.password = await bcrypt.hash(password, 10);
+        if (admin.password === password && password !== 'admin123') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            admin.password = hashedPassword;
             await admin.save();
         }
-
+        
         const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ 
-            success: true,
-            message: 'Admin login successful', 
-            token 
-        });
+        res.status(200).json({ message: "Admin login successful", token });
     } catch (err) {
-        console.error('Admin login error:', err);
-        if (!res.headersSent) {
-            res.setHeader('Content-Type', 'application/json; charset=utf-8');
-            res.setHeader('Access-Control-Allow-Origin', '*');
-        }
-        res.status(500).json({ success: false, message: 'Login error. Please try again.' });
+        console.error("Admin login error:", err);
+        res.status(500).json({ message: "Login error" });
     }
 });
 
@@ -578,8 +360,6 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
         // Update student with form data
         student.formData = {
             fName: formData.fName,
-            dob: formData.dob,
-            gender: formData.gender,
             caste: formData.caste,
             domicile: formData.domicile,
             email: formData.email,
@@ -629,7 +409,7 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
     }
 });
 
-// 5. Generate Challan PDF (Professional Format)
+// 5. Generate Challan PDF
 app.get('/api/student/challan/:studentId', async (req, res) => {
     try {
         const student = await Student.findById(req.params.studentId);
@@ -639,8 +419,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         
         const doc = new PDFDocument({ 
             size: 'A4', 
-            layout: 'portrait',
-            margin: 15
+            layout: 'landscape',
+            margin: 20
         });
         
         res.setHeader('Content-Type', 'application/pdf');
@@ -648,75 +428,42 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         
         doc.pipe(res);
         
-        // Helper function to draw a professional challan copy
-        const drawChallan = (copyText) => {
-            // Header background color (blue)
-            doc.rect(15, 15, 565, 80).fill('#1e3a8a').stroke();
-            doc.fillColor('white').fontSize(18).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', 30, 25);
-            doc.fontSize(11).text('Government Boys Degree College Umerkot', 30, 48);
-            doc.fontSize(10).font('Helvetica').text('Sindh, Pakistan', 30, 63);
+        // Helper function to draw a single challan
+        const drawChallan = (x, y, copyText) => {
+            doc.fontSize(10);
             
-            // Copy type badge
-            doc.rect(470, 25, 90, 30).fill('#dc2626').stroke();
-            doc.fillColor('white').fontSize(12).font('Helvetica-Bold').text(copyText, 475, 32, { width: 80, align: 'center' });
+            // Header with logo placeholder
+            doc.rect(x, y, 240, 160).stroke();
+            doc.fontSize(12).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', x + 10, y + 5, { align: 'center', width: 220 });
+            doc.fontSize(10).font('Helvetica').text('Govt. Boys Degree College Umerkot', x + 10, y + 20, { align: 'center', width: 220 });
+            doc.fontSize(9).font('Helvetica-Bold').text(copyText, x + 10, y + 35, { align: 'center', width: 220 });
             
-            // Content box
-            doc.moveTo(15, 100).lineTo(580, 100).stroke();
-            doc.fillColor('black').fontSize(9);
+            doc.moveTo(x + 10, y + 45).lineTo(x + 230, y + 45).stroke();
             
-            doc.fontSize(10).font('Helvetica-Bold').text('ADMISSION FEE CHALLAN', 20, 110);
+            // Content
+            doc.fontSize(8).font('Helvetica');
+            doc.text(`Unique ID: ${student.uniqueId}`, x + 15, y + 50);
+            doc.text(`Name: ${student.fullName}`, x + 15, y + 60);
+            doc.text(`Father's Name: ${student.formData?.fName || 'N/A'}`, x + 15, y + 70);
+            doc.text(`CNIC: ${student.cnic}`, x + 15, y + 80);
+            doc.text(`Apply For: BS Chemistry (Batch 2026)`, x + 15, y + 90);
+            doc.text(`Fees: Rs. 2000/-`, x + 15, y + 100);
+            doc.text(`Last Date: 15-01-2026`, x + 15, y + 110);
             
-            doc.moveTo(15, 130).lineTo(580, 130).stroke();
+            doc.moveTo(x + 10, y + 125).lineTo(x + 230, y + 125).stroke();
             
-            // Student Details
-            doc.fontSize(9).font('Helvetica');
-            doc.text(`Unique ID: ${student.uniqueId}`, 20, 140);
-            doc.text(`Student Name: ${student.fullName}`, 20, 155);
-            doc.text(`Father's Name: ${student.formData?.fName || 'N/A'}`, 20, 170);
-            doc.text(`CNIC: ${student.cnic}`, 20, 185);
-            doc.text(`Program: BS Chemistry (Batch 2026)`, 20, 200);
+            doc.fontSize(8).text('Bank: JS BANK UMERKOT', x + 15, y + 130);
+            doc.text('Account: BS CHEMISTRY GBDC UMERKOT', x + 15, y + 140);
+            doc.text('Account No: 1234567890', x + 15, y + 150);
             
-            doc.moveTo(15, 215).lineTo(580, 215).stroke();
-            
-            // Fee Details
-            doc.fontSize(10).font('Helvetica-Bold').text('FEE DETAILS', 20, 225);
-            doc.fontSize(9).font('Helvetica');
-            doc.text(`Admission Fee: Rs. 2,000/-`, 20, 242);
-            doc.text(`Due Date: 15-01-2026`, 20, 257);
-            
-            doc.moveTo(15, 270).lineTo(580, 270).stroke();
-            
-            // Bank Details
-            doc.fontSize(10).font('Helvetica-Bold').text('DEPOSIT TO:', 20, 280);
-            doc.fontSize(9).font('Helvetica');
-            doc.text(`Bank Name: JS BANK`, 20, 297);
-            doc.text(`Branch: Umerkot`, 20, 312);
-            doc.text(`Account Title: BS Chemistry Department`, 20, 327);
-            doc.text(`Account Number: 1234567890`, 20, 342);
-            
-            doc.moveTo(15, 360).lineTo(580, 360).stroke();
-            
-            // Signature line
-            doc.fontSize(8).text('Student Signature', 50, 375);
-            doc.moveTo(20, 370).lineTo(150, 370).stroke();
-            
-            doc.fontSize(8).text('Bank Officer', 250, 375);
-            doc.moveTo(220, 370).lineTo(350, 370).stroke();
-            
-            doc.fontSize(8).text('College Seal', 420, 375);
-            doc.moveTo(400, 370).lineTo(530, 370).stroke();
-            
-            // Footer notes
-            doc.fontSize(7).fillColor('#666').text('Note: This challan is valid for 30 days from the issue date.', 20, 400);
-            doc.text('Please attach this challan with your admission form and upload the paid challan image online.', 20, 412);
-            
-            doc.addPage();
+            doc.moveTo(x + 100, y + 155).lineTo(x + 180, y + 155).stroke();
+            doc.fontSize(7).text('Signature', x + 130, y + 157, { align: 'center', width: 50 });
         };
         
-        // Draw three copies: Bank, Office, Student
-        drawChallan('BANK COPY');
-        drawChallan('OFFICE COPY');
-        drawChallan('STUDENT COPY');
+        // Draw three copies
+        drawChallan(20, 20, 'BANK COPY');
+        drawChallan(280, 20, 'OFFICE COPY');
+        drawChallan(540, 20, 'STUDENT COPY');
         
         doc.end();
     } catch (err) {
@@ -735,11 +482,6 @@ app.post('/api/student/upload-challan', upload.single('challanImage'), async (re
         
         if (!req.file) {
             return res.status(400).json({ message: "File missing" });
-        }
-
-        // Server-side validation: only accept image files for challan
-        if (!req.file.mimetype || !req.file.mimetype.startsWith('image/')) {
-            return res.status(400).json({ message: "Invalid file type. Please upload an image (jpg, png)." });
         }
         
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -931,7 +673,7 @@ app.get('/api/student/slip', async (req, res) => {
     }
 });
 
-// 13. Generate Slip PDF (Professional Format - University Style)
+// 13. Generate Slip PDF
 app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
     try {
         const slip = await Slip.findById(req.params.slipId);
@@ -949,164 +691,43 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             student = await OldStudent.findById(slip.studentId);
         }
         
-        const doc = new PDFDocument({ size: 'A4', margin: 20 });
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=slip-${slip.rollNumber || slip.studentCnic}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=slip-${slip.studentCnic}.pdf`);
         
         doc.pipe(res);
         
-        // White background
-        doc.rect(0, 0, 595, 842).fill('white');
+        // Header
+        doc.fontSize(20).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', { align: 'center' });
+        doc.fontSize(14).font('Helvetica').text('Govt. Boys Degree College Umerkot', { align: 'center' });
+        doc.moveDown();
         
-        // TOP SECTION: Logo (left), Department/College info (center), QR Code (right)
-        const logoX = 30;
-        const logoY = 30;
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown();
         
-        // Logo placeholder - "Chem"
-        doc.rect(logoX, logoY, 60, 60).stroke();
-        doc.font('Helvetica-Bold').fontSize(28).fillColor('#1e3a8a').text('Chem', logoX + 5, logoY + 15, { width: 50, align: 'center' });
+        // Student Info
+        doc.fontSize(14).font('Helvetica-Bold').text('Admission Slip', { align: 'center' });
+        doc.moveDown();
         
-        // Department and College Name (Center top)
-        const centerX = 200;
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000').text('Department of Chemistry', centerX, logoY + 10, { align: 'center', width: 180 });
-        doc.fontSize(11).font('Helvetica').text('Government Boys Degree College Umerkot', centerX, logoY + 35, { align: 'center', width: 180 });
+        doc.fontSize(12).font('Helvetica');
+        doc.text(`Name: ${student.fullName}`, 50, doc.y);
+        doc.text(`CNIC: ${student.cnic}`, 50, doc.y + 20);
+        doc.text(`Batch: ${student.batch}`, 50, doc.y + 20);
+        if (slip.testDate) {
+            doc.text(`Test Date: ${slip.testDate.toLocaleDateString()}`, 50, doc.y + 20);
+        }
         
-        // QR Code (Right side, top)
+        doc.moveDown(2);
+        
+        // QR Code (as base64 image)
         if (slip.qrCode) {
-            doc.image(Buffer.from(slip.qrCode, 'base64'), 500, logoY, { width: 65, height: 65 });
-        } else {
-            doc.rect(500, logoY, 65, 65).stroke();
+            doc.image(Buffer.from(slip.qrCode, 'base64'), 400, doc.y - 100, { width: 100, height: 100 });
         }
         
-        // Red banner with "ENTRY TEST SLIP"
-        const bannerY = 110;
-        doc.rect(30, bannerY, 535, 45).fill('#dc2626');
-        doc.fontSize(24).font('Helvetica-Bold').fillColor('white').text('ENTRY TEST SLIP', 30, bannerY + 8, { width: 535, align: 'center' });
+        doc.moveDown(2);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
         
-        // MAIN CONTENT AREA
-        let contentY = bannerY + 60;
-        
-        // Left side: Student Info (in one div, no lines between fields)
-        const infoX = 30;
-        const infoWidth = 300;
-        
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e3a8a').text('STUDENT INFORMATION', infoX, contentY);
-        contentY += 20;
-        
-        doc.fontSize(9).font('Helvetica').fillColor('#000');
-        const infoLines = [
-            `Roll Number:  ${slip.rollNumber || 'N/A'}`,
-            `Name:  ${student.fullName || 'N/A'}`,
-            `Father's Name:  ${student.fatherName || student.formData?.fName || 'N/A'}`,
-            `CNIC:  ${student.cnic || 'N/A'}`,
-            `Date of Birth:  ${student.dob || 'N/A'}`,
-            `Email:  ${student.email || 'N/A'}`,
-            `Phone:  ${student.phone || student.formData?.phone || 'N/A'}`
-        ];
-        
-        infoLines.forEach(line => {
-            doc.text(line, infoX, contentY, { width: infoWidth });
-            contentY += 15;
-        });
-        
-        // Right side: Student Photo in border
-        const photoX = 380;
-        const photoY = bannerY + 60;
-        const photoW = 140;
-        const photoH = 170;
-        
-        // Photo border
-        doc.rect(photoX, photoY, photoW, photoH).stroke('#999');
-        
-        if (student.profileImage) {
-            try {
-                // Use https/http module to fetch image
-                const url = require('url');
-                const https = require('https');
-                const http = require('http');
-                const parsedUrl = url.parse(student.profileImage);
-                const client = parsedUrl.protocol === 'https:' ? https : http;
-                
-                const photoBuffer = await new Promise((resolve, reject) => {
-                    client.get(student.profileImage, (res) => {
-                        if (res.statusCode !== 200) {
-                            reject(new Error(`Failed to fetch image: ${res.statusCode}`));
-                            return;
-                        }
-                        const chunks = [];
-                        res.on('data', chunk => chunks.push(chunk));
-                        res.on('end', () => resolve(Buffer.concat(chunks)));
-                        res.on('error', reject);
-                    }).on('error', reject);
-                });
-                
-                doc.image(photoBuffer, photoX + 2, photoY + 2, { width: photoW - 4, height: photoH - 4, fit: [photoW - 4, photoH - 4] });
-            } catch (photoErr) {
-                console.log('Could not fetch student photo:', photoErr.message);
-                doc.fontSize(10).fillColor('#999').text('Photo', photoX, photoY + 70, { width: photoW, align: 'center' });
-            }
-        } else {
-            doc.fontSize(10).fillColor('#999').text('Photo', photoX, photoY + 70, { width: photoW, align: 'center' });
-        }
-        
-        // Divider line
-        const dividerY = contentY;
-        doc.moveTo(30, dividerY).lineTo(565, dividerY).stroke('#ccc');
-        
-        contentY = dividerY + 20;
-        
-        // Test Details Section
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e3a8a').text('TEST DETAILS', 30, contentY);
-        contentY += 18;
-        
-        doc.fontSize(9).font('Helvetica').fillColor('#000');
-        const testLines = [
-            `Test Date:  ${slip.testDate ? slip.testDate.toLocaleDateString() : 'To be announced'}`,
-            `Test Time:  10:00 AM - 01:00 PM`,
-            `Test Venue:  ${slip.testVenue || 'Chemistry Lab, Chemistry Department'}`,
-            `Duration:  3 Hours`,
-            `Total Marks:  100`
-        ];
-        
-        testLines.forEach(line => {
-            doc.text(line, 30, contentY);
-            contentY += 15;
-        });
-        
-        // Divider line
-        contentY += 5;
-        doc.moveTo(30, contentY).lineTo(565, contentY).stroke('#ccc');
-        contentY += 15;
-        
-        // Important Instructions
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#dc2626').text('⚠ IMPORTANT INSTRUCTIONS', 30, contentY);
-        contentY += 16;
-        
-        doc.fontSize(8).font('Helvetica').fillColor('#000');
-        const instructions = [
-            '• This slip is mandatory for entry to the test center. Bring original printed copy.',
-            '• Report 15 minutes before the scheduled test time. Gates close at test start time.',
-            '• Bring valid CNIC/Passport and this printed slip as proof of identity.',
-            '• No electronic devices (mobile phones, calculators, smartwatches) allowed inside the test center.',
-            '• No unauthorized materials, notes, or books permitted. Violators will be disqualified.',
-            '• Maintain complete silence and follow invigilator instructions at all times.',
-            '• Use only black/blue ballpoint pen for marking answers. Pencil marks may not be recognized.',
-            '• Any form of cheating or malpractice will result in immediate disqualification.'
-        ];
-        
-        instructions.forEach(instruction => {
-            doc.text(instruction, 30, contentY, { width: 535 });
-            contentY += 13;
-        });
-        
-        // Footer
-        contentY += 10;
-        doc.moveTo(30, contentY).lineTo(565, contentY).stroke('#ccc');
-        contentY += 12;
-        
-        doc.fontSize(7).fillColor('#666').font('Helvetica').text('This is an electronically generated slip. For any discrepancies in the details, contact the Chemistry Department office immediately.', 30, contentY, { width: 535 });
-        contentY += 12;
-        doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Slip ID: ${slip._id.toString().substring(0, 8).toUpperCase()}`, 30, contentY);
+        doc.fontSize(10).text('This slip is required for the test. Please bring a printed copy.', { align: 'center' });
         
         doc.end();
     } catch (err) {
@@ -1130,7 +751,7 @@ app.post('/api/results/check', async (req, res) => {
 // --- ADMIN ROUTES ---
 
 // 15. Get All Students (Admin)
-app.get('/api/admin/students', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/students', async (req, res) => {
     try {
         const newStudents = await Student.find().sort({ registrationDate: -1 });
         const oldStudents = await OldStudent.find().sort({ registrationDate: -1 });
@@ -1145,7 +766,7 @@ app.get('/api/admin/students', authenticateAdmin, async (req, res) => {
 });
 
 // 16. Approve/Reject Student Registration
-app.put('/api/admin/students/:id/approve', authenticateAdmin, async (req, res) => {
+app.put('/api/admin/students/:id/approve', async (req, res) => {
     try {
         const { status } = req.body;
         const student = await Student.findByIdAndUpdate(req.params.id, { status }, { new: true });
@@ -1175,7 +796,7 @@ app.put('/api/admin/students/:id/approve', authenticateAdmin, async (req, res) =
 });
 
 // 17. Verify Challan
-app.put('/api/admin/students/:id/verify-challan', authenticateAdmin, async (req, res) => {
+app.put('/api/admin/students/:id/verify-challan', async (req, res) => {
     try {
         const student = await Student.findByIdAndUpdate(
             req.params.id, 
@@ -1193,7 +814,7 @@ app.put('/api/admin/students/:id/verify-challan', authenticateAdmin, async (req,
 });
 
 // 18. Register Old Student (Admin)
-app.post('/api/admin/old-students', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/old-students', async (req, res) => {
     try {
         const { fullName, cnic, batch, rollNumber, email, mobile, fatherName, caste, domicile, address, formData, password } = req.body;
         
@@ -1232,7 +853,7 @@ app.post('/api/admin/old-students', authenticateAdmin, async (req, res) => {
 });
 
 // 19. Delete Student
-app.delete('/api/admin/students/:id', authenticateAdmin, async (req, res) => {
+app.delete('/api/admin/students/:id', async (req, res) => {
     try {
         const { oldStudent } = req.query;
         
@@ -1250,7 +871,7 @@ app.delete('/api/admin/students/:id', authenticateAdmin, async (req, res) => {
 });
 
 // 20. Get All Assignments (Admin)
-app.get('/api/admin/assignments', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/assignments', async (req, res) => {
   try {
     const assignments = await Assignment.find().sort({ uploadedAt: -1 });
     
@@ -1279,7 +900,7 @@ app.get('/api/admin/assignments', authenticateAdmin, async (req, res) => {
 });
 
 // 21. Grade Assignment
-app.post('/api/admin/assignments/:id/grade', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/assignments/:id/grade', async (req, res) => {
     try {
         const { grade } = req.body;
         const assignment = await Assignment.findByIdAndUpdate(
@@ -1298,17 +919,13 @@ app.post('/api/admin/assignments/:id/grade', authenticateAdmin, async (req, res)
 });
 
 // 22. Upload Slip for Student
-app.post('/api/admin/students/:id/slip', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/students/:id/slip', async (req, res) => {
     try {
-        const { testDate, rollNumber, availableDate } = req.body;
+        const { testDate, availableDate } = req.body;
         const studentId = req.params.id;
         
-        if (!rollNumber) {
-            return res.status(400).json({ message: "Roll Number is required" });
-        }
-        
         // Generate QR code
-        const qrData = JSON.stringify({ studentId, rollNumber, testDate, timestamp: Date.now() });
+        const qrData = JSON.stringify({ studentId, testDate, timestamp: Date.now() });
         const qrCodeBuffer = await QRCode.toBuffer(qrData);
         const qrCodeBase64 = qrCodeBuffer.toString('base64');
         
@@ -1320,11 +937,9 @@ app.post('/api/admin/students/:id/slip', authenticateAdmin, async (req, res) => 
         const slip = new Slip({
             studentId,
             studentCnic: student.cnic,
-            rollNumber,
             qrCode: qrCodeBase64,
             testDate: testDate ? new Date(testDate) : null,
-            testVenue: 'Chemistry Lab',
-            availableDate: availableDate ? new Date(availableDate) : new Date()
+            availableDate: availableDate ? new Date(availableDate) : new Date(Date.now() - 24 * 60 * 60 * 1000) // Default: 1 day ago (available)
         });
         await slip.save();
         
@@ -1336,7 +951,7 @@ app.post('/api/admin/students/:id/slip', authenticateAdmin, async (req, res) => 
 });
 
 // 23. Add Result
-app.post('/api/admin/students/:id/results', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/students/:id/results', async (req, res) => {
     try {
         let student = await Student.findById(req.params.id);
         if (!student) {
@@ -1364,7 +979,7 @@ app.post('/api/admin/students/:id/results', authenticateAdmin, async (req, res) 
 });
 
 // 24. Get Contact Submissions
-app.get('/api/admin/contact-submissions', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/contact-submissions', async (req, res) => {
     try {
         const submissions = await Contact.find().sort({ submittedAt: -1 });
         res.status(200).json({ success: true, submissions });
@@ -1375,7 +990,7 @@ app.get('/api/admin/contact-submissions', authenticateAdmin, async (req, res) =>
 });
 
 // 25. Reply to Contact
-app.post('/api/admin/contact/:id/reply', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/contact/:id/reply', async (req, res) => {
     try {
         const { replyMessage } = req.body;
         const contact = await Contact.findById(req.params.id);
@@ -1402,7 +1017,7 @@ app.post('/api/admin/contact/:id/reply', authenticateAdmin, async (req, res) => 
 });
 
 // 26. Get Admin Stats
-app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/stats', async (req, res) => {
     try {
         const totalStudents = await Student.countDocuments() + await OldStudent.countDocuments();
         const activeStudents = await Student.countDocuments({ status: 'Approved' }) + await OldStudent.countDocuments();
@@ -1432,35 +1047,6 @@ app.post('/api/contact', async (req, res) => {
     }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Catch-all for unmapped routes - serve index.html for SPA
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    // Ensure proper headers for error responses to prevent CORB
-    if (!res.headersSent) {
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
-});
-
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;
-// Export the Express app for serverless platforms and tests
-module.exports = app;
-
-// If this file is run directly (node server.js), start the HTTP server.
-if (require.main === module) {
-    if (!process.env.VERCEL) {
-        app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
-    }
-}
+app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));

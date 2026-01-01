@@ -1,21 +1,4 @@
-// API Base URL - detect environment correctly
-const API_BASE_URL = (() => {
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  const port = window.location.port;
-  
-  // Local development
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:3000/api';
-  }
-  
-  // Production - use relative path
-  return '/api';
-})();
-
-// Debug logging
-console.log('API Base URL:', API_BASE_URL);
-console.log('Current URL:', window.location.href);
+const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
 // Mobile nav toggle
 const navToggle = document.querySelector(".nav-toggle");
 const mainNav = document.querySelector(".main-nav");
@@ -245,56 +228,13 @@ if (signupForm) {
     }
 
     try {
-      // Validate form data before sending
-      if (!payload.fullName || !payload.cnic || !payload.password || !payload.confirmPassword) {
-        alert("Please fill in all fields");
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = originalText;
-        }
-        return;
-      }
-
-      if (payload.password !== payload.confirmPassword) {
-        alert("Passwords do not match");
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = originalText;
-        }
-        return;
-      }
-
-      if (payload.password.length < 6) {
-        alert("Password must be at least 6 characters long");
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = originalText;
-        }
-        return;
-      }
-
-      console.log('Sending signup request to:', `${API_BASE_URL}/student/signup`);
-      console.log('Payload:', { ...payload, password: '***' });
-      
       const res = await fetch(`${API_BASE_URL}/student/signup`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      
-      console.log('Response status:', res.status);
-      console.log('Response ok:', res.ok);
 
-      let data;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        console.error("JSON parse error:", jsonErr);
-        throw new Error("Invalid response from server");
-      }
+      const data = await res.json();
 
       if (res.ok) {
         alert(data.message || "Registration successful! Please sign in.");
@@ -306,7 +246,7 @@ if (signupForm) {
       }
     } catch (err) {
       console.error("Signup error:", err);
-      alert(err.message || "Network error. Please check your connection and try again.");
+      alert("Network error. Please check your connection and try again.");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -335,41 +275,23 @@ if (signinForm) {
     }
 
     try {
-      // Check if it's admin login (username is "admin" - case insensitive)
+      // Check if it's admin login (username is "admin")
       let apiUrl, payload;
-      const normalizedUserValue = userValue.trim().toLowerCase();
-      if (normalizedUserValue === "admin") {
+      if (userValue === "admin" || userValue.toLowerCase() === "admin") {
         apiUrl = `${API_BASE_URL}/admin/login`;
-        payload = { username: userValue.trim(), password: passwordValue };
-        console.log('Detected admin login attempt');
+        payload = { username: userValue, password: passwordValue };
       } else {
         apiUrl = `${API_BASE_URL}/student/login`;
-        payload = { cnic: userValue.trim(), password: passwordValue };
-        console.log('Detected student login attempt');
+        payload = { cnic: userValue, password: passwordValue };
       }
 
-      console.log('Sending login request to:', apiUrl);
-      console.log('Login type:', userValue === "admin" || userValue.toLowerCase() === "admin" ? 'Admin' : 'Student');
-      
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      
-      console.log('Response status:', res.status);
-      console.log('Response ok:', res.ok);
 
-      let data;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        console.error("JSON parse error:", jsonErr);
-        throw new Error("Invalid response from server");
-      }
+      const data = await res.json();
 
       if (res.ok && data.token) {
         if (userValue === "admin" || userValue.toLowerCase() === "admin") {
@@ -378,20 +300,16 @@ if (signinForm) {
           window.location.href = "admin-dashboard.html";
         } else {
           localStorage.setItem("studentToken", data.token);
-          if (data.student) {
-            localStorage.setItem("studentData", JSON.stringify(data.student));
-          }
+          localStorage.setItem("studentData", JSON.stringify(data.student));
           closeModal(signinModal);
           window.location.href = "student-portal.html";
         }
       } else {
-        console.error('Login failed:', data);
         alert(data.message || "Login failed. Please check your credentials.");
       }
     } catch (err) {
       console.error("Login error:", err);
-      console.error("Error details:", err.message, err.stack);
-      alert(err.message || "Network error. Please check your connection and try again.");
+      alert("Network error. Please check your connection and try again.");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -399,8 +317,6 @@ if (signinForm) {
       }
     }
   });
-} else {
-  console.warn('Signin form not found!');
 }
 
 

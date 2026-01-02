@@ -429,7 +429,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const doc = new PDFDocument({ 
             size: 'A4', 
             layout: 'landscape',
-            margin: 20
+            margin: 25
         });
         
         res.setHeader('Content-Type', 'application/pdf');
@@ -437,42 +437,151 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         
         doc.pipe(res);
         
-        // Helper function to draw a single challan
-        const drawChallan = (x, y, copyText) => {
-            doc.fontSize(10);
-            
-            // Header with logo placeholder
-            doc.rect(x, y, 240, 160).stroke();
-            doc.fontSize(12).font('Helvetica-Bold').text('BS CHEMISTRY DEPARTMENT', x + 10, y + 5, { align: 'center', width: 220 });
-            doc.fontSize(10).font('Helvetica').text('Govt. Boys Degree College Umerkot', x + 10, y + 20, { align: 'center', width: 220 });
-            doc.fontSize(9).font('Helvetica-Bold').text(copyText, x + 10, y + 35, { align: 'center', width: 220 });
-            
-            doc.moveTo(x + 10, y + 45).lineTo(x + 230, y + 45).stroke();
-            
-            // Content
-            doc.fontSize(8).font('Helvetica');
-            doc.text(`Unique ID: ${student.uniqueId}`, x + 15, y + 50);
-            doc.text(`Name: ${student.fullName}`, x + 15, y + 60);
-            doc.text(`Father's Name: ${student.formData?.fName || 'N/A'}`, x + 15, y + 70);
-            doc.text(`CNIC: ${student.cnic}`, x + 15, y + 80);
-            doc.text(`Apply For: BS Chemistry (Batch 2026)`, x + 15, y + 90);
-            doc.text(`Fees: Rs. 2000/-`, x + 15, y + 100);
-            doc.text(`Last Date: 15-01-2026`, x + 15, y + 110);
-            
-            doc.moveTo(x + 10, y + 125).lineTo(x + 230, y + 125).stroke();
-            
-            doc.fontSize(8).text('Bank: JS BANK UMERKOT', x + 15, y + 130);
-            doc.text('Account: BS CHEMISTRY GBDC UMERKOT', x + 15, y + 140);
-            doc.text('Account No: 1234567890', x + 15, y + 150);
-            
-            doc.moveTo(x + 100, y + 155).lineTo(x + 180, y + 155).stroke();
-            doc.fontSize(7).text('Signature', x + 130, y + 157, { align: 'center', width: 50 });
+        // Load department logo
+        let logoBuffer = null;
+        try {
+            const logoPath = path.join(__dirname, '..', 'frontend', 'logo.png');
+            const fs = require('fs');
+            if (fs.existsSync(logoPath)) {
+                logoBuffer = fs.readFileSync(logoPath);
+            }
+        } catch (err) {
+            console.error('Error loading logo:', err);
+        }
+        
+        // Page dimensions for landscape A4
+        const pageWidth = 841.89;
+        const pageHeight = 595.28;
+        const margin = 25;
+        const gap = 12;
+        const challanWidth = (pageWidth - (margin * 2) - (gap * 2)) / 3;
+        const challanHeight = pageHeight - (margin * 2);
+        const startY = margin;
+        
+        // Helper function to draw dotted border
+        const drawDottedRect = (x, y, width, height) => {
+            doc.dash(2, 2);
+            doc.strokeColor('#9e9e9e').lineWidth(1);
+            doc.rect(x, y, width, height).stroke();
+            doc.undash(); // Reset dash to solid line
         };
         
-        // Draw three copies
-        drawChallan(20, 20, 'BANK COPY');
-        drawChallan(280, 20, 'OFFICE COPY');
-        drawChallan(540, 20, 'STUDENT COPY');
+        // Helper function to draw a single challan
+        const drawChallan = (x, y, copyText, copyColor) => {
+            const padding = 10;
+            const headerHeight = 50;
+            const contentStartY = y + headerHeight;
+            
+            // Outer border (dotted for separation between copies)
+            drawDottedRect(x, y, challanWidth, challanHeight);
+            
+            // Header background with color
+            doc.fillColor(copyColor).rect(x, y, challanWidth, headerHeight).fill();
+            
+            // Logo in header
+            const logoSize = 32;
+            if (logoBuffer) {
+                doc.image(logoBuffer, x + padding, y + (headerHeight - logoSize) / 2, { width: logoSize, height: logoSize });
+            }
+            
+            // Header text
+            const headerTextX = x + (logoBuffer ? logoSize + padding + 5 : padding);
+            const headerTextWidth = challanWidth - headerTextX - padding;
+            
+            doc.fontSize(11).font('Helvetica-Bold').fillColor('#ffffff');
+            doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 8, { width: headerTextWidth });
+            doc.fontSize(9).font('Helvetica-Bold').fillColor('#ffffff');
+            doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 22, { width: headerTextWidth });
+            doc.fontSize(8).font('Helvetica-Bold').fillColor('#fff9c4');
+            doc.text(copyText, headerTextX, y + 35, { width: headerTextWidth });
+            
+            // Divider line below header
+            doc.strokeColor('#757575').lineWidth(0.5);
+            doc.moveTo(x + padding, contentStartY).lineTo(x + challanWidth - padding, contentStartY).stroke();
+            
+            // Content area
+            let currentY = contentStartY + 12;
+            const labelWidth = 70;
+            const valueWidth = challanWidth - padding * 2 - labelWidth - 5;
+            const contentX = x + padding;
+            
+            // Student Information
+            doc.fontSize(8).font('Helvetica-Bold').fillColor('#424242');
+            doc.text('Unique ID:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica').fillColor('#212121');
+            doc.text(student.uniqueId || '-', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 14;
+            
+            doc.font('Helvetica-Bold').fillColor('#424242');
+            doc.text('Name:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica').fillColor('#212121');
+            doc.text(student.fullName || '-', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 14;
+            
+            doc.font('Helvetica-Bold').fillColor('#424242');
+            doc.text('Father\'s Name:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica').fillColor('#212121');
+            doc.text(student.formData?.fName || student.fatherName || 'N/A', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 14;
+            
+            doc.font('Helvetica-Bold').fillColor('#424242');
+            doc.text('CNIC:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica').fillColor('#212121');
+            doc.text(student.cnic || '-', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 14;
+            
+            doc.font('Helvetica-Bold').fillColor('#424242');
+            doc.text('Apply For:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica-Bold').fillColor('#1565c0');
+            doc.text('BS Chemistry (Batch 2026)', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 14;
+            
+            doc.font('Helvetica-Bold').fillColor('#424242');
+            doc.text('Fees:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica-Bold').fillColor('#c62828');
+            doc.text('Rs. 2000/-', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 14;
+            
+            doc.font('Helvetica-Bold').fillColor('#424242');
+            doc.text('Last Date:', contentX, currentY, { width: labelWidth });
+            doc.font('Helvetica').fillColor('#212121');
+            doc.text('15-01-2026', contentX + labelWidth, currentY, { width: valueWidth });
+            currentY += 18;
+            
+            // Divider
+            doc.strokeColor('#e0e0e0').lineWidth(0.5);
+            doc.moveTo(contentX, currentY).lineTo(x + challanWidth - padding, currentY).stroke();
+            currentY += 10;
+            
+            // Bank Information
+            doc.fontSize(8).font('Helvetica-Bold').fillColor('#1a237e');
+            doc.text('BANK DETAILS', contentX, currentY);
+            currentY += 12;
+            
+            doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
+            doc.text('Bank: JS BANK UMERKOT', contentX, currentY);
+            currentY += 11;
+            doc.text('Account: BS CHEMISTRY GBDC UMERKOT', contentX, currentY);
+            currentY += 11;
+            doc.font('Helvetica-Bold').fillColor('#212121');
+            doc.text('Account No: 1234567890', contentX, currentY);
+            currentY += 18;
+            
+            // Signature line
+            doc.strokeColor('#9e9e9e').lineWidth(0.5);
+            doc.moveTo(contentX + 20, currentY).lineTo(x + challanWidth - padding - 20, currentY).stroke();
+            doc.fontSize(6.5).font('Helvetica').fillColor('#757575');
+            doc.text('Authorized Signature', contentX + 20, currentY + 2, { width: challanWidth - padding * 2 - 40, align: 'center' });
+        };
+        
+        // Draw three copies with different header colors
+        const copy1X = margin;
+        const copy2X = margin + challanWidth + gap;
+        const copy3X = margin + (challanWidth + gap) * 2;
+        
+        drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); // Dark Blue
+        drawChallan(copy2X, startY, 'OFFICE COPY', '#1565c0'); // Blue
+        drawChallan(copy3X, startY, 'STUDENT COPY', '#c62828'); // Red
         
         doc.end();
     } catch (err) {
@@ -751,92 +860,11 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             return res.status(404).json({ message: "Student not found" });
         }
         
-        const doc = new PDFDocument({ size: 'A4', margin: 40 });
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=admit-card-${slip.studentCnic}.pdf`);
         
         doc.pipe(res);
-        
-        // Header Section
-        doc.fontSize(18).font('Helvetica-Bold').text('DEPARTMENT OF CHEMISTRY', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(12).font('Helvetica-Bold').text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(16).font('Helvetica-Bold').text('ENTRY TEST SLIP', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(12).font('Helvetica').text('BATCH 2K26', { align: 'center' });
-        doc.moveDown(0.5);
-        
-        // QR Code on top right
-        let qrY = 40;
-        if (slip.qrCode) {
-            doc.image(Buffer.from(slip.qrCode, 'base64'), 450, qrY, { width: 80, height: 80 });
-            if (slip.rollNumber) {
-                const rollParts = slip.rollNumber.split('/');
-                const rollSuffix = rollParts[rollParts.length - 1];
-                doc.fontSize(10).font('Helvetica').text(rollSuffix, 450, qrY + 85, { width: 80, align: 'center' });
-            }
-        }
-        
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
-        doc.moveDown(1);
-        
-        // Candidate Information Section
-        const startY = doc.y;
-        let currentY = startY;
-        
-        doc.fontSize(11).font('Helvetica-Bold');
-        doc.text('CANDIDATE INFORMATION', 40, currentY);
-        currentY += 25;
-        
-        doc.fontSize(10).font('Helvetica');
-        const labelWidth = 150;
-        const valueWidth = 300;
-        let xPos = 40;
-        
-        // Name
-        doc.font('Helvetica-Bold').text('NAME:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text(student.fullName || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Father's Name
-        doc.font('Helvetica-Bold').text('FATHER\'S NAME:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text(student.formData?.fName || student.fatherName || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Surname/Caste
-        doc.font('Helvetica-Bold').text('SURNAME:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text(student.formData?.caste || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // CNIC
-        doc.font('Helvetica-Bold').text('CNIC:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text(student.cnic || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Program
-        doc.font('Helvetica-Bold').text('PROGRAM:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text('BS CHEMISTRY', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Seat No / Roll Number
-        doc.font('Helvetica-Bold').text('SEAT NO:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Held In
-        doc.font('Helvetica-Bold').text('HELD IN:', xPos, currentY, { width: labelWidth });
-        const testDate = slip.testDate ? new Date(slip.testDate) : '-';
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const heldIn = `${testDate.getDate()}: ${monthNames[testDate.getMonth()]}: ${testDate.getFullYear()}`;
-        doc.font('Helvetica').text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 25;
-        
-        // Photo (right side) - try to load student photo if available
-        const photoX = 400;
-        const photoY = startY + 20;
-        const photoWidth = 80;
-        const photoHeight = 100;
         
         // Helper function to fetch image
         function fetchImage(url) {
@@ -858,66 +886,208 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             });
         }
         
+        // Load department logo
+        let logoBuffer = null;
+        try {
+            const logoPath = path.join(__dirname, '..', 'frontend', 'logo.png');
+            const fs = require('fs');
+            if (fs.existsSync(logoPath)) {
+                logoBuffer = fs.readFileSync(logoPath);
+            }
+        } catch (err) {
+            console.error('Error loading logo:', err);
+        }
+        
+        // Header Section with Logo and QR Code
+        const headerY = 50;
+        const logoSize = 60;
+        const qrSize = 80;
+        const pageWidth = 595.28;
+        const rightMargin = 50;
+        const qrX = pageWidth - rightMargin - qrSize;
+        
+        // Logo on top left
+        if (logoBuffer) {
+            doc.image(logoBuffer, 50, headerY, { width: logoSize, height: logoSize });
+        }
+        
+        // QR Code on top right
+        const qrY = headerY;
+        if (slip.qrCode) {
+            doc.image(Buffer.from(slip.qrCode, 'base64'), qrX, qrY, { width: qrSize, height: qrSize });
+            if (slip.rollNumber) {
+                const rollParts = slip.rollNumber.split('/');
+                const rollSuffix = rollParts[rollParts.length - 1];
+                doc.fontSize(9).font('Helvetica-Bold').fillColor('#1565c0');
+                doc.text(rollSuffix, qrX, qrY + qrSize + 3, { width: qrSize, align: 'center' });
+            }
+        }
+        
+        // Header text (centered, adjusted for logo/QR)
+        const centerX = pageWidth / 2; // A4 width / 2 (595.28 / 2)
+        doc.fontSize(20).font('Helvetica-Bold').fillColor('#1a237e');
+        doc.text('DEPARTMENT OF CHEMISTRY', centerX, headerY + 10, { align: 'center', width: 400 });
+        doc.moveDown(0.4);
+        doc.fontSize(15).font('Helvetica-Bold').fillColor('#1565c0');
+        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', centerX, doc.y, { align: 'center', width: 400 });
+        doc.moveDown(0.4);
+        doc.fontSize(18).font('Helvetica-Bold').fillColor('#c62828');
+        doc.text('ENTRY TEST SLIP', centerX, doc.y, { align: 'center', width: 400 });
+        doc.moveDown(0.4);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#424242');
+        doc.text('BATCH 2K26', centerX, doc.y, { align: 'center', width: 400 });
+        doc.moveDown(0.6);
+        
+        // Divider line
+        doc.strokeColor('#757575').lineWidth(1);
+        doc.moveTo(50, doc.y).lineTo(pageWidth - rightMargin, doc.y).stroke();
+        doc.moveDown(1);
+        
+        // Candidate Information Section
+        const startY = doc.y;
+        let currentY = startY;
+        
+        doc.fontSize(13).font('Helvetica-Bold').fillColor('#1a237e');
+        doc.text('CANDIDATE INFORMATION', 50, currentY);
+        currentY += 28;
+        
+        const labelWidth = 160;
+        const valueWidth = 290;
+        let xPos = 50;
+        
+        // Name
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
+        doc.text('NAME:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').fillColor('#212121');
+        doc.text(student.fullName || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+        
+        // Father's Name
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('FATHER\'S NAME:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').fillColor('#212121');
+        doc.text(student.formData?.fName || student.fatherName || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+        
+        // Surname/Caste
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('SURNAME:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').fillColor('#212121');
+        doc.text(student.formData?.caste || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+        
+        // CNIC
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('CNIC:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica').fillColor('#212121');
+        doc.text(student.cnic || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+        
+        // Program
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('PROGRAM:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica-Bold').fillColor('#1565c0');
+        doc.text('BS CHEMISTRY', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+        
+        // Seat No / Roll Number
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('SEAT NO:', xPos, currentY, { width: labelWidth });
+        doc.font('Helvetica-Bold').fillColor('#c62828');
+        doc.text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+        
+        // Held In
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('HELD IN:', xPos, currentY, { width: labelWidth });
+        const testDate = slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-';
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const heldIn = `${testDate[new Date(slip.testDate).getDate()]}: ${monthNames[new Date(slip.testDate).getMonth()]}: ${new Date(slip.testDate).getFullYear()}`;
+        doc.font('Helvetica').fillColor('#212121');
+        doc.text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 28;
+        
+        // Photo (right side) - try to load student photo if available
+        const photoX = 420;
+        const photoY = startY + 25;
+        const photoWidth = 85;
+        const photoHeight = 105;
+        const borderWidth = 3;
+        
         if (student.profileImage) {
             try {
                 const imageBuffer = await fetchImage(student.profileImage);
                 if (imageBuffer) {
+                    // Draw border
+                    doc.strokeColor('#424242').lineWidth(borderWidth);
+                    doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+                    // Draw photo
                     doc.image(imageBuffer, photoX, photoY, { width: photoWidth, height: photoHeight, fit: [photoWidth, photoHeight] });
                 } else {
-                    // Fallback to placeholder
-                    doc.rect(photoX, photoY, photoWidth, photoHeight).stroke();
-                    doc.fontSize(8).font('Helvetica').text('PHOTO', photoX + 25, photoY + 45, { width: 30, align: 'center' });
+                    // Fallback to placeholder with border
+                    doc.strokeColor('#424242').lineWidth(borderWidth);
+                    doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+                    doc.fontSize(9).font('Helvetica').fillColor('#757575');
+                    doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
                 }
             } catch (err) {
                 console.error('Error loading profile image:', err);
-                doc.rect(photoX, photoY, photoWidth, photoHeight).stroke();
-                doc.fontSize(8).font('Helvetica').text('PHOTO', photoX + 25, photoY + 45, { width: 30, align: 'center' });
+                doc.strokeColor('#424242').lineWidth(borderWidth);
+                doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+                doc.fontSize(9).font('Helvetica').fillColor('#757575');
+                doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
             }
         } else {
-            // No photo available, show placeholder
-            doc.rect(photoX, photoY, photoWidth, photoHeight).stroke();
-            doc.fontSize(8).font('Helvetica').text('PHOTO', photoX + 25, photoY + 45, { width: 30, align: 'center' });
+            // No photo available, show placeholder with border
+            doc.strokeColor('#424242').lineWidth(borderWidth);
+            doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+            doc.fontSize(9).font('Helvetica').fillColor('#757575');
+            doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
         }
         
         // Exam Centre
-        doc.fontSize(11).font('Helvetica-Bold');
+        doc.fontSize(11).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('EXAM CENTRE:', xPos, currentY);
-        doc.fontSize(10).font('Helvetica');
-        doc.text('BS CHEMISTRY BUILDING GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 100, currentY);
-        currentY += 30;
+        doc.fontSize(10).font('Helvetica').fillColor('#212121');
+        doc.text('BS CHEMISTRY BUILDING GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 110, currentY);
+        currentY += 32;
         
         // Notes
-        doc.fontSize(9).font('Helvetica-Bold');
+        const noteTextWidth = pageWidth - rightMargin - xPos - 35;
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#c62828');
         doc.text('NOTE:', xPos, currentY);
-        doc.font('Helvetica');
-        doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 30, currentY, { width: 470 });
-        currentY += 25;
+        doc.font('Helvetica').fillColor('#424242');
+        doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 35, currentY, { width: noteTextWidth });
+        currentY += 28;
         
         // Instructions
-        doc.fontSize(9).font('Helvetica-Bold');
+        const instructionTextWidth = pageWidth - rightMargin - xPos - 25;
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('INSTRUCTIONS:', xPos, currentY);
-        currentY += 15;
-        doc.fontSize(8).font('Helvetica');
-        doc.text('(i) Mobile Phone / calculator or any other electronic device is not allowed.', xPos + 20, currentY, { width: 480 });
-        currentY += 12;
-        doc.text('(ii) You are required to bring this admit card/Slip along with your original Computerized National Identity Card (CNIC).', xPos + 20, currentY, { width: 480 });
-        currentY += 12;
-        doc.text('(iii) Entry Test will be of 100 marks consisting of Multiple Choice Questions (MCQs).', xPos + 20, currentY, { width: 480 });
-        currentY += 12;
-        doc.text('(iv) Each question carries 1 mark. There is no negative marking for wrong answers.', xPos + 20, currentY, { width: 480 });
-        currentY += 12;
-        doc.text('(v) The duration of the test will be 2 hours.', xPos + 20, currentY, { width: 480 });
-        currentY += 12;
-        doc.text('(vi) Use of unfair means during examination is strictly prohibited and will lead to disqualification.', xPos + 20, currentY, { width: 480 });
-        currentY += 12;
+        currentY += 18;
+        doc.fontSize(9).font('Helvetica').fillColor('#424242');
+        doc.text('(i) Mobile Phone / calculator or any other electronic device is not allowed.', xPos + 25, currentY, { width: instructionTextWidth });
+        currentY += 14;
+        doc.text('(ii) You are required to bring this admit card/Slip along with your original Computerized National Identity Card (CNIC).', xPos + 25, currentY, { width: instructionTextWidth });
+        currentY += 14;
+        doc.text('(iii) Entry Test will be of 100 marks consisting of Multiple Choice Questions (MCQs).', xPos + 25, currentY, { width: instructionTextWidth });
+        currentY += 14;
+        doc.text('(iv) Each question carries 1 mark. There is no negative marking for wrong answers.', xPos + 25, currentY, { width: instructionTextWidth });
+        currentY += 14;
+        doc.text('(v) The duration of the test will be 2 hours.', xPos + 25, currentY, { width: instructionTextWidth });
+        currentY += 14;
+        doc.text('(vi) Use of unfair means during examination is strictly prohibited and will lead to disqualification.', xPos + 25, currentY, { width: instructionTextWidth });
+        currentY += 14;
 
         // Footer
         const footerY = 750;
-        doc.fontSize(8).font('Helvetica');
-        doc.text('POWERED BY: IT TEAM - DEPARTMENT OF CHEMISTRY', 40, footerY);
-        doc.text('Page 1', 280, footerY, { align: 'center' });
+        doc.strokeColor('#e0e0e0').lineWidth(0.5);
+        doc.moveTo(50, footerY - 5).lineTo(pageWidth - rightMargin, footerY - 5).stroke();
+        doc.fontSize(8).font('Helvetica').fillColor('#757575');
+        doc.text('POWERED BY: IT TEAM - DEPARTMENT OF CHEMISTRY', 50, footerY);
+        doc.text('Page 1', pageWidth / 2, footerY, { align: 'center' });
         const printDate = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        doc.text(`(Print Date: ${printDate})`, 400, footerY, { align: 'right' });
+        doc.text(`(Print Date: ${printDate})`, pageWidth - rightMargin, footerY, { align: 'right' });
         
         doc.end();
     } catch (err) {

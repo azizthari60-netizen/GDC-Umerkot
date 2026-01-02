@@ -167,6 +167,9 @@ async function loadChallans() {
         const verifyChallanBtn = (student.challanStatus === 'Uploaded' && student.status !== 'Rejected')
           ? `<button class="btn btn-primary btn-small" onclick="verifyChallan('${student._id}')">Verify Challan</button>`
           : (student.challanStatus === 'Verified' ? '<span style="color: #059669;">✓ Verified</span>' : '');
+        const uploadSlipBtn = (student.challanStatus === 'Verified' && student.status !== 'Rejected')
+          ? `<button class="btn btn-primary btn-small" onclick="uploadSlip('${student._id}')">Upload Slip</button>`
+          : '';
         const approveBtn = (student.challanStatus === 'Verified' && student.status !== 'Approved' && student.status !== 'Rejected')
           ? `<button class="btn btn-primary btn-small" onclick="approveApplication('${student._id}')">Approve</button>`
           : '';
@@ -184,6 +187,7 @@ async function loadChallans() {
               ${viewProfileBtn}
               ${viewChallanBtn}
               ${verifyChallanBtn}
+              ${uploadSlipBtn}
               ${approveBtn}
               ${rejectBtn}
             </div>

@@ -197,6 +197,14 @@
         </div>
       </div>
 
+      <!-- Challan Management & Verification (FIRST SECTION) -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>Challan Management & Verification</h3>
+        <div class="students-list" id="challans-list">
+          <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading students with applications...</p>
+        </div>
+      </div>
+
       <!-- Register Old Student -->
       <div class="admin-card" style="margin-bottom: 2rem;">
         <h3>Register Old Student</h3>
@@ -237,17 +245,9 @@
         </form>
       </div>
 
-      <!-- Challan Management -->
+      <!-- Students List (Only Old Students) -->
       <div class="admin-card" style="margin-bottom: 2rem;">
-        <h3>Challan Management & Verification</h3>
-        <div class="students-list" id="challans-list">
-          <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading students with challans...</p>
-        </div>
-      </div>
-
-      <!-- Students List -->
-      <div class="admin-card" style="margin-bottom: 2rem;">
-        <h3>All Students</h3>
+        <h3>All Students (Old Students Only)</h3>
         <div class="students-list" id="students-list">
           <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading students...</p>
         </div>
@@ -266,6 +266,30 @@
         <h3>Contact Form Submissions</h3>
         <div class="students-list" id="contact-submissions">
           <p style="text-align: center; color: #6b7280; padding: 2rem;">Loading submissions...</p>
+        </div>
+      </div>
+
+      <!-- Modal for Viewing Student Profile -->
+      <div class="modal" id="view-profile-modal" aria-hidden="true" role="dialog" aria-labelledby="view-profile-title">
+        <div class="modal-backdrop" data-close-modal></div>
+        <div class="modal-dialog" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+          <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
+          <h2 id="view-profile-title">Student Registration Form</h2>
+          <div id="student-profile-content" style="padding: 1rem 0;">
+            <p>Loading profile...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal for Viewing Challan -->
+      <div class="modal" id="view-challan-modal" aria-hidden="true" role="dialog" aria-labelledby="view-challan-title">
+        <div class="modal-backdrop" data-close-modal></div>
+        <div class="modal-dialog" style="max-width: 600px;">
+          <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
+          <h2 id="view-challan-title">Challan Image</h2>
+          <div id="challan-image-content" style="padding: 1rem 0; text-align: center;">
+            <p>Loading challan image...</p>
+          </div>
         </div>
       </div>
 

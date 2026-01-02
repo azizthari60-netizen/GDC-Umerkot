@@ -223,7 +223,8 @@ img {
   inset: 0;
   background-image: var(--bg);
   background-size: cover;
-  background-position: center;
+  background-position: center center;
+  background-repeat: no-repeat;
   opacity: 0;
   transform: scale(1.02);
   transition: opacity 0.5s ease, transform 0.7s ease;
@@ -587,6 +588,65 @@ img {
   color: #9ca3af;
 }
 
+.footer-socials {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer-socials a {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.footer-socials a.social-fb {
+  background: #1877f2;
+}
+
+.footer-socials a.social-fb:hover {
+  background: #166fe5;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(24, 119, 242, 0.4);
+  border-color: #1877f2;
+}
+
+.footer-socials a.social-whatsapp {
+  background: #25d366;
+}
+
+.footer-socials a.social-whatsapp:hover {
+  background: #20ba5a;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(37, 211, 102, 0.4);
+  border-color: #25d366;
+}
+
+.footer-socials a.social-email {
+  background: #ea4335;
+}
+
+.footer-socials a.social-email:hover {
+  background: #d33b2c;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(234, 67, 53, 0.4);
+  border-color: #ea4335;
+}
+
+.footer-socials a svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 .map-embed {
   margin-top: 0.4rem;
   border-radius: 0.9rem;
@@ -662,8 +722,11 @@ img {
   height: 90px;
   border-radius: 50%;
   background-size: cover;
-  background-position: center;
+  background-position: center top;
+  background-repeat: no-repeat;
   margin: 0 auto 0.7rem;
+  border: 3px solid #e5e7eb;
+  object-fit: cover;
 }
 
 .faculty-name {
@@ -686,24 +749,58 @@ img {
 .faculty-socials {
   display: flex;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .faculty-socials a {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  color: #0f172a;
-  background: #e5e7eb;
+  font-size: 0.85rem;
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
-.faculty-socials a:hover {
-  background: #1e3a8a;
-  color: #ffffff;
+.faculty-socials a.social-fb {
+  background: #1877f2;
+}
+
+.faculty-socials a.social-fb:hover {
+  background: #166fe5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(24, 119, 242, 0.3);
+}
+
+.faculty-socials a.social-whatsapp {
+  background: #25d366;
+}
+
+.faculty-socials a.social-whatsapp:hover {
+  background: #20ba5a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
+}
+
+.faculty-socials a.social-email {
+  background: #ea4335;
+}
+
+.faculty-socials a.social-email:hover {
+  background: #d33b2c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(234, 67, 53, 0.3);
+}
+
+.faculty-socials a svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 /* Contact form */
@@ -816,6 +913,26 @@ img {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .faculty-socials a {
+    width: 32px;
+    height: 32px;
+  }
+
+  .faculty-socials a svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .footer-socials a {
+    width: 36px;
+    height: 36px;
+  }
+
+  .footer-socials a svg {
+    width: 18px;
+    height: 18px;
+  }
+
   .contact-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -920,6 +1037,35 @@ img {
 
   .footer-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .faculty-socials {
+    gap: 0.4rem;
+  }
+
+  .faculty-socials a {
+    width: 30px;
+    height: 30px;
+  }
+
+  .faculty-socials a svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .footer-socials {
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+  }
+
+  .footer-socials a {
+    width: 34px;
+    height: 34px;
+  }
+
+  .footer-socials a svg {
+    width: 16px;
+    height: 16px;
   }
 }
 

@@ -571,7 +571,7 @@ app.post('/api/admin/approve-application/:studentId', async (req, res) => {
 // 9. Get All Students with Challan Details (Admin)
 app.get('/api/admin/students-with-challans', async (req, res) => {
     try {
-        const students = await Student.find({ isFormFilled: true }).select('fullName cnic challanStatus challanImage status formData profileImage');
+        const students = await Student.find({ isFormFilled: true }).select('_id fullName cnic challanStatus challanImage status formData profileImage');
         res.status(200).json({ success: true, students });
     } catch (err) {
         console.error("Get students error:", err);
@@ -990,13 +990,16 @@ app.put('/api/admin/students/:id/verify-challan', async (req, res) => {
     try {
         const student = await Student.findByIdAndUpdate(
             req.params.id, 
-            { challanStatus: 'Verified' }, 
+            { 
+                challanStatus: 'Verified',
+                status: 'Challan Verified'
+            }, 
             { new: true }
         );
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
-        res.status(200).json({ success: true, message: "Challan verified" });
+        res.status(200).json({ success: true, message: "Challan verified", student });
     } catch (err) {
         console.error("Verify challan error:", err);
         res.status(500).json({ message: "Verify challan error" });

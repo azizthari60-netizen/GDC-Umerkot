@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const result = await res.json();
         if (res.ok) {
-          alert('Challan uploaded successfully!');
+          alert('Challan uploaded successfully! Waiting for admin verification.');
           loadStudentData(); // Reload to update status
         } else {
           alert(result.message || 'Failed to upload challan');
@@ -256,50 +256,52 @@ function updateApplySection() {
 
   if (!currentStudent.isFormFilled) {
     // No form submitted yet
-    statusText.textContent = 'Please fill out the admission form to proceed.';
+    statusText.innerHTML = 'Please fill out the admission form to proceed.';
     applyNowBtn.style.display = 'inline-block';
     generateChallanBtn.style.display = 'none';
     uploadChallanBtn.style.display = 'none';
     downloadSlipBtn.style.display = 'none';
+    challanStatusDiv.innerHTML = '';
   } else {
+    // Form submitted
     applyNowBtn.style.display = 'none';
     
+    // Show application status with color
+    let statusHTML = '';
+    if (currentStudent.status === 'Pending') {
+      statusHTML = '<span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Application Status: Pending</span>';
+    } else if (currentStudent.status === 'Challan Verified') {
+      statusHTML = '<span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Application Status: Challan Verified</span>';
+    } else if (currentStudent.status === 'Approved') {
+      statusHTML = '<span style="background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Application Status: Approved ✓</span>';
+    } else if (currentStudent.status === 'Rejected') {
+      statusHTML = '<span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Application Status: Rejected ✗</span>';
+    }
+    
     if (currentStudent.challanStatus === 'Not Generated' || currentStudent.challanStatus === 'Generated') {
-      // Form submitted, generate and download challan
-      statusText.textContent = 'Form submitted successfully! Generate and download your challan, then upload the paid challan image.';
+      // Form submitted, show generate and upload buttons
+      statusText.innerHTML = 'Form submitted successfully! Generate and download your challan, then upload the paid challan image.<br><br>' + statusHTML;
       generateChallanBtn.style.display = 'inline-block';
       uploadChallanBtn.style.display = 'inline-block';
       downloadSlipBtn.style.display = 'none';
+      challanStatusDiv.innerHTML = '';
     } else if (currentStudent.challanStatus === 'Uploaded') {
-      // Challan uploaded, waiting for verification
-      statusText.textContent = 'Challan uploaded. Waiting for admin verification...';
+      // Challan uploaded, still show buttons until verified
+      statusText.innerHTML = 'Challan uploaded. Waiting for admin verification...<br><br>' + statusHTML;
       generateChallanBtn.style.display = 'inline-block';
       uploadChallanBtn.style.display = 'inline-block';
       downloadSlipBtn.style.display = 'none';
       
       if (currentStudent.challanImage) {
-        challanStatusDiv.innerHTML = `<p style="color: #059669;">✓ Challan uploaded: <a href="${currentStudent.challanImage}" target="_blank">View Image</a></p>`;
+        challanStatusDiv.innerHTML = `<p style="color: #059669; margin-top: 0.5rem;">✓ Challan uploaded: <a href="${currentStudent.challanImage}" target="_blank" style="color: #1e3a8a;">View Image</a></p>`;
       }
     } else if (currentStudent.challanStatus === 'Verified') {
-      // Challan verified, show download slip button
-      statusText.textContent = 'Challan verified! Download your admission slip.';
+      // Challan verified, hide generate/upload buttons, show download slip button
+      statusText.innerHTML = 'Challan verified! Download your admission slip.<br><br>' + statusHTML;
       generateChallanBtn.style.display = 'none';
       uploadChallanBtn.style.display = 'none';
       downloadSlipBtn.style.display = 'inline-block';
-      challanStatusDiv.innerHTML = '<p style="color: #059669;">✓ Challan verified by admin</p>';
-    }
-
-    // Show status updates
-    if (currentStudent.status === 'Pending') {
-      statusText.textContent += ' | Status: Pending';
-    } else if (currentStudent.status === 'Challan Verified') {
-      statusText.textContent += ' | Status: Challan Verified';
-    } else if (currentStudent.status === 'Approved') {
-      statusText.textContent += ' | Status: Approved ✓';
-      challanStatusDiv.innerHTML = '<p style="color: #059669;">✓ Registration Approved</p>';
-    } else if (currentStudent.status === 'Rejected') {
-      statusText.textContent += ' | Status: Rejected';
-      challanStatusDiv.innerHTML = '<p style="color: #dc2626;">✗ Registration Rejected</p>';
+      challanStatusDiv.innerHTML = '<p style="color: #059669; margin-top: 0.5rem;">✓ Challan verified by admin</p>';
     }
   }
 }

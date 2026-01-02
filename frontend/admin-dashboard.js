@@ -100,22 +100,26 @@ async function loadStudents() {
     const studentsList = document.getElementById('students-list');
     
     if (res.ok && data.success && data.students.length > 0) {
-      studentsList.innerHTML = data.students.map(student => {
-        const approveBtn = `<button class="btn btn-primary btn-small" onclick="approveStudent('${student._id}')">Approve</button>`;
-        const rejectBtn = `<button class="btn btn-danger btn-small" onclick="rejectStudent('${student._id}')">Reject</button>`;
-        
-        return `
-          <div class="student-item">
-            <div style="flex: 1;">
-              <strong>${student.fullName}</strong> (${student.cnic})<br>
-              <small>Batch: ${student.batch || 'N/A'} | Status: ${student.status || 'N/A'}</small>
+      // Filter to show ONLY old students (isOldStudent: true)
+      const oldStudents = data.students.filter(student => student.isOldStudent === true);
+      
+      if (oldStudents.length > 0) {
+        studentsList.innerHTML = oldStudents.map(student => {
+          return `
+            <div class="student-item">
+              <div style="flex: 1;">
+                <strong>${student.fullName}</strong> (${student.cnic})<br>
+                <small>Batch: ${student.batch || 'N/A'} | Roll: ${student.rollNumber || 'N/A'} | Status: Active</small>
+              </div>
+              <div class="student-actions">
+                <span style="color: #059669;">✓ Registered</span>
+              </div>
             </div>
-            <div class="student-actions">
-              ${student.status === 'Pending' ? approveBtn + ' ' + rejectBtn : `<span style="color: #059669;">✓ ${student.status}</span>`}
-            </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      } else {
+        studentsList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No old students registered yet.</p>';
+      }
     } else {
       studentsList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No students found.</p>';
     }
@@ -137,44 +141,57 @@ async function loadChallans() {
     const challansList = document.getElementById('challans-list');
     
     if (res.ok && data.success && data.students.length > 0) {
-      // Filter students with uploaded challans
-      const challengsToVerify = data.students.filter(s => s.challanStatus === 'Uploaded' || s.challanStatus === 'Verified');
+      // Show ALL students who submitted forms (isFormFilled: true)
+      // They are already filtered by the API endpoint
       
-      if (challengsToVerify.length > 0) {
-        challansList.innerHTML = challengsToVerify.map(student => {
-          const verifyChallanBtn = student.challanStatus === 'Uploaded' 
-            ? `<button class="btn btn-primary btn-small" onclick="verifyChallan('${student._id}')">Verify</button>`
-            : `<span style="color: #059669;">✓ Verified</span>`;
-          
-          const approvAppBtn = student.status === 'Challan Verified' || student.status === 'Approved'
-            ? `<button class="btn btn-primary btn-small" onclick="approveApplication('${student._id}')">Approve App</button>`
-            : `<span style="color: #059669;">✓ Approved</span>`;
-          
-          // Upload Slip button for approved students
-          const uploadSlipBtn = (student.status === 'Approved' || student.status === 'Challan Verified')
-            ? `<button class="btn btn-primary btn-small" onclick="uploadSlip('${student._id}')">Upload Slip</button>`
-            : '';
-          
-          return `
-            <div class="student-item">
-              <div style="flex: 1;">
-                <strong>${student.fullName}</strong> (${student.cnic})<br>
-                <small>Challan: ${student.challanStatus} | App Status: ${student.status}</small><br>
-                ${student.challanImage ? `<a href="${student.challanImage}" target="_blank" style="color: #1e3a8a; font-size: 0.85rem;">📷 View Challan Image</a>` : ''}
-              </div>
-              <div class="student-actions">
-                ${verifyChallanBtn}
-                ${student.challanStatus === 'Verified' ? approvAppBtn : ''}
-                ${uploadSlipBtn}
-              </div>
+      challansList.innerHTML = data.students.map(student => {
+        // Status badge with color
+        let statusBadge = '';
+        if (student.status === 'Pending') {
+          statusBadge = '<span class="status-pending">Pending</span>';
+        } else if (student.status === 'Challan Verified') {
+          statusBadge = '<span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Challan Verified</span>';
+        } else if (student.status === 'Approved') {
+          statusBadge = '<span style="background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Approved</span>';
+        } else if (student.status === 'Rejected') {
+          statusBadge = '<span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;">Rejected</span>';
+        } else {
+          statusBadge = `<span>${student.status || 'N/A'}</span>`;
+        }
+        
+        // Buttons based on status
+        const viewProfileBtn = `<button class="btn btn-primary btn-small" onclick="viewStudentProfile('${student._id}')">View Profile</button>`;
+        const viewChallanBtn = student.challanImage 
+          ? `<button class="btn btn-primary btn-small" onclick="viewChallanImage('${student._id}', '${student.challanImage}')">View Challan</button>`
+          : '<span style="color: #6b7280; font-size: 0.85rem;">No Challan</span>';
+        const verifyChallanBtn = (student.challanStatus === 'Uploaded' && student.status !== 'Rejected')
+          ? `<button class="btn btn-primary btn-small" onclick="verifyChallan('${student._id}')">Verify Challan</button>`
+          : (student.challanStatus === 'Verified' ? '<span style="color: #059669;">✓ Verified</span>' : '');
+        const approveBtn = (student.challanStatus === 'Verified' && student.status !== 'Approved' && student.status !== 'Rejected')
+          ? `<button class="btn btn-primary btn-small" onclick="approveApplication('${student._id}')">Approve</button>`
+          : '';
+        const rejectBtn = (student.status === 'Pending' || student.status === 'Challan Verified')
+          ? `<button class="btn btn-danger btn-small" onclick="rejectApplication('${student._id}')">Reject</button>`
+          : '';
+        
+        return `
+          <div class="student-item">
+            <div style="flex: 1;">
+              <strong>${student.fullName}</strong> (${student.cnic})<br>
+              <small>Challan Status: ${student.challanStatus || 'Not Generated'} | Application Status: ${statusBadge}</small>
             </div>
-          `;
-        }).join('');
-      } else {
-        challansList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No challans pending verification.</p>';
-      }
+            <div class="student-actions" style="flex-wrap: wrap; gap: 0.5rem;">
+              ${viewProfileBtn}
+              ${viewChallanBtn}
+              ${verifyChallanBtn}
+              ${approveBtn}
+              ${rejectBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
     } else {
-      challansList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No students with challans.</p>';
+      challansList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No students with submitted applications.</p>';
     }
   } catch (err) {
     console.error('Error loading challans:', err);
@@ -186,8 +203,8 @@ async function verifyChallan(studentId) {
   
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/verify-challan/${studentId}`, {
-      method: 'POST',
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/verify-challan`, {
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${adminToken}`
       }
@@ -195,7 +212,7 @@ async function verifyChallan(studentId) {
 
     const data = await res.json();
     if (res.ok && data.success) {
-      alert('Challan verified successfully!');
+      alert('Challan verified successfully! Student status updated to "Challan Verified".');
       loadChallans();
       loadStats();
     } else {
@@ -208,11 +225,11 @@ async function verifyChallan(studentId) {
 }
 
 async function approveApplication(studentId) {
-  if (!confirm('Approve this student application?')) return;
+  if (!confirm('Approve this student application? This will change the status to "Approved".')) return;
   
   try {
     const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/approve-application/${studentId}`, {
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/approve`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -221,7 +238,7 @@ async function approveApplication(studentId) {
 
     const data = await res.json();
     if (res.ok && data.success) {
-      alert('Application approved successfully!');
+      alert('Application approved successfully! Student status updated to "Approved".');
       loadChallans();
       loadStats();
     } else {
@@ -283,6 +300,138 @@ async function rejectStudent(studentId) {
     console.error('Error rejecting student:', err);
     alert('Network error. Please try again.');
   }
+}
+
+async function rejectApplication(studentId) {
+  if (!confirm('Reject this student application? This action cannot be undone.')) return;
+  
+  try {
+    const adminToken = localStorage.getItem('adminToken');
+    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/reject`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert('Application rejected successfully!');
+      loadChallans();
+      loadStats();
+    } else {
+      alert(data.message || 'Failed to reject application');
+    }
+  } catch (err) {
+    console.error('Error rejecting application:', err);
+    alert('Network error. Please try again.');
+  }
+}
+
+async function viewStudentProfile(studentId) {
+  try {
+    const adminToken = localStorage.getItem('adminToken');
+    const res = await fetch(`${API_BASE_URL}/admin/students-with-challans`, {
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const student = data.students.find(s => s._id === studentId);
+      if (!student) {
+        alert('Student not found');
+        return;
+      }
+
+      const modal = document.getElementById('view-profile-modal');
+      const content = document.getElementById('student-profile-content');
+      
+      // Build profile HTML
+      const formData = student.formData || {};
+      content.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+          <div><strong>Full Name:</strong> ${student.fullName || '-'}</div>
+          <div><strong>CNIC:</strong> ${student.cnic || '-'}</div>
+          <div><strong>Father's Name:</strong> ${formData.fName || '-'}</div>
+          <div><strong>Caste:</strong> ${formData.caste || '-'}</div>
+          <div><strong>Domicile:</strong> ${formData.domicile || '-'}</div>
+          <div><strong>Date of Birth:</strong> ${formData.dob || '-'}</div>
+          <div><strong>Gender:</strong> ${formData.gender || '-'}</div>
+          <div><strong>Email:</strong> ${formData.email || '-'}</div>
+          <div><strong>Mobile:</strong> ${formData.mobile || '-'}</div>
+          <div><strong>Address:</strong> ${formData.address || '-'}</div>
+          <div><strong>Guardian Name:</strong> ${formData.gName || '-'}</div>
+          <div><strong>Guardian Occupation:</strong> ${formData.gOcc || '-'}</div>
+          <div><strong>Guardian Contact:</strong> ${formData.gContact || '-'}</div>
+          <div><strong>Guardian Address:</strong> ${formData.gAddress || '-'}</div>
+        </div>
+        <div style="margin-top: 1.5rem;">
+          <h4 style="margin-bottom: 0.5rem;">Matriculation Details</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div><strong>Board:</strong> ${formData.matric?.brd || '-'}</div>
+            <div><strong>Year:</strong> ${formData.matric?.yr || '-'}</div>
+            <div><strong>Roll Number:</strong> ${formData.matric?.roll || '-'}</div>
+            <div><strong>Group:</strong> ${formData.matric?.grp || '-'}</div>
+            <div><strong>Percentage:</strong> ${formData.matric?.per || '-'}%</div>
+          </div>
+        </div>
+        <div style="margin-top: 1.5rem;">
+          <h4 style="margin-bottom: 0.5rem;">Intermediate Details</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div><strong>Board:</strong> ${formData.inter?.brd || '-'}</div>
+            <div><strong>Year:</strong> ${formData.inter?.yr || '-'}</div>
+            <div><strong>Roll Number:</strong> ${formData.inter?.roll || '-'}</div>
+            <div><strong>Group:</strong> ${formData.inter?.grp || '-'}</div>
+            <div><strong>Percentage:</strong> ${formData.inter?.per || '-'}%</div>
+          </div>
+        </div>
+        ${student.profileImage ? `<div style="margin-top: 1.5rem; text-align: center;"><img src="${student.profileImage}" alt="Profile" style="max-width: 200px; border-radius: 8px; border: 2px solid #e5e7eb;"></div>` : ''}
+      `;
+      
+      // Show modal
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      
+      // Close modal handlers
+      const closeButtons = modal.querySelectorAll('[data-close-modal]');
+      closeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          modal.classList.remove('active');
+          modal.setAttribute('aria-hidden', 'true');
+        });
+      });
+    } else {
+      alert('Failed to load student profile');
+    }
+  } catch (err) {
+    console.error('Error loading student profile:', err);
+    alert('Network error. Please try again.');
+  }
+}
+
+function viewChallanImage(studentId, challanImageUrl) {
+  const modal = document.getElementById('view-challan-modal');
+  const content = document.getElementById('challan-image-content');
+  
+  content.innerHTML = `
+    <img src="${challanImageUrl}" alt="Challan Image" style="max-width: 100%; border-radius: 8px; border: 2px solid #e5e7eb;">
+    <p style="margin-top: 1rem;"><a href="${challanImageUrl}" target="_blank" style="color: #1e3a8a;">Open in new tab</a></p>
+  `;
+  
+  // Show modal
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+  
+  // Close modal handlers
+  const closeButtons = modal.querySelectorAll('[data-close-modal]');
+  closeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    });
+  });
 }
 
 async function loadContactSubmissions() {

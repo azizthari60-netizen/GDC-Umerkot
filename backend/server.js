@@ -758,13 +758,13 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.pipe(res);
         
         // Header Section
-        doc.fontSize(18).font('Helvetica-Bold').text('UNIVERSITY OF SINDH', { align: 'center' });
+        doc.fontSize(18).font('Helvetica-Bold').text('DEPARTMENT OF CHEMISTRY', { align: 'center' });
         doc.moveDown(0.3);
-        doc.fontSize(14).font('Helvetica-Bold').text('ANNUAL EXAMINATIONS OF 2024', { align: 'center' });
+        doc.fontSize(14).font('Helvetica-Bold').text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', { align: 'center' });
         doc.moveDown(0.3);
-        doc.fontSize(16).font('Helvetica-Bold').text('ADMIT CARD', { align: 'center' });
+        doc.fontSize(16).font('Helvetica-Bold').text('ENTRY TEST SLIP', { align: 'center' });
         doc.moveDown(0.3);
-        doc.fontSize(12).font('Helvetica').text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', { align: 'center' });
+        doc.fontSize(12).font('Helvetica').text('BATCH 2K26', { align: 'center' });
         doc.moveDown(0.5);
         
         // QR Code on top right
@@ -819,36 +819,16 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.font('Helvetica').text('BS CHEMISTRY', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 18;
         
-        // Degree Type
-        doc.font('Helvetica-Bold').text('DEGREE TYPE:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text('REGULAR', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
         // Seat No / Roll Number
         doc.font('Helvetica-Bold').text('SEAT NO:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica').text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 18;
         
-        // Exam Part
-        doc.font('Helvetica-Bold').text('EXAM PART:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text('1-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Exam Type
-        doc.font('Helvetica-Bold').text('EXAM TYPE:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text('REGULAR', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
-        // Exam Year
-        doc.font('Helvetica-Bold').text('EXAM YEAR:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').text('2024', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 18;
-        
         // Held In
         doc.font('Helvetica-Bold').text('HELD IN:', xPos, currentY, { width: labelWidth });
-        const testDate = slip.testDate ? new Date(slip.testDate) : new Date();
+        const testDate = slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-';
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const heldIn = `${monthNames[testDate.getMonth()]}: ${testDate.getFullYear()}`;
+        const heldIn = `${testDate[new Date(slip.testDate).getDate()]}: ${monthNames[new Date(slip.testDate).getMonth()]}: ${new Date(slip.testDate).getFullYear()}`;
         doc.font('Helvetica').text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 25;
         
@@ -859,7 +839,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         const photoHeight = 100;
         
         // Helper function to fetch image
-        const fetchImage = (url) => {
+        function fetchImage(url) {
             return new Promise((resolve) => {
                 const protocol = url.startsWith('https') ? https : http;
                 protocol.get(url, (response) => {
@@ -876,7 +856,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
                     resolve(null);
                 });
             });
-        };
+        }
         
         if (student.profileImage) {
             try {
@@ -903,66 +883,14 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.fontSize(11).font('Helvetica-Bold');
         doc.text('EXAM CENTRE:', xPos, currentY);
         doc.fontSize(10).font('Helvetica');
-        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 100, currentY);
+        doc.text('BS CHEMISTRY BUILDING GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 100, currentY);
         currentY += 30;
-        
-        // Selected Subjects Table
-        doc.fontSize(11).font('Helvetica-Bold');
-        doc.text('SELECTED SUBJECTS', xPos, currentY);
-        currentY += 20;
-        
-        // Table Header
-        const tableStartY = currentY;
-        const colWidths = [30, 100, 150, 100, 100, 80];
-        const headers = ['SNO', 'Subject Type', 'Subject Title', 'Exam Date', 'Exam Time', 'Session'];
-        
-        doc.fontSize(9).font('Helvetica-Bold');
-        let tableX = xPos;
-        headers.forEach((header, i) => {
-            doc.text(header, tableX, tableStartY, { width: colWidths[i] });
-            tableX += colWidths[i];
-        });
-        
-        currentY += 15;
-        doc.moveTo(xPos, currentY).lineTo(xPos + colWidths.reduce((a, b) => a + b, 0), currentY).stroke();
-        currentY += 5;
-        
-        // Sample subjects (you can customize this)
-        const subjects = [
-            { type: 'Compulsory', title: 'ENGLISH (COMPULSORY)', date: slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-', time: '02:00 pm to 05:00 pm', session: 'Evening' },
-            { type: 'Compulsory', title: 'ISLAMIC STUDIES (COMPULSORY)', date: slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-', time: '02:30 pm to 04:30 pm', session: 'Evening' },
-            { type: 'Compulsory', title: 'PAKISTAN STUDIES (COMPULSORY)', date: slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-', time: '02:00 pm to 05:00 pm', session: 'Evening' }
-        ];
-        
-        doc.fontSize(8).font('Helvetica');
-        subjects.forEach((subject, idx) => {
-            tableX = xPos;
-            doc.text(String(idx + 1), tableX, currentY, { width: colWidths[0] });
-            tableX += colWidths[0];
-            doc.text(subject.type, tableX, currentY, { width: colWidths[1] });
-            tableX += colWidths[1];
-            doc.text(subject.title, tableX, currentY, { width: colWidths[2] });
-            tableX += colWidths[2];
-            doc.text(subject.date, tableX, currentY, { width: colWidths[3] });
-            tableX += colWidths[3];
-            doc.text(subject.time, tableX, currentY, { width: colWidths[4] });
-            tableX += colWidths[4];
-            doc.text(subject.session, tableX, currentY, { width: colWidths[5] });
-            currentY += 15;
-        });
-        
-        currentY += 15;
-        
-        // Declaration
-        doc.fontSize(9).font('Helvetica');
-        doc.text('I wish to appear in the above Subject(s) and shall answer the questions paper(s) in \'ENGLISH\' Language.', xPos, currentY, { width: 500 });
-        currentY += 20;
         
         // Notes
         doc.fontSize(9).font('Helvetica-Bold');
         doc.text('NOTE:', xPos, currentY);
         doc.font('Helvetica');
-        doc.text('The University of Sindh reserves the right of cancellation of examination, if Exam form/documents are found to be incomplete/incorrect at any stage.', xPos + 30, currentY, { width: 470 });
+        doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 30, currentY, { width: 470 });
         currentY += 25;
         
         // Instructions
@@ -974,23 +902,19 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         currentY += 12;
         doc.text('(ii) You are required to bring this admit card/Slip along with your original Computerized National Identity Card (CNIC).', xPos + 20, currentY, { width: 480 });
         currentY += 12;
-        doc.text('(iii) Wearing mask is mandatory as per COVID-19 SOPs. No candidate will be allowed to enter in the examination center without mask.', xPos + 20, currentY, { width: 480 });
+        doc.text('(iii) Entry Test will be of 100 marks consisting of Multiple Choice Questions (MCQs).', xPos + 20, currentY, { width: 480 });
         currentY += 12;
-        doc.text('(iv) Paste your CNIC copy on the back of this Admit Card/Slip.', xPos + 20, currentY, { width: 480 });
-        currentY += 30;
-        
-        // Signatures
-        doc.fontSize(9).font('Helvetica');
-        doc.text('STUDENT SIGNATURE', xPos, currentY);
-        doc.text('CONTROLLER OF EXAMINATIONS', xPos + 300, currentY);
-        currentY += 20;
-        doc.moveTo(xPos, currentY).lineTo(xPos + 150, currentY).stroke();
-        doc.moveTo(xPos + 300, currentY).lineTo(xPos + 500, currentY).stroke();
-        
+        doc.text('(iv) Each question carries 1 mark. There is no negative marking for wrong answers.', xPos + 20, currentY, { width: 480 });
+        currentY += 12;
+        doc.text('(v) The duration of the test will be 2 hours.', xPos + 20, currentY, { width: 480 });
+        currentY += 12;
+        doc.text('(vi) Use of unfair means during examination is strictly prohibited and will lead to disqualification.', xPos + 20, currentY, { width: 480 });
+        currentY += 12;
+
         // Footer
         const footerY = 750;
         doc.fontSize(8).font('Helvetica');
-        doc.text('POWERED BY: IT SERVICES CENTRE - UNIVERSITY OF SINDH', 40, footerY);
+        doc.text('POWERED BY: IT TEAM - DEPARTMENT OF CHEMISTRY', 40, footerY);
         doc.text('Page 1', 280, footerY, { align: 'center' });
         const printDate = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         doc.text(`(Print Date: ${printDate})`, 400, footerY, { align: 'right' });
@@ -1239,9 +1163,8 @@ app.post('/api/admin/students/:id/slip', async (req, res) => {
         
         // Generate roll number in format: Chem/batch/2026/001
         const batch = student.batch || "2026";
-        const currentYear = new Date().getFullYear();
         const suffix = rollNumberSuffix ? String(rollNumberSuffix).padStart(3, '0') : '001';
-        const rollNumber = `Chem/${batch}/${currentYear}/${suffix}`;
+        const rollNumber = `Chem/${batch}/${suffix}`;
         
         // Generate QR code with student registration information
         const qrData = JSON.stringify({

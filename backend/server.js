@@ -760,7 +760,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         // Header Section
         doc.fontSize(18).font('Helvetica-Bold').text('DEPARTMENT OF CHEMISTRY', { align: 'center' });
         doc.moveDown(0.3);
-        doc.fontSize(14).font('Helvetica-Bold').text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', { align: 'center' });
+        doc.fontSize(12).font('Helvetica-Bold').text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', { align: 'center' });
         doc.moveDown(0.3);
         doc.fontSize(16).font('Helvetica-Bold').text('ENTRY TEST SLIP', { align: 'center' });
         doc.moveDown(0.3);
@@ -826,9 +826,9 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         // Held In
         doc.font('Helvetica-Bold').text('HELD IN:', xPos, currentY, { width: labelWidth });
-        const testDate = slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-';
+        const testDate = slip.testDate ? new Date(slip.testDate) : '-';
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const heldIn = `${testDate[new Date(slip.testDate).getDate()]}: ${monthNames[new Date(slip.testDate).getMonth()]}: ${new Date(slip.testDate).getFullYear()}`;
+        const heldIn = `${testDate.getDate()}: ${monthNames[testDate.getMonth()]}: ${testDate.getFullYear()}`;
         doc.font('Helvetica').text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 25;
         

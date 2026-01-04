@@ -516,6 +516,48 @@ img {
   box-shadow: 0 0 0 1px rgba(30, 58, 138, 0.4);
 }
 
+/* Password input wrapper with toggle button */
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  padding-right: 2.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: color 0.15s ease;
+}
+
+.password-toggle:hover {
+  color: #1e3a8a;
+}
+
+.password-toggle:focus {
+  outline: 2px solid #1e3a8a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.eye-icon {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+}
+
 .info-note {
   margin-top: 0.9rem;
   font-size: 0.8rem;
@@ -1272,6 +1314,13 @@ img {
   margin-right: -0.5rem;
 }
 
+/* Hide navigation arrows on mobile */
+@media (max-width: 640px) {
+  .notification-nav {
+    display: none;
+  }
+}
+
 .notification-slides {
   position: relative;
   overflow: hidden;
@@ -1330,10 +1379,18 @@ img {
   font-weight: 600;
   text-decoration: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .notification-link:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.notification-link:active {
+  transform: translateY(0);
 }
 

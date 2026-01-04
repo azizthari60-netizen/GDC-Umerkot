@@ -16,6 +16,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
+const fs = require('fs');
 const app = express();
 
 // --- Configuration ---
@@ -47,8 +48,8 @@ mongoose.connect(process.env.MONGODB_URI)
 const transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || 'gmail',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
+        pass: process.env.EMAIL_PASS || '123'
     }
 });
 
@@ -332,6 +333,86 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
+// 3.5. Password Recovery Request
+app.post('/api/student/recovery', async (req, res) => {
+    try {
+        const { 'recovery-id': recoveryId } = req.body;
+        
+        if (!recoveryId) {
+            return res.status(400).json({ message: "Email or Roll Number is required" });
+        }
+        
+        // Check in new students by email or roll number
+        let student = await Student.findOne({
+            $or: [
+                { 'formData.email': recoveryId },
+                { rollNumber: recoveryId }
+            ]
+        });
+        
+        // If not found, check old students
+        if (!student) {
+            student = await OldStudent.findOne({
+                $or: [
+                    { email: recoveryId },
+                    { rollNumber: recoveryId }
+                ]
+            });
+        }
+        
+        if (!student) {
+            return res.status(404).json({ message: "No account found with the provided email or roll number." });
+        }
+        
+        // Send email notification to admin/student about password recovery request
+        try {
+            const adminEmail = process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com';
+            await transporter.sendMail({
+                from: adminEmail,
+                to: adminEmail,
+                subject: 'Password Recovery Request',
+                html: `
+                    <h2>Password Recovery Request</h2>
+                    <p>A password recovery request has been submitted for:</p>
+                    <ul>
+                        <li><strong>Name:</strong> ${student.fullName}</li>
+                        <li><strong>CNIC:</strong> ${student.cnic}</li>
+                        <li><strong>Email/Roll Number:</strong> ${recoveryId}</li>
+                    </ul>
+                    <p>Please verify and reset the password for this student.</p>
+                `
+            });
+            
+            // Also send confirmation to student if email is available
+            const studentEmail = student.formData?.email || student.email;
+            if (studentEmail) {
+                await transporter.sendMail({
+                    from: adminEmail,
+                    to: studentEmail,
+                    subject: 'Password Recovery Request Received',
+                    html: `
+                        <h2>Password Recovery Request Received</h2>
+                        <p>Dear ${student.fullName},</p>
+                        <p>Your password recovery request has been received. The department will verify your information and reset your password.</p>
+                        <p>You will receive your new credentials via email once the verification is complete.</p>
+                        <p>Thank you!</p>
+                    `
+                });
+            }
+        } catch (emailErr) {
+            console.error("Email error:", emailErr);
+            // Continue even if email fails
+        }
+        
+        res.status(200).json({ 
+            message: "Password recovery request submitted successfully. The department will verify and reset your password. You will receive an email with new credentials once verified." 
+        });
+    } catch (err) {
+        console.error("Password recovery error:", err);
+        res.status(500).json({ message: "Password recovery error" });
+    }
+});
+
 // 4. Submit Registration Form (New Students)
 app.post('/api/student/submit-form', upload.single('profileImage'), async (req, res) => {
     try {
@@ -391,7 +472,7 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
         // Send email notification
         try {
             await transporter.sendMail({
-                from: process.env.EMAIL_USER,
+                from: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
                 to: formData.email,
                 subject: 'Registration Form Submitted Successfully',
                 html: `
@@ -426,14 +507,28 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             return res.status(404).json({ message: "Student or form not found" });
         }
         
+        // Validate student has uniqueId
+        if (!student.uniqueId) {
+            return res.status(400).json({ message: "Student unique ID not found. Please submit the form first." });
+        }
+        
         const doc = new PDFDocument({ 
             size: 'A4', 
             layout: 'landscape',
             margin: 25
         });
         
+        // Set headers before piping
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=challan-${student.uniqueId}.pdf`);
+        
+        // Handle PDF generation errors
+        doc.on('error', (err) => {
+            console.error("PDF generation error:", err);
+            if (!res.headersSent) {
+                res.status(500).json({ message: "Error generating PDF" });
+            }
+        });
         
         doc.pipe(res);
         
@@ -441,12 +536,12 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         let logoBuffer = null;
         try {
             const logoPath = path.join(__dirname, '..', 'frontend', 'logo.png');
-            const fs = require('fs');
             if (fs.existsSync(logoPath)) {
                 logoBuffer = fs.readFileSync(logoPath);
             }
         } catch (err) {
             console.error('Error loading logo:', err);
+            // Continue without logo if it fails
         }
         
         // Page dimensions for landscape A4
@@ -466,11 +561,11 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.undash(); // Reset dash to solid line
         };
         
-        // // Helper function to draw a single challan
-        // const drawChallan = (x, y, copyText, copyColor) => {
-        //     const padding = 10;
-        //     const headerHeight = 50;
-        //     const contentStartY = y + headerHeight;
+        // Helper function to draw a single challan
+        const drawChallan = (x, y, copyText, copyColor) => {
+            const padding = 10;
+            const headerHeight = 50;
+            const contentStartY = y + headerHeight;
             
             // Outer border (dotted for separation between copies)
             drawDottedRect(x, y, challanWidth, challanHeight);
@@ -478,13 +573,15 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             // Header background with color
             doc.fillColor(copyColor).rect(x, y, challanWidth, headerHeight).fill();
             
-            // Logo in header
+            // Logo in header - ensure it's always visible
             const logoSize = 32;
+            const logoX = x + padding;
+            const logoY = y + (headerHeight - logoSize) / 2;
             if (logoBuffer) {
-                doc.image(logoBuffer, x + padding, y + (headerHeight - logoSize) / 2, { width: logoSize, height: logoSize, fit: [logoSize, logoSize] });
+                doc.image(logoBuffer, logoX, logoY, { width: logoSize, height: logoSize, fit: [logoSize, logoSize] });
             }
             
-            // Header text
+            // Header text - positioned after logo for all copies (consistent across all three)
             const headerTextX = x + (logoBuffer ? logoSize + padding + 5 : padding);
             const headerTextWidth = challanWidth - headerTextX - padding;
             
@@ -492,7 +589,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 6, { width: headerTextWidth });
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4') .align('center');
+            // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4');
             doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
             
             // Divider line below header
@@ -583,10 +681,21 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         drawChallan(copy2X, startY, 'OFFICE COPY', '#1565c0'); // Blue
         drawChallan(copy3X, startY, 'STUDENT COPY', '#c62828'); // Red
         
+        // Finalize PDF - this will trigger the stream to end
         doc.end();
+        
     } catch (err) {
         console.error("Challan generation error:", err);
-        res.status(500).json({ message: "Challan generation error" });
+        // Only send error response if headers haven't been sent yet
+        if (!res.headersSent) {
+            res.status(500).json({ message: "Challan generation error: " + err.message });
+        } else {
+            // If headers already sent (PDF headers set), destroy the response stream
+            if (!res.finished) {
+                res.destroy();
+            }
+            console.error("Cannot send error response - headers already sent. Response destroyed.");
+        }
     }
 });
 
@@ -924,24 +1033,25 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             }
         }
         
-        // Header text positioned between logo and QR code
+        // Header text positioned between logo and QR code (centered vertically with logo/QR)
         const logoRightEdge = leftMargin + logoSize;
         const qrLeftEdge = qrX;
         const headerTextStartX = logoRightEdge + 10;
         const headerTextWidth = qrLeftEdge - headerTextStartX - 10;
         const headerTextCenterX = headerTextStartX + (headerTextWidth / 2);
+        const headerTextY = headerY + (logoSize / 2) - 30; // Center vertically with logo/QR
         
-        doc.fontSize(18).font('Helvetica-Bold').fillColor('#1a237e');
-        doc.text('DEPARTMENT OF CHEMISTRY', headerTextCenterX, headerY + 8, { align: 'center', width: headerTextWidth });
-        doc.fontSize(13).font('Helvetica-Bold').fillColor('#1565c0');
-        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', headerTextCenterX, headerY + 28, { align: 'center', width: headerTextWidth });
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#c62828');
-        doc.text('ENTRY TEST SLIP', headerTextCenterX, headerY + 48, { align: 'center', width: headerTextWidth });
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('#424242');
-        doc.text('BATCH 2K26', headerTextCenterX, headerY + 68, { align: 'center', width: headerTextWidth });
+        doc.fontSize(16).font('Helvetica-Bold').fillColor('#1a237e');
+        doc.text('DEPARTMENT OF CHEMISTRY', headerTextCenterX, headerTextY, { align: 'center', width: headerTextWidth });
+        doc.fontSize(11).font('Helvetica-Bold').fillColor('#1565c0');
+        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', headerTextCenterX, headerTextY + 18, { align: 'center', width: headerTextWidth });
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#c62828');
+        doc.text('ENTRY TEST SLIP', headerTextCenterX, headerTextY + 36, { align: 'center', width: headerTextWidth });
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
+        doc.text('BATCH 2K26', headerTextCenterX, headerTextY + 52, { align: 'center', width: headerTextWidth });
         
         // Set Y position for next content
-        doc.y = headerY + 90;
+        doc.y = headerY + logoSize + 15;
         
         // Divider line
         doc.strokeColor('#757575').lineWidth(1);
@@ -1005,12 +1115,18 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         // Held In
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('HELD IN:', xPos, currentY, { width: labelWidth });
-        const testDate = slip.testDate ? new Date(slip.testDate).toLocaleDateString('en-GB') : '-';
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const heldIn = `${testDate[new Date(slip.testDate).getDate()]}: ${monthNames[new Date(slip.testDate).getMonth()]}: ${new Date(slip.testDate).getFullYear()}`;
+        let heldIn = '-';
+        if (slip.testDate) {
+            const testDate = new Date(slip.testDate);
+            const day = testDate.getDate();
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames[testDate.getMonth()];
+            const year = testDate.getFullYear();
+            heldIn = `${day}: ${month}: ${year}`;
+        }
         doc.font('Helvetica').fillColor('#212121');
         doc.text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 28;
+        currentY += 24;
         
         // Photo (right side) - try to load student photo if available
         const photoX = 420;
@@ -1019,37 +1135,32 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         const photoHeight = 105;
         const borderWidth = 3;
         
+        // Draw border first
+        doc.strokeColor('#424242').lineWidth(borderWidth);
+        doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+        
         if (student.profileImage) {
             try {
                 const imageBuffer = await fetchImage(student.profileImage);
                 if (imageBuffer) {
-                    // Draw border
-                    doc.strokeColor('#424242').lineWidth(borderWidth);
-                    doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
-                    // Draw photo with proper fit
+                    // Draw photo with fit to fill the box properly
                     doc.image(imageBuffer, photoX, photoY, { 
                         width: photoWidth, 
                         height: photoHeight,
                         fit: [photoWidth, photoHeight]
                     });
                 } else {
-                    // Fallback to placeholder with border
-                    doc.strokeColor('#424242').lineWidth(borderWidth);
-                    doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+                    // Fallback to placeholder
                     doc.fontSize(9).font('Helvetica').fillColor('#757575');
                     doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
                 }
             } catch (err) {
                 console.error('Error loading profile image:', err);
-                doc.strokeColor('#424242').lineWidth(borderWidth);
-                doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
                 doc.fontSize(9).font('Helvetica').fillColor('#757575');
                 doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
             }
         } else {
-            // No photo available, show placeholder with border
-            doc.strokeColor('#424242').lineWidth(borderWidth);
-            doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
+            // No photo available, show placeholder
             doc.fontSize(9).font('Helvetica').fillColor('#757575');
             doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
         }
@@ -1059,7 +1170,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.text('EXAM CENTRE:', xPos, currentY);
         doc.fontSize(10).font('Helvetica').fillColor('#212121');
         doc.text('BS CHEMISTRY BUILDING GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 110, currentY);
-        currentY += 32;
+        currentY += 26;
         
         // Notes
         const noteTextWidth = pageWidth - rightMargin - xPos - 35;
@@ -1067,37 +1178,36 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.text('NOTE:', xPos, currentY);
         doc.font('Helvetica').fillColor('#424242');
         doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 35, currentY, { width: noteTextWidth });
-        currentY += 28;
+        currentY += 22;
         
         // Instructions
         const instructionTextWidth = pageWidth - rightMargin - xPos - 25;
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('INSTRUCTIONS:', xPos, currentY);
-        currentY += 18;
+        currentY += 15;
         doc.fontSize(9).font('Helvetica').fillColor('#424242');
         doc.text('(i) Mobile Phone / calculator or any other electronic device is not allowed.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 14;
+        currentY += 12;
         doc.text('(ii) You are required to bring this admit card/Slip along with your original Computerized National Identity Card (CNIC).', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 14;
+        currentY += 12;
         doc.text('(iii) Entry Test will be of 100 marks consisting of Multiple Choice Questions (MCQs).', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 14;
+        currentY += 12;
         doc.text('(iv) Each question carries 1 mark. There is no negative marking for wrong answers.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 14;
+        currentY += 12;
         doc.text('(v) The duration of the test will be 2 hours.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 14;
+        currentY += 12;
         doc.text('(vi) Use of unfair means during examination is strictly prohibited and will lead to disqualification.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 14;
+        currentY += 12;
 
         // Footer - positioned at bottom of page
         const pageHeight = 841.89; // A4 height in points
-        const footerY = pageHeight - 50; // 50 points from bottom (matching margin)
+        const footerY = pageHeight - 40; // 40 points from bottom
         doc.strokeColor('#e0e0e0').lineWidth(0.5);
         doc.moveTo(leftMargin, footerY - 5).lineTo(pageWidth - rightMargin, footerY - 5).stroke();
         doc.fontSize(8).font('Helvetica').fillColor('#757575');
-        doc.text('POWERED BY: IT TEAM - DEPARTMENT OF CHEMISTRY', leftMargin, footerY);
-        doc.text('Page 1', pageWidth / 2, footerY, { align: 'center' });
-        const printDate = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        doc.text(`(Print Date: ${printDate})`, pageWidth - rightMargin, footerY, { align: 'right' });
+        // Footer text in one line
+        const footerText = 'POWERED BY: IT TEAM - DEPARTMENT OF CHEMISTRY';
+        doc.text(footerText, leftMargin, footerY, { width: pageWidth - leftMargin - rightMargin, align: 'left' });
         
         doc.end();
     } catch (err) {
@@ -1148,7 +1258,7 @@ app.put('/api/admin/students/:id/approve', async (req, res) => {
         if (student.formData?.email) {
             try {
                 await transporter.sendMail({
-                    from: process.env.EMAIL_USER,
+                    from: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
                     to: student.formData.email,
                     subject: `Registration ${status}`,
                     html: `<p>Your registration has been ${status.toLowerCase()}.</p>`
@@ -1442,7 +1552,7 @@ app.post('/api/admin/contact/:id/reply', async (req, res) => {
         }
         
         await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+            from: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
             to: contact.email,
             subject: `Re: ${contact.subject}`,
             html: `<p>${replyMessage}</p>`

@@ -192,6 +192,14 @@ if (switchToSignup && signupModal && signinModal) {
   });
 }
 
+// Announcement "Apply Now" button opens signup modal
+const announcementApplyBtn = document.getElementById('announcement-apply-now');
+if (announcementApplyBtn && signupModal) {
+  announcementApplyBtn.addEventListener('click', () => {
+    openModal(signupModal);
+  });
+}
+
 // Close modals on backdrop/close click
 [signupModal, signinModal].forEach(modal => {
   if (modal) {
@@ -319,6 +327,89 @@ if (signinForm) {
   });
 }
 
+// Password toggle functionality
+const togglePasswordBtn = document.getElementById('toggle-password');
+const signinPasswordInput = document.getElementById('signin-password');
+
+if (togglePasswordBtn && signinPasswordInput) {
+  togglePasswordBtn.addEventListener('click', () => {
+    const isPassword = signinPasswordInput.type === 'password';
+    signinPasswordInput.type = isPassword ? 'text' : 'password';
+    
+    // Toggle eye icons
+    const eyeOpen = togglePasswordBtn.querySelector('.eye-open');
+    const eyeClosed = togglePasswordBtn.querySelector('.eye-closed');
+    
+    if (eyeOpen && eyeClosed) {
+      if (isPassword) {
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = 'block';
+        togglePasswordBtn.setAttribute('aria-label', 'Hide password');
+      } else {
+        eyeOpen.style.display = 'block';
+        eyeClosed.style.display = 'none';
+        togglePasswordBtn.setAttribute('aria-label', 'Show password');
+      }
+    }
+  });
+}
+
+// Forgot Password button - open recovery modal
+const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+const recoveryModal = document.getElementById('recovery-modal');
+const signinModal = document.getElementById('signin-modal');
+
+if (forgotPasswordBtn && recoveryModal && signinModal) {
+  forgotPasswordBtn.addEventListener('click', () => {
+    closeModal(signinModal);
+    openModal(recoveryModal);
+  });
+}
+
+// Password Recovery Form Handler
+const recoveryForm = document.getElementById('recovery-form');
+if (recoveryForm) {
+  recoveryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(recoveryForm);
+    const recoveryId = formData.get('recovery-id');
+    
+    const submitButton = recoveryForm.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : 'Request Reset';
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Sending Request...';
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/student/recovery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'recovery-id': recoveryId })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert(data.message || 'Password recovery request submitted. The department will verify and reset your password.');
+        recoveryForm.reset();
+        closeModal(recoveryModal);
+      } else {
+        alert(data.message || 'Failed to submit recovery request. Please try again.');
+      }
+    } catch (err) {
+      console.error('Recovery form error:', err);
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
 
 // Contact form handler - connect to backend API
 const contactForm = document.getElementById("contact-form");

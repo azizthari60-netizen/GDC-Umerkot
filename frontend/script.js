@@ -153,7 +153,6 @@ document.querySelectorAll(".animate-on-scroll").forEach(el => {
 
 // Auth modals
 const signupModal = document.getElementById("signup-modal");
-const signinModal = document.getElementById("signin-modal");
 const registerBtn = document.getElementById("btn-register");
 const switchToSignin = document.getElementById("switch-to-signin");
 const switchToSignup = document.getElementById("switch-to-signup");

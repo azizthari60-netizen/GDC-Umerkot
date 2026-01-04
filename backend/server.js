@@ -515,7 +515,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const doc = new PDFDocument({ 
             size: 'A4', 
             layout: 'landscape',
-            margin: 25
+            margin: 20
         });
         
         // Set headers before piping
@@ -547,8 +547,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         // Page dimensions for landscape A4
         const pageWidth = 841.89;
         const pageHeight = 595.28;
-        const margin = 25;
-        const gap = 12;
+        const margin = 20;
+        const gap = 10;
         const challanWidth = (pageWidth - (margin * 2) - (gap * 2)) / 3;
         const challanHeight = pageHeight - (margin * 2);
         const startY = margin;
@@ -1038,17 +1038,17 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         const qrLeftEdge = qrX;
         const headerTextStartX = logoRightEdge + 10;
         const headerTextWidth = qrLeftEdge - headerTextStartX - 10;
-        const headerTextCenterX = headerTextStartX + (headerTextWidth / 2);
-        const headerTextY = headerY + (logoSize / 2) - 30; // Center vertically with logo/QR
+        const startX = headerTextStartX;
+        const headerTextY = headerY + 5;
         
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#1a237e');
-        doc.text('DEPARTMENT OF CHEMISTRY', headerTextCenterX, headerTextY, { align: 'center', width: headerTextWidth });
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('#1565c0');
-        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', headerTextCenterX, headerTextY + 18, { align: 'center', width: headerTextWidth });
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#c62828');
-        doc.text('ENTRY TEST SLIP', headerTextCenterX, headerTextY + 36, { align: 'center', width: headerTextWidth });
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a237e');
+        doc.text('DEPARTMENT OF CHEMISTRY', startX, headerTextY, { align: 'center', width: headerTextWidth });
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1565c0');
+        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', startX, headerTextY + 18, { align: 'center', width: headerTextWidth });
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#c62828');
+        doc.text('ENTRY TEST SLIP', startX, headerTextY + 36, { align: 'center', width: headerTextWidth });
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
-        doc.text('BATCH 2K26', headerTextCenterX, headerTextY + 52, { align: 'center', width: headerTextWidth });
+        doc.text('BATCH 2K26', startX, headerTextY + 52, { align: 'center', width: headerTextWidth });
         
         // Set Y position for next content
         doc.y = headerY + logoSize + 15;
@@ -1201,12 +1201,12 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 
         // Footer - positioned at bottom of page
         const pageHeight = 841.89; // A4 height in points
-        const footerY = pageHeight - 40; // 40 points from bottom
+        const footerY = doc.y + 30
         doc.strokeColor('#e0e0e0').lineWidth(0.5);
         doc.moveTo(leftMargin, footerY - 5).lineTo(pageWidth - rightMargin, footerY - 5).stroke();
         doc.fontSize(8).font('Helvetica').fillColor('#757575');
         // Footer text in one line
-        const footerText = 'POWERED BY: IT TEAM - DEPARTMENT OF CHEMISTRY';
+        const footerText = 'CREATED BY: IT TEAM - DEPARTMENT OF CHEMISTRY';
         doc.text(footerText, leftMargin, footerY, { width: pageWidth - leftMargin - rightMargin, align: 'left' });
         
         doc.end();

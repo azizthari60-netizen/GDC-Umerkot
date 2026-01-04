@@ -429,7 +429,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const doc = new PDFDocument({ 
             size: 'A4', 
             layout: 'landscape',
-            margin: 20
+            margin: 25
         });
         
         res.setHeader('Content-Type', 'application/pdf');
@@ -452,7 +452,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         // Page dimensions for landscape A4
         const pageWidth = 841.89;
         const pageHeight = 595.28;
-        const margin = 20;
+        const margin = 25;
         const gap = 12;
         const challanWidth = (pageWidth - (margin * 2) - (gap * 2)) / 3;
         const challanHeight = pageHeight - (margin * 2);
@@ -466,11 +466,11 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.undash(); // Reset dash to solid line
         };
         
-        // Helper function to draw a single challan
-        const drawChallan = (x, y, copyText, copyColor) => {
-            const padding = 10;
-            const headerHeight = 50;
-            const contentStartY = y + headerHeight;
+        // // Helper function to draw a single challan
+        // const drawChallan = (x, y, copyText, copyColor) => {
+        //     const padding = 10;
+        //     const headerHeight = 50;
+        //     const contentStartY = y + headerHeight;
             
             // Outer border (dotted for separation between copies)
             drawDottedRect(x, y, challanWidth, challanHeight);
@@ -492,7 +492,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 6, { width: headerTextWidth });
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4').align('center');
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4') .align('center');
             doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
             
             // Divider line below header
@@ -559,7 +559,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             currentY += 12;
             
             doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
-            doc.text('Bank: SINDH BANK UMERKOT', contentX, currentY);
+            doc.text('Bank: JS BANK UMERKOT', contentX, currentY);
             currentY += 11;
             doc.text('Account: BS CHEMISTRY GBDC UMERKOT', contentX, currentY);
             currentY += 11;
@@ -927,9 +927,9 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         // Header text positioned between logo and QR code
         const logoRightEdge = leftMargin + logoSize;
         const qrLeftEdge = qrX;
-        const headerTextStartX = logoRightEdge + 5;
+        const headerTextStartX = logoRightEdge + 10;
         const headerTextWidth = qrLeftEdge - headerTextStartX - 10;
-        const headerTextCenterX = headerTextStartX + (headerTextWidth);
+        const headerTextCenterX = headerTextStartX + (headerTextWidth / 2);
         
         doc.fontSize(18).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('DEPARTMENT OF CHEMISTRY', headerTextCenterX, headerY + 8, { align: 'center', width: headerTextWidth });

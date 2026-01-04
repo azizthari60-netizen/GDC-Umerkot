@@ -153,6 +153,8 @@ document.querySelectorAll(".animate-on-scroll").forEach(el => {
 
 // Auth modals
 const signupModal = document.getElementById("signup-modal");
+const signinModal = document.getElementById("signin-modal");
+const recoveryModal = document.getElementById('recovery-modal');
 const registerBtn = document.getElementById("btn-register");
 const switchToSignin = document.getElementById("switch-to-signin");
 const switchToSignup = document.getElementById("switch-to-signup");
@@ -200,7 +202,7 @@ if (announcementApplyBtn && signupModal) {
 }
 
 // Close modals on backdrop/close click
-[signupModal, signinModal].forEach(modal => {
+[signupModal, signinModal, recoveryModal].forEach(modal => {
   if (modal) {
     modal.addEventListener("click", (e) => {
       const target = e.target;
@@ -355,8 +357,6 @@ if (togglePasswordBtn && signinPasswordInput) {
 
 // Forgot Password button - open recovery modal
 const forgotPasswordBtn = document.getElementById('forgot-password-btn');
-const recoveryModal = document.getElementById('recovery-modal');
-const signinModal = document.getElementById('signin-modal');
 
 if (forgotPasswordBtn && recoveryModal && signinModal) {
   forgotPasswordBtn.addEventListener('click', () => {

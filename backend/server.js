@@ -221,10 +221,9 @@ function generateUniqueId(serialNo) {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    const dateStr = `${day}${month}${year}`;
-    const formattedSerial = String(serialNo).padStart(3, '0');
+    const dateStr = `${day}/${month}/${year}`;
 
-    return `CHEM-${dateStr}-${formattedSerial}`;
+    return `CHEM-${dateStr}-S.No:___________`;
 }
 
 // --- ROUTES ---
@@ -242,10 +241,6 @@ app.post('/api/student/signup', async (req, res) => {
         if (exists) {
             return res.status(400).json({ message: "CNIC already registered" });
         }
-        
-        const studentCount = await Student.countDocuments();
-        const nextSerialNo = studentCount + 1;
-        const uniqueId = generateUniqueId(nextSerialNo);
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const newStudent = new Student({ 

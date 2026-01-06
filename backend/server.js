@@ -221,10 +221,10 @@ function generateUniqueId(serialNo) {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    const dateStr = '${day}${month}${year}';
+    const dateStr = `${day}${month}${year}`;
     const formattedSerial = String(serialNo).padStart(3, '0');
 
-    return 'CHEM-${dateStr}-${formattedSerial}';
+    return `CHEM-${dateStr}-${formattedSerial}`;
 }
 
 // --- ROUTES ---
@@ -596,13 +596,13 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             const headerTextX = x + (logoBuffer ? logoSize + padding + 5 : padding);
             const headerTextWidth = challanWidth - headerTextX - padding;
             
-            doc.fontSize(11).font('Helvetica-Bold').fillColor('#0b33a0ff');
+            doc.fontSize(11).font('Helvetica-Bold').fillColor('#04206eff');
             doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 6, { width: headerTextWidth });
-            doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#170a91ff');
+            doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#200491ff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
             doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#96880fff');
-            doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth }, align='center');
+            doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth, align: 'center' });
             
             // Divider line below header
             doc.strokeColor('#757575').lineWidth(0.5);

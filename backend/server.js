@@ -658,7 +658,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             
             doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
             doc.text('Bank: SINDH BANK UMERKOT', contentX, currentY);
-            currentY += 11;
+            currentY += 12;
+            doc.font('Helvetica-Bold').fillColor('#212121');
             doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT \n (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY,{width: challanWidth - padding * 2});
             currentY += 25;
             doc.font('Helvetica-Bold').fillColor('#212121');
@@ -666,10 +667,11 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             currentY += 18;
             
             // Signature line
+            const signatureY = currentY + 25;
             doc.strokeColor('#9e9e9e').lineWidth(0.5);
             doc.moveTo(contentX + 20, currentY).lineTo(x + challanWidth - padding - 20, currentY).stroke();
             doc.fontSize(6.5).font('Helvetica').fillColor('#757575');
-            doc.text('Authorized Signature', contentX + 20, currentY + 2, { width: challanWidth - padding * 2 - 40, align: 'center' });
+            doc.text('Authorized Signature', contentX + 20, signatureY + 2, { width: challanWidth - padding * 2 - 40, align: 'center' });
         };
         
         // Draw three copies with different header colors

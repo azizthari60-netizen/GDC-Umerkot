@@ -216,8 +216,15 @@ function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
 }
 
 // Generate unique ID for challan
-function generateUniqueId() {
-    return 'CHEM-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+function generateUniqueId(serialNo) {
+    const date = new Date();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const dateStr = '${day}${month}${year}';
+    const formattedSerial = String(serialNo).padStart(3, '0');
+
+    return 'CHEM-${dateStr}-${formattedSerial}';
 }
 
 // --- ROUTES ---
@@ -236,6 +243,10 @@ app.post('/api/student/signup', async (req, res) => {
             return res.status(400).json({ message: "CNIC already registered" });
         }
         
+        const studentCount = await Student.countDocuments();
+        const nextSerialNo = studentCount + 1;
+        const uniqueId = generateUniqueId(nextSerialNo);
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newStudent = new Student({ 
             fullName, 
@@ -585,13 +596,13 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             const headerTextX = x + (logoBuffer ? logoSize + padding + 5 : padding);
             const headerTextWidth = challanWidth - headerTextX - padding;
             
-            doc.fontSize(11).font('Helvetica-Bold').fillColor('#ffffff');
+            doc.fontSize(11).font('Helvetica-Bold').fillColor('#0b33a0ff');
             doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 6, { width: headerTextWidth });
-            doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
+            doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#170a91ff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#f5e65fff');
-            doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#96880fff');
+            doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth }, align='center');
             
             // Divider line below header
             doc.strokeColor('#757575').lineWidth(0.5);
@@ -671,7 +682,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.strokeColor('#9e9e9e').lineWidth(0.5);
             doc.moveTo(contentX + 20, currentY).lineTo(x + challanWidth - padding - 20, currentY).stroke();
             doc.fontSize(6.5).font('Helvetica').fillColor('#757575');
-            doc.text('Authorized Signature', contentX + 20, signatureY + 2, { width: challanWidth - padding * 2 - 40, align: 'center' });
+            doc.text('Authorized Signature', contentX + 20, signatureY + 2, { width: challanWidth - padding * 2 - 40, align: 'left' });
+            doc.text('Bank Stamp', contentX + 20, signatureY + 2, { width: challanWidth - padding * 2 - 40, align: 'right' });
         };
         
         // Draw three copies with different header colors
@@ -679,9 +691,9 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const copy2X = margin + challanWidth + gap;
         const copy3X = margin + (challanWidth + gap) * 2;
         
-        drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); // Dark Blue
-        drawChallan(copy2X, startY, 'OFFICE COPY', '#1a237e'); // Blue
-        drawChallan(copy3X, startY, 'STUDENT COPY', '#1a237e'); // Red
+        drawChallan(copy1X, startY, 'BANK COPY', '#1fb8dfff'); // Dark Blue
+        drawChallan(copy2X, startY, 'OFFICE COPY', '#1fb8dfff'); // Blue
+        drawChallan(copy3X, startY, 'STUDENT COPY', '#1fb8dfff'); // Red
         
         // Finalize PDF - this will trigger the stream to end
         doc.end();

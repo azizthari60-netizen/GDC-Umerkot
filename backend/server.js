@@ -590,7 +590,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4');
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4').align('center');
             doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
             
             // Divider line below header
@@ -643,7 +643,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.font('Helvetica-Bold').fillColor('#424242');
             doc.text('Last Date:', contentX, currentY, { width: labelWidth });
             doc.font('Helvetica').fillColor('#212121');
-            doc.text('20-01-2026', contentX + labelWidth, currentY, { width: valueWidth });
+            doc.text('15-02-2026', contentX + labelWidth, currentY, { width: valueWidth });
             currentY += 18;
             
             // Divider
@@ -657,12 +657,12 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             currentY += 12;
             
             doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
-            doc.text('Bank: JS BANK UMERKOT', contentX, currentY);
+            doc.text('Bank: SINDH BANK UMERKOT', contentX, currentY);
             currentY += 11;
-            doc.text('Account: BS CHEMISTRY GBDC UMERKOT', contentX, currentY);
+            doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY);
             currentY += 11;
             doc.font('Helvetica-Bold').fillColor('#212121');
-            doc.text('Account No: 1234567890', contentX, currentY);
+            doc.text('Account No: 0419-156150-1000', contentX, currentY);
             currentY += 18;
             
             // Signature line
@@ -677,9 +677,9 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const copy2X = margin + challanWidth + gap;
         const copy3X = margin + (challanWidth + gap) * 2;
         
-        drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); // Dark Blue
-        drawChallan(copy2X, startY, 'OFFICE COPY', '#1565c0'); // Blue
-        drawChallan(copy3X, startY, 'STUDENT COPY', '#c62828'); // Red
+        drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); 
+        drawChallan(copy2X, startY, 'OFFICE COPY', '#1a237e'); 
+        drawChallan(copy3X, startY, 'STUDENT COPY', '#1a237e');
         
         // Finalize PDF - this will trigger the stream to end
         doc.end();

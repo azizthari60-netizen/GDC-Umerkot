@@ -591,13 +591,13 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             const headerTextX = x + (logoBuffer ? logoSize + padding + 5 : padding);
             const headerTextWidth = challanWidth - headerTextX - padding;
             
-            doc.fontSize(11).font('Helvetica-Bold').fillColor('#04206eff');
+            doc.fontSize(11).font('Helvetica-Bold').fillColor('#96880fff');
             doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 6, { width: headerTextWidth });
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#200491ff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
             doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#96880fff');
-            doc.text(copyText, x, y + 33, { width: headerTextWidth, align: 'center' });
+            doc.text(copyText, x, y + 33, { width: challanWidth, align: 'center' });
         
             // Divider line below header
             doc.strokeColor('#757575').lineWidth(0.5);

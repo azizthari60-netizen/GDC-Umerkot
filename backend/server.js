@@ -590,7 +590,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4');
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#f5e65fff').align('center');
             doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
             
             // Divider line below header
@@ -659,8 +659,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
             doc.text('Bank: SINDH BANK UMERKOT', contentX, currentY);
             currentY += 11;
-            doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT /n (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY);
-            currentY += 22;
+            doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT \n (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY,{width: challanWidth - padding * 2});
+            currentY += 25;
             doc.font('Helvetica-Bold').fillColor('#212121');
             doc.text('Account No: 0419-156150-1000', contentX, currentY);
             currentY += 18;

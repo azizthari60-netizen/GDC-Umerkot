@@ -597,8 +597,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
             doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#96880fff');
-            doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth, align: 'center' });
-            
+            doc.text(copyText, x, y + 33, { width: headerTextWidth, align: 'center' });
+        
             // Divider line below header
             doc.strokeColor('#757575').lineWidth(0.5);
             doc.moveTo(x + padding, contentStartY).lineTo(x + challanWidth - padding, contentStartY).stroke();
@@ -673,7 +673,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             currentY += 18;
             
             // Signature line
-            const signatureY = currentY + 25;
+            const signatureY = currentY + 30;
             doc.strokeColor('#9e9e9e').lineWidth(0.5);
             doc.moveTo(contentX + 20, currentY).lineTo(x + challanWidth - padding - 20, currentY).stroke();
             doc.fontSize(6.5).font('Helvetica').fillColor('#757575');

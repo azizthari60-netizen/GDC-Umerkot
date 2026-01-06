@@ -590,7 +590,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#f5e65fff').align('center');
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#f5e65fff');
             doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
             
             // Divider line below header

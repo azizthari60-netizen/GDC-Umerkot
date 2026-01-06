@@ -659,8 +659,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
             doc.text('Bank: SINDH BANK UMERKOT', contentX, currentY);
             currentY += 11;
-            doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY);
-            currentY += 11;
+            doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT /n (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY);
+            currentY += 22;
             doc.font('Helvetica-Bold').fillColor('#212121');
             doc.text('Account No: 0419-156150-1000', contentX, currentY);
             currentY += 18;
@@ -678,8 +678,8 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const copy3X = margin + (challanWidth + gap) * 2;
         
         drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); // Dark Blue
-        drawChallan(copy2X, startY, 'OFFICE COPY', '#1565c0'); // Blue
-        drawChallan(copy3X, startY, 'STUDENT COPY', '#c62828'); // Red
+        drawChallan(copy2X, startY, 'OFFICE COPY', '#1a237e'); // Blue
+        drawChallan(copy3X, startY, 'STUDENT COPY', '#1a237e'); // Red
         
         // Finalize PDF - this will trigger the stream to end
         doc.end();

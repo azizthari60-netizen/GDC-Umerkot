@@ -49,7 +49,7 @@ const transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || 'gmail',
     auth: {
         user: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
-        pass: process.env.EMAIL_PASS || 'Samejo77'
+        pass: process.env.EMAIL_PASS || '123'
     }
 });
 
@@ -590,7 +590,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ffffff');
             doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
             // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4').align('center');
+            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff9c4');
             doc.text(copyText, headerTextX, y + 33, { width: headerTextWidth });
             
             // Divider line below header
@@ -677,9 +677,9 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
         const copy2X = margin + challanWidth + gap;
         const copy3X = margin + (challanWidth + gap) * 2;
         
-        drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); 
-        drawChallan(copy2X, startY, 'OFFICE COPY', '#1a237e'); 
-        drawChallan(copy3X, startY, 'STUDENT COPY', '#1a237e');
+        drawChallan(copy1X, startY, 'BANK COPY', '#1a237e'); // Dark Blue
+        drawChallan(copy2X, startY, 'OFFICE COPY', '#1565c0'); // Blue
+        drawChallan(copy3X, startY, 'STUDENT COPY', '#c62828'); // Red
         
         // Finalize PDF - this will trigger the stream to end
         doc.end();

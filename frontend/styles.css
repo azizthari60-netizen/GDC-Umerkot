@@ -461,8 +461,20 @@ img {
 .prev-btn { left: 20px; top: 50%; transform: translateY(-50%); }
 .next-btn { right: 20px; top: 50%; transform: translateY(-50%); }
 
-/* Modal / Auth */
+/* Pic Hover*/
+.gallery-img {
+    transition: transform 0.3s ease, box-shadow 0.3s ease; 
+    cursor: pointer;
+}
 
+.gallery-img:hover {
+    transform: scale(1.05) translateY(-5px); 
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); 
+    filter: brightness(1.1); 
+
+}
+
+/* Modal / Auth */
 .modal {
   position: fixed;
   inset: 0;

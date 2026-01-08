@@ -120,34 +120,42 @@
           <p>A glimpse into our academic and co-curricular life.</p>
         </div>
         <div class="gallery-grid">
-          <div class="gallery-box animate-on-scroll">
-            <h3>Academic</h3>
-            <div class="gallery-images">
-              <div class="gallery-img" style="background-image:url('/Public/academic-1.jpg');"></div>
-              <div class="gallery-img" style="background-image:url('/Public/academic-2.jpg');"></div>
-              <div class="gallery-img" style="background-image:url('/Public/academic-3.jpg');"></div>
-            </div>
-          </div>
+            <div class="gallery-box animate-on-scroll">
+           <h3>Academic</h3>
+           <div class="gallery-images">
+              <div class="gallery-img" style="background-image:url('/Public/academic-1.jpg');" onclick="openLightbox('academic', 0)"></div>
+              <div class="gallery-img" style="background-image:url('/Public/academic-2.jpg');" onclick="openLightbox('academic', 1)"></div>
+              <div class="gallery-img" style="background-image:url('/Public/academic-3.jpg');" onclick="openLightbox('academic', 2)"></div>
+           </div>
+         </div>
           <div class="gallery-box animate-on-scroll">
             <h3>Seminars & Workshops</h3>
             <div class="gallery-images">
-              <div class="gallery-img" style="background-image:url('/Public/seminar-1.jpg');"></div>
-              <div class="gallery-img" style="background-image:url('/Public/seminar-2.jpg');"></div>
-              <div class="gallery-img" style="background-image:url('/Public/Seminar-3.jpg');"></div>
+              <div class="gallery-img" style="background-image:url('/Public/seminar-1.jpg');" onclick="openLightbox('seminar', 0)"></div>
+              <div class="gallery-img" style="background-image:url('/Public/seminar-2.jpg');" onclick="openLightbox('seminar', 1)"></div>
+              <div class="gallery-img" style="background-image:url('/Public/Seminar-3.jpg');" onclick="openLightbox('seminar', 2)"></div>
             </div>
           </div>
           <div class="gallery-box animate-on-scroll">
             <h3>Student Activities</h3>
             <div class="gallery-images">
-              <div class="gallery-img" style="background-image:url('/Public/activity-1.jpg');"></div>
-              <div class="gallery-img" style="background-image:url('/Public/activity-2.jpg');"></div>
-              <div class="gallery-img" style="background-image:url('/Public/activity-3.jpg');"></div>
+              <div class="gallery-img" style="background-image:url('/Public/activity-1.jpg');" onclick="openLightbox('activity', 0)"></div>
+              <div class="gallery-img" style="background-image:url('/Public/activity-2.jpg');" onclick="openLightbox('activity', 1)"></div>
+              <div class="gallery-img" style="background-image:url('/Public/activity-3.jpg');" onclick="openLightbox('activity', 2)"></div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- Gallaries Lightbox -->
+     <div id="lightboxOverlay" class="lightbox-overlay">
+         <span class="close-btn" onclick="closeLightbox()">&times;</span>
+         <button class="prev-btn" onclick="changeImage(-1)">&#10094;</button>
+         <img id="lightboxImg" src="" alt="Full View">
+          <button class="next-btn" onclick="changeImage(1)">&#10095;</button>
+      </div>
+      
     <!-- Sign Up Modal -->
     <div class="modal" id="signup-modal" aria-hidden="true" role="dialog" aria-labelledby="signup-title">
       <div class="modal-backdrop" data-close-modal></div>
@@ -295,7 +303,7 @@
       </div>
     </div>
   </footer>
-
+  
   <script src="script.js"></script>
 </body>
 </html>

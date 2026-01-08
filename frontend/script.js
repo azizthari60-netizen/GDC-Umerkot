@@ -151,6 +151,49 @@ document.querySelectorAll(".animate-on-scroll").forEach(el => {
   observer.observe(el);
 });
 
+// All galleries data and lightbox functionality
+const allGalleries = {
+  'academic': [
+    '/Public/academic-1.jpg', 
+    '/Public/academic-2.jpg', 
+    '/Public/academic-3.jpg',
+    '/Public/academic-4.jpg' // یہ تصویر باہر نظر نہیں آئے گی مگر اندر ہوگی
+  ],
+  'seminar': [
+    '/Public/seminar-1.jpg',
+    '/Public/seminar-2.jpg',
+    '/Public/seminar-3.jpg'
+  ],
+  'activities': [
+    '/Public/activity-1.jpg',
+    '/Public/activity-2.jpg',
+    '/Public/activity-3.jpg'
+  ]
+};
+
+let currentGallery = [];
+let currentIndex = 0;
+
+function openLightbox(galleryType, index) {
+  currentGallery = allGalleries[galleryType];
+  currentIndex = index;
+  
+  document.getElementById('lightboxImg').src = currentGallery[currentIndex];
+  document.getElementById('lightboxOverlay').style.display = 'flex';
+}
+
+function closeLightbox() {
+  document.getElementById('lightboxOverlay').style.display = 'none';
+}
+
+function changeImage(step) {
+  currentIndex += step;
+  if (currentIndex >= currentGallery.length) currentIndex = 0;
+  if (currentIndex < 0) currentIndex = currentGallery.length - 1;
+  
+  document.getElementById('lightboxImg').src = currentGallery[currentIndex];
+}
+
 // Auth modals
 const signupModal = document.getElementById("signup-modal");
 const signinModal = document.getElementById("signin-modal");

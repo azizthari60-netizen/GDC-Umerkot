@@ -101,7 +101,7 @@ async function processAndPrint() {
 
   const admissinForm = document.getElementById('admissionForm');
   if (!admissinForm.checkValidity()) {
-    alert('Please fill all required fields correctly.');
+    admissionForm.reportValidity ();
     return;
   }
   

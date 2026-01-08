@@ -99,6 +99,12 @@ async function processAndPrint() {
     return;
   }
 
+  const admissinForm = document.getElementById('admissionForm');
+  if (!admissinForm.checkValidity()) {
+    alert('Please fill all required fields correctly.');
+    return;
+  }
+  
   // Get all data from form fields
   const formData = {
     name: document.getElementById('in-name').value,
@@ -147,7 +153,7 @@ async function processAndPrint() {
   }
 
   const submitButton = document.querySelector('.submit-btn');
-  const originalText = submitButton ? submitButton.textContent : 'Submit and Download';
+  const originalText = submitButton ? submitButton.textContent : 'Submit';
   
   if (submitButton) {
     submitButton.disabled = true;

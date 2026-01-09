@@ -238,7 +238,7 @@ if (switchToSignup && signupModal && signinModal) {
 }
 
 // Announcement "Apply Now" button opens signup modal
-const announcementApplyBtn = document.getElementById('announcement-apply-now');
+const announcementApplyBtn = document.getElementById('announcement-apply-now-btn');
 if (announcementApplyBtn && signupModal) {
   announcementApplyBtn.addEventListener('click', () => {
     openModal(signupModal);

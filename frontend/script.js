@@ -154,21 +154,22 @@ document.querySelectorAll(".animate-on-scroll").forEach(el => {
 // All galleries data and lightbox functionality
 const allGalleries = {
   'academics': [
-    '/Public/academic-1.jpg', 
-    '/Public/academic-2.jpg', 
-    '/Public/academic-3.jpg',
-    '/Public/academic-4.jpg' // یہ تصویر باہر نظر نہیں آئے گی مگر اندر ہوگی
+    '/Public/academic.1.jpg', 
+    '/Public/academic.2.jpg', 
+    '/Public/academic.3.jpg'
   ],
   'seminars': [
-    '/Public/seminar-1.jpg',
-    '/Public/seminar-2.jpg',
-    '/Public/seminar-3.jpg',
-    '/Public/seminar-4.jpg' // یہ تصویر باہر نظر نہیں آئے گی مگر اندر ہوگی
+    '/Public/seminar.1.jpg',
+    '/Public/seminar.2.jpg',
+    '/Public/seminar.3.jpg',
+    '/Public/seminar.4.jpg',
+    '/Public/seminar.5.jpg',
+    '/Public/seminar.6.jpg'
   ],
   'activities': [
-    '/Public/activity-1.jpg',
-    '/Public/activity-2.jpg',
-    '/Public/activity-3.jpg'
+    '/Public/activity.1.jpg',
+    '/Public/activity.2.jpg',
+    '/Public/activity.3.jpg'
   ]
 };
 

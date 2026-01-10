@@ -230,17 +230,18 @@
       <div class="modal-dialog">
         <button class="modal-close" aria-label="Close" data-close-modal>&times;</button>
         <h2 id="recovery-title">Password Recovery</h2>
-        <p class="modal-subtitle">Enter your registered email or roll number. The department will verify and reset your password.</p>
+        <p class="modal-subtitle">Enter your registered CNIC Number and reset your password.</p>
         <form class="auth-form" id="recovery-form">
           <div class="form-group">
-            <label for="recovery-id">Email / Roll Number</label>
-            <input type="text" id="recovery-id" name="recovery-id" required />
+            <label for="recovery-id">CNIC Number</label>
+            <input type="text" id="recovery-id" name="recovery-id" placeholder="12345-1234567-1" required />
           </div>
-          <button type="submit" class="btn btn-primary full-width">Request Reset</button>
+          <div class="form-group">
+            <label for="new-password">New Password</label>
+            <input type="text" id="new-password" name="new-password" placeholder="Set your new password" required />
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Update Password</button>
         </form>
-        <div class="info-note">
-          An email/SMS will be sent with your new credentials after verification by the department office.
-        </div>
       </div>
     </div>
   </main>

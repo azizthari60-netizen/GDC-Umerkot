@@ -339,169 +339,70 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-// 3.5. Password Recovery Request
+// 3.5. Password Reset & Recovery Logic (Updated)
 app.post('/api/student/recovery', async (req, res) => {
     try {
-        const { 'recovery-id': recoveryId } = req.body;
+        const { 'recovery-id': recoveryId, 'new-password': newPassword } = req.body;
         
-        if (!recoveryId) {
-            return res.status(400).json({ message: "Email or Roll Number is required" });
+        if (!recoveryId || !newPassword) {
+            return res.status(400).json({ message: "CNIC Number and New Password are required" });
         }
         
-        // Check in new students by email or roll number
-        let student = await Student.findOne({
-            $or: [
-                { 'formData.email': recoveryId },
-                { rollNumber: recoveryId }
-            ]
-        });
-        
-        // If not found, check old students
+        let student = await Student.findOne({ cnic: recoveryId });
+        let isOldStudent = false;
+
+        // 2. اگر نہیں ملا، تو پرانے اسٹوڈنٹس کے ٹیبل میں تلاش کریں
         if (!student) {
-            student = await OldStudent.findOne({
-                $or: [
-                    { email: recoveryId },
-                    { rollNumber: recoveryId }
-                ]
-            });
+            student = await OldStudent.findOne({ cnic: recoveryId });
+            isOldStudent = true;
         }
         
+        // اگر اسٹوڈنٹ کسی بھی ٹیبل میں نہیں ملا
         if (!student) {
-            return res.status(404).json({ message: "No account found with the provided email or roll number." });
+            return res.status(404).json({ message: "Your registration is not found with this CNIC." });
         }
-        
-        // Send email notification to admin/student about password recovery request
+
+        // 3. پاس ورڈ کو ہیش (Hash) کرنا
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // 4. ڈیٹا بیس میں پاس ورڈ اپ ڈیٹ کریں
+        if (isOldStudent) {
+            await OldStudent.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
+        } else {
+            await Student.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
+        }
+
+        // 5. اسٹوڈنٹ کو ای میل بھیجنا (اختیاری - ریکارڈ کے لیے)
         try {
-            const adminEmail = process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com';
-            await transporter.sendMail({
-                from: adminEmail,
-                to: adminEmail,
-                subject: 'Password Recovery Request',
-                html: `
-                    <h2>Password Recovery Request</h2>
-                    <p>A password recovery request has been submitted for:</p>
-                    <ul>
-                        <li><strong>Name:</strong> ${student.fullName}</li>
-                        <li><strong>CNIC:</strong> ${student.cnic}</li>
-                        <li><strong>Email/Roll Number:</strong> ${recoveryId}</li>
-                    </ul>
-                    <p>Please verify and reset the password for this student.</p>
-                `
-            });
-            
-            // Also send confirmation to student if email is available
             const studentEmail = student.formData?.email || student.email;
             if (studentEmail) {
                 await transporter.sendMail({
                     from: adminEmail,
                     to: studentEmail,
-                    subject: 'Password Recovery Request Received',
+                    subject: 'Password Changed Successfully',
                     html: `
-                        <h2>Password Recovery Request Received</h2>
-                        <p>Dear ${student.fullName},</p>
-                        <p>Your password recovery request has been received. The department will verify your information and reset your password.</p>
-                        <p>You will receive your new credentials via email once the verification is complete.</p>
+                        <h2>Password Reset Successful</h2>
+                        <p>Dear ${student.fullName || 'Student'},</p>
+                        <p>Your password has been successfully changed using your CNIC.</p>
+                        <p>If you did not perform this action, please contact the department immediately.</p>
                         <p>Thank you!</p>
                     `
                 });
             }
         } catch (emailErr) {
-            console.error("Email error:", emailErr);
-            // Continue even if email fails
+            console.error("Email error (Non-critical):", emailErr);
+            // ای میل نہ بھی جائے تو پاس ورڈ اپ ڈیٹ ہو چکا ہے، اس لیے ایرر نہیں دیں گے
         }
         
+        // فائنل ریسپانس
         res.status(200).json({ 
-            message: "Password recovery request submitted successfully. The department will verify and reset your password. You will receive an email with new credentials once verified." 
+            message: "Congratulations! Your password has been successfully changed. You can now log in with your new password." 
         });
+
     } catch (err) {
         console.error("Password recovery error:", err);
-        res.status(500).json({ message: "Password recovery error" });
-    }
-});
-
-// 4. Submit Registration Form (New Students)
-app.post('/api/student/submit-form', upload.single('profileImage'), async (req, res) => {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const student = await Student.findById(decoded.id);
-        
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        const formData = req.body;
-        
-        // Upload profile image to Cloudinary
-        let profileImageUrl = student.profileImage;
-        if (req.file) {
-            try {
-                const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/profiles');
-                profileImageUrl = uploadResult.secure_url;
-            } catch (uploadError) {
-                console.error('Profile image upload error:', uploadError);
-                return res.status(500).json({ message: "Failed to upload profile image. Please check Cloudinary configuration." });
-            }
-        }
-        
-        // Generate unique ID for challan
-        const uniqueId = generateUniqueId();
-        
-        // Update student with form data
-        student.formData = {
-            fName: formData.fName,
-            caste: formData.caste,
-            domicile: formData.domicile,
-            dob: formData.dob,
-            gender: formData.gender,
-            email: formData.email,
-            mobile: formData.mobile,
-            address: formData.address,
-            gName: formData.gName,
-            gOcc: formData.gOcc,
-            gJobAddr: formData.gJobAddr,
-            gContact: formData.gContact,
-            gAddress: formData.gAddress,
-            matric: JSON.parse(formData.matric || '{}'),
-            inter: JSON.parse(formData.inter || '{}')
-        };
-        student.profileImage = profileImageUrl;
-        student.isFormFilled = true;
-        student.uniqueId = uniqueId;
-        student.challanStatus = 'Generated';
-        await student.save();
-        
-        // Send email notification
-        try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
-                to: formData.email,
-                subject: 'Registration Form Submitted Successfully',
-                html: `
-                    <h2>Registration Form Submitted Successfully</h2>
-                    <p>Dear ${formData.name || student.fullName},</p>
-                    <p>Your registration form has been submitted successfully. Please generate and download your challan.</p>
-                    <p>Your Unique ID: <strong>${uniqueId}</strong></p>
-                    <p>Your registration status: <strong>Pending</strong></p>
-                    <p>Thank you!</p>
-                `
-            });
-        } catch (emailErr) {
-            console.error("Email error:", emailErr);
-        }
-        
-        res.status(200).json({ 
-            message: "Form submitted successfully! Challan can be generated now.",
-            uniqueId,
-            studentId: student._id
-        });
-    } catch (err) {
-        console.error("Form submission error:", err);
-        res.status(500).json({ message: "Form submission error" });
+        res.status(500).json({ message: "Server error, please try again later." });
     }
 });
 

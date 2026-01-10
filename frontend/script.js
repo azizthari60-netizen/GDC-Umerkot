@@ -410,42 +410,57 @@ if (forgotPasswordBtn && recoveryModal && signinModal) {
   });
 }
 
-// Password Recovery Form Handler
+// Password Recovery Form Handler (Updated for CNIC & New Password)
 const recoveryForm = document.getElementById('recovery-form');
 if (recoveryForm) {
   recoveryForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const formData = new FormData(recoveryForm);
-    const recoveryId = formData.get('recovery-id');
+    const recoveryId = formData.get('recovery-id'); // یہ CNIC نمبر ہے
+    const newPassword = formData.get('new-password'); // یہ HTML میں شامل کی گئی نئی فیلڈ ہے
     
     const submitButton = recoveryForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : 'Request Reset';
+    const originalText = submitButton ? submitButton.textContent : 'Update Password';
+    
+    // سیکیورٹی چیک: اگر اسٹوڈنٹ نے پاس ورڈ نہیں لکھا
+    if (!newPassword) {
+      alert('Please enter a new password to proceed.');
+      return;
+    }
     
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = 'Sending Request...';
+      submitButton.textContent = 'Updating...'; // ٹیکسٹ تبدیل کر دیا تاکہ اسٹوڈنٹ کو پتہ چلے کام ہو رہا ہے
     }
     
     try {
       const res = await fetch(`${API_BASE_URL}/student/recovery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 'recovery-id': recoveryId })
+        // یہاں ہم اب دو چیزیں بھیج رہے ہیں: CNIC اور نیا پاس ورڈ
+        body: JSON.stringify({ 
+          'recovery-id': recoveryId,
+          'new-password': newPassword 
+        })
       });
       
       const data = await res.json();
       
       if (res.ok) {
-        alert(data.message || 'Password recovery request submitted. The department will verify and reset your password.');
+        // کامیابی کا میسج
+        alert(data.message || 'Password updated successfully. You can now log in.');
         recoveryForm.reset();
-        closeModal(recoveryModal);
+        if (typeof closeModal === 'function') {
+          closeModal(recoveryModal);
+        }
       } else {
-        alert(data.message || 'Failed to submit recovery request. Please try again.');
+        // سرور سے آنے والا ایرر (مثلاً اگر CNIC غلط ہو)
+        alert(data.message || 'Failed to update password. Please try again.');
       }
     } catch (err) {
       console.error('Recovery form error:', err);
-      alert('Network error. Please check your connection and try again.');
+      alert('Network error. Please check your internet connection.');
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

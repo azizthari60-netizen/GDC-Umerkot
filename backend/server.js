@@ -13,7 +13,6 @@ const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');

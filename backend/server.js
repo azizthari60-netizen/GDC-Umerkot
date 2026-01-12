@@ -1,4 +1,4 @@
-const dotenv = require('dotenv')
+const dotenv = require('dotenv');
 dotenv.config();
 const express = require('express');
 const path = require('path');
@@ -12,45 +12,33 @@ const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
-const https = require('https');
-const http = require('http');
+const bcrypt = require('bcryptjs'); // ✅ یہاں غلطی تھی، اب ٹھیک کر دیا
 const fs = require('fs');
+
 const app = express();
 
 // --- Configuration ---
-console.log("Environment Check - Cloud ssName:", process.env.CLOUDINARY_CLOUD_NAME ? "Found" : "NOT FOUND");
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-mongoose.connect(process.env.MONGODB_URI)
-    .then(async () => {
-        console.log("🚀 MongoDB Connected Successfully");
-        // Initialize admin if not exists
-        const adminCount = await Admin.countDocuments();
-        if (adminCount === 0) {
-            const hashedPassword = await bcrypt.hash('admin123', 10);
-            const defaultAdmin = new Admin({
-                username: 'admin',
-                password: hashedPassword
-            });
-            await defaultAdmin.save();
-            console.log("✅ Default admin created (username: admin, password: admin123)");
-        }
-    })
-    .catch(err => console.error("❌ DB Connection Error:", err));
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
-        pass: process.env.EMAIL_PASS || '123'
+// ✅ بہتر کنکشن سیٹنگز (تاکہ ٹائم آؤٹ نہ آئے)
+mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 30000,
+})
+.then(async () => {
+    console.log("🚀 MongoDB Connected Successfully");
+    // Initialize admin if not exists
+    const adminCount = await Admin.countDocuments();
+    if (adminCount === 0) {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await new Admin({ username: 'admin', password: hashedPassword }).save();
+        console.log("✅ Default admin created");
     }
-});
+})
+.catch(err => console.error("❌ DB Connection Error:", err));
 
 // --- Middleware ---
 app.use(cors());
@@ -59,12 +47,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-const upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } 
-});
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const upload = multer({ storage: multer.memoryStorage() });
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // --- Database Models ---
 
@@ -256,16 +240,13 @@ app.post('/api/student/signup', async (req, res) => {
     }
 });
 
-// 2. Student Login (New & Old)
+// 2. Student Login (Fixed) ---
 app.post('/api/student/login', async (req, res) => {
     try {
         const { cnic, password } = req.body;
-        
-        // Check new students
         let student = await Student.findOne({ cnic });
         let isOld = false;
         
-        // If not found, check old students
         if (!student) {
             student = await OldStudent.findOne({ cnic });
             isOld = true;
@@ -275,27 +256,20 @@ app.post('/api/student/login', async (req, res) => {
             return res.status(401).json({ message: "Invalid CNIC or password" });
         }
         
+        // ✅ پاسورڈ چیک کرنے کا صحیح طریقہ
         const isPasswordValid = await bcrypt.compare(password, student.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid CNIC or password" });
         }
         
         const token = jwt.sign({ id: student._id, cnic: student.cnic }, JWT_SECRET, { expiresIn: '7d' });
-        
         res.status(200).json({ 
             message: "Login successful", 
             token,
-            student: {
-                _id: student._id,
-                fullName: student.fullName,
-                cnic: student.cnic,
-                batch: student.batch,
-                isOldStudent: isOld || student.isOldStudent
-            }
+            student: { _id: student._id, fullName: student.fullName, cnic: student.cnic, isOldStudent: isOld }
         });
     } catch (err) {
-        console.error("Login error:", err);
-        res.status(500).json({ message: "Login error" });
+        res.status(500).json({ message: "Login server error" });
     }
 });
 
@@ -404,70 +378,29 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-// 3.5. Password Reset & Recovery Logic (Updated)
+/// --- 3.5. Password Recovery (Fixed) ---
 app.post('/api/student/recovery', async (req, res) => {
     try {
         const { 'recovery-id': recoveryId, 'new-password': newPassword } = req.body;
         
-        if (!recoveryId || !newPassword) {
-            return res.status(400).json({ message: "CNIC Number and New Password are required" });
-        }
-        
         let student = await Student.findOne({ cnic: recoveryId });
-        let isOldStudent = false;
+        let modelType = Student;
 
-        // 2. اگر نہیں ملا، تو پرانے اسٹوڈنٹس کے ٹیبل میں تلاش کریں
         if (!student) {
             student = await OldStudent.findOne({ cnic: recoveryId });
-            isOldStudent = true;
+            modelType = OldStudent;
         }
         
-        // اگر اسٹوڈنٹ کسی بھی ٹیبل میں نہیں ملا
         if (!student) {
-            return res.status(404).json({ message: "Your registration is not found with this CNIC." });
+            return res.status(404).json({ message: "CNIC not found in our records." });
         }
 
-        // 3. پاس ورڈ کو ہیش (Hash) کرنا
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await modelType.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
 
-        // 4. ڈیٹا بیس میں پاس ورڈ اپ ڈیٹ کریں
-        if (isOldStudent) {
-            await OldStudent.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
-        } else {
-            await Student.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
-        }
-
-        // 5. اسٹوڈنٹ کو ای میل بھیجنا (اختیاری - ریکارڈ کے لیے)
-        try {
-            const studentEmail = student.formData?.email || student.email;
-            if (studentEmail) {
-                await transporter.sendMail({
-                    from: adminEmail,
-                    to: studentEmail,
-                    subject: 'Password Changed Successfully',
-                    html: `
-                        <h2>Password Reset Successful</h2>
-                        <p>Dear ${student.fullName || 'Student'},</p>
-                        <p>Your password has been successfully changed using your CNIC.</p>
-                        <p>If you did not perform this action, please contact the department immediately.</p>
-                        <p>Thank you!</p>
-                    `
-                });
-            }
-        } catch (emailErr) {
-            console.error("Email error (Non-critical):", emailErr);
-            // ای میل نہ بھی جائے تو پاس ورڈ اپ ڈیٹ ہو چکا ہے، اس لیے ایرر نہیں دیں گے
-        }
-        
-        // فائنل ریسپانس
-        res.status(200).json({ 
-            message: "Congratulations! Your password has been successfully changed. You can now log in with your new password." 
-        });
-
+        res.status(200).json({ message: "Password updated! You can now login." });
     } catch (err) {
-        console.error("Password recovery error:", err);
-        res.status(500).json({ message: "Server error, please try again later." });
+        res.status(500).json({ message: "Recovery error: " + err.message });
     }
 });
 

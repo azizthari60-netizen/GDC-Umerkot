@@ -91,104 +91,82 @@ function previewImage(event) {
   }
 }
 
-async function processAndPrint() { // 'a' چھوٹا کر دیا
+async function processAndPrint() {
   const studentToken = localStorage.getItem('studentToken');
-  if (!studentToken) {
-    alert('Please login first');
-    window.location.href = 'index.html';
-    return;
-  }
-
-  // اسپیلنگ درست کر دی: admissionForm
   const admissionForm = document.getElementById('admissionForm');
-  if (!admissionForm) {
-      console.error("Form with ID 'admissionForm' not found!");
-      return;
-  }
-
+  
   if (!admissionForm.checkValidity()) {
     admissionForm.reportValidity();
     return;
   }
   
-  const formData = {
-    name: document.getElementById('in-name').value,
-    fName: document.getElementById('in-fname').value,
-    caste: document.getElementById('in-caste').value,
-    cnic: document.getElementById('in-cnic').value,
-    domicile: document.getElementById('in-domicile').value,
-    dob: document.getElementById('in-dob').value,
-    gender: document.getElementById('in-gender').value,
-    email: document.getElementById('in-email').value,
-    mobile: document.getElementById('in-mobile').value,
-    address: document.getElementById('in-address').value,
-    gName: document.getElementById('in-gname').value,
-    gOcc: document.getElementById('in-gjob').value,
-    gJobAddr: document.getElementById('in-gjob-addr').value,
-    gContact: document.getElementById('in-gcontact').value,
-    gAddress: document.getElementById('in-gperm-addr').value,
-    matric: JSON.stringify({
-      brd: document.getElementById('m-board').value,
-      yr: document.getElementById('m-year').value,
-      roll: document.getElementById('m-roll').value,
-      grp: document.getElementById('m-group').value,
-      per: document.getElementById('m-perc').value
-    }),
-    inter: JSON.stringify({
-      brd: document.getElementById('i-board').value,
-      yr: document.getElementById('i-year').value,
-      roll: document.getElementById('i-roll').value,
-      grp: document.getElementById('i-group').value,
-      per: document.getElementById('i-perc').value
-    })
-  };
-
-  const submitFormData = new FormData();
-  Object.keys(formData).forEach(key => {
-    submitFormData.append(key, formData[key]);
-  });
-  
-  const imageInput = document.getElementById('userImage');
-  if (imageInput && imageInput.files.length > 0) {
-    submitFormData.append('profileImage', imageInput.files[0]);
-  }
-
   const submitButton = document.querySelector('.submit-btn');
-  const originalText = submitButton ? submitButton.textContent : 'Submit';
-  
   if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = 'Submitting...';
   }
 
+  const submitFormData = new FormData();
+  
+  // بنیادی ڈیٹا
+  submitFormData.append('fName', document.getElementById('in-fname').value);
+  submitFormData.append('caste', document.getElementById('in-caste').value);
+  submitFormData.append('cnic', document.getElementById('in-cnic').value);
+  submitFormData.append('domicile', document.getElementById('in-domicile').value);
+  submitFormData.append('dob', document.getElementById('in-dob').value);
+  submitFormData.append('gender', document.getElementById('in-gender').value);
+  submitFormData.append('email', document.getElementById('in-email').value);
+  submitFormData.append('mobile', document.getElementById('in-mobile').value);
+  submitFormData.append('address', document.getElementById('in-address').value);
+  
+  // گارڈین ڈیٹا
+  submitFormData.append('gName', document.getElementById('in-gname').value);
+  submitFormData.append('gOcc', document.getElementById('in-gjob').value);
+  submitFormData.append('gJobAddr', document.getElementById('in-gjob-addr').value);
+  submitFormData.append('gContact', document.getElementById('in-gcontact').value);
+  submitFormData.append('gAddress', document.getElementById('in-gperm-addr').value);
+  
+  // اکیڈمک ڈیٹا (JSON Stringify لازمی ہے)
+  submitFormData.append('matric', JSON.stringify({
+    brd: document.getElementById('m-board').value,
+    yr: document.getElementById('m-year').value,
+    roll: document.getElementById('m-roll').value,
+    grp: document.getElementById('m-group').value,
+    per: document.getElementById('m-perc').value
+  }));
+  
+  submitFormData.append('inter', JSON.stringify({
+    brd: document.getElementById('i-board').value,
+    yr: document.getElementById('i-year').value,
+    roll: document.getElementById('i-roll').value,
+    grp: document.getElementById('i-group').value,
+    per: document.getElementById('i-perc').value
+  }));
+   
+  // پروفائل امیج
+  const imageInput = document.getElementById('userImage');
+  if (imageInput && imageInput.files[0]) {
+    submitFormData.append('profileImage', imageInput.files[0]);
+  }
+
   try {
     const res = await fetch(`${API_BASE_URL}/student/submit-form`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${studentToken}`
-        // یہاں Content-Type نہیں لکھنا، براؤزر خود FormData کے لیے سیٹ کرے گا
-      },
+      headers: { 'Authorization': `Bearer ${studentToken}` },
       body: submitFormData
     });
 
     const data = await res.json();
-
     if (res.ok) {
-      alert(data.message || 'Form submitted successfully!');
+      alert("Success! Form Submitted.");
       window.location.href = 'student-portal.html';
     } else {
-      alert(data.message || 'Submission failed.');
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
+      alert(data.message);
+      submitButton.disabled = false;
+      submitButton.textContent = 'Submit';
     }
   } catch (err) {
-    console.error('Submission error:', err);
-    alert('Network error. Check connection.');
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = originalText;
-    }
+    alert("Network Error!");
+    submitButton.disabled = false;
   }
 }

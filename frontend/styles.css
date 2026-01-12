@@ -894,13 +894,53 @@ img {
 
 
 /* Syllabus Table */
-  .syllabus-container { padding: 20px; font-family: 'Segoe UI', Arial; background: #f4f7f6; }
-  .syllabus-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-  .semester-header { background: #2c3e50; color: white; padding: 15px; font-size: 20px; text-align: center; border: 1px solid #1a252f; }
-  .column-names th { background: #ecf0f1; border: 1px solid #ddd; padding: 12px; font-size: 14px; text-align: left; }
-  .syllabus-table td { border: 1px solid #eee; padding: 12px; font-size: 14px; color: #333; }
-  .syllabus-table tr:nth-child(even) { background: #f9f9f9; }
-  .syllabus-table tr:hover { background: #f1f1f1; }
+
+    .syllabus-container { 
+        padding: 10px; 
+        font-family: 'Segoe UI', Arial; 
+        background: #f4f7f6; 
+    }
+
+   
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto; 
+        margin-bottom: 30px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .syllabus-table { 
+        width: 100%; 
+        min-width: 600px;
+        border-collapse: collapse; 
+        background: #fff; 
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
+    }
+
+    .semester-header { 
+        background: #2c3e50; 
+        color: white; 
+        padding: 15px; 
+        font-size: 18px; 
+        text-align: center; 
+        border: 1px solid #1a252f; 
+    }
+
+    .column-names th { 
+        background: #ecf0f1; 
+        border: 1px solid #ddd; 
+        padding: 10px; 
+        font-size: 12px;
+        text-align: left; 
+    }
+
+    .syllabus-table td { 
+        border: 1px solid #eee; 
+        padding: 10px; 
+        font-size: 13px; 
+        color: #333; 
+    }
+
 
 /* Contact form */
 
@@ -1450,4 +1490,7 @@ img {
 .notification-link:active {
   transform: translateY(0);
 }
-
+ @media screen and (max-width: 600px) {
+        .semester-header { font-size: 16px; padding: 10px; }
+        .syllabus-table td, .column-names th { padding: 8px 5px; }
+    }

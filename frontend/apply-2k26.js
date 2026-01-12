@@ -91,7 +91,7 @@ function previewImage(event) {
   }
 }
 
-async function processAndPrint() {
+async function processAndPrint() { // 'a' چھوٹا کر دیا
   const studentToken = localStorage.getItem('studentToken');
   if (!studentToken) {
     alert('Please login first');
@@ -99,13 +99,18 @@ async function processAndPrint() {
     return;
   }
 
-  const admissinForm = document.getElementById('admissionForm');
-  if (!admissinForm.checkValidity()) {
-    admissionForm.reportValidity ();
+  // اسپیلنگ درست کر دی: admissionForm
+  const admissionForm = document.getElementById('admissionForm');
+  if (!admissionForm) {
+      console.error("Form with ID 'admissionForm' not found!");
+      return;
+  }
+
+  if (!admissionForm.checkValidity()) {
+    admissionForm.reportValidity();
     return;
   }
   
-  // Get all data from form fields
   const formData = {
     name: document.getElementById('in-name').value,
     fName: document.getElementById('in-fname').value,
@@ -138,17 +143,13 @@ async function processAndPrint() {
     })
   };
 
-  // Create FormData for file upload
   const submitFormData = new FormData();
-  
-  // Add text fields
   Object.keys(formData).forEach(key => {
     submitFormData.append(key, formData[key]);
   });
   
-  // Add image file if selected
   const imageInput = document.getElementById('userImage');
-  if (imageInput.files.length > 0) {
+  if (imageInput && imageInput.files.length > 0) {
     submitFormData.append('profileImage', imageInput.files[0]);
   }
 
@@ -165,6 +166,7 @@ async function processAndPrint() {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${studentToken}`
+        // یہاں Content-Type نہیں لکھنا، براؤزر خود FormData کے لیے سیٹ کرے گا
       },
       body: submitFormData
     });
@@ -172,20 +174,18 @@ async function processAndPrint() {
     const data = await res.json();
 
     if (res.ok) {
-      alert(data.message || 'Form submitted successfully! Challan can be generated now.');
-      
-      // Redirect to student portal
+      alert(data.message || 'Form submitted successfully!');
       window.location.href = 'student-portal.html';
     } else {
-      alert(data.message || 'Failed to submit form. Please try again.');
+      alert(data.message || 'Submission failed.');
       if (submitButton) {
         submitButton.disabled = false;
         submitButton.textContent = originalText;
       }
     }
   } catch (err) {
-    console.error('Form submission error:', err);
-    alert('Network error. Please check your connection and try again.');
+    console.error('Submission error:', err);
+    alert('Network error. Check connection.');
     if (submitButton) {
       submitButton.disabled = false;
       submitButton.textContent = originalText;

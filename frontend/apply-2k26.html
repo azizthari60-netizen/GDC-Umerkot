@@ -41,8 +41,8 @@
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                     </select>
-                    <input type="text" id="in-email" placeholder="Email Address" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" title="Enter a valid email address">
-                    <input type="text" id="in-mobile" placeholder="Mobile Number" required pattern="[0-9]{10,15}" title="Enter a valid mobile number">
+                    <input type="text" id="in-email" placeholder="Email Address" title="Enter a valid email address">
+                    <input type="text" id="in-mobile" placeholder="Mobile Number" title="Enter a valid mobile number">
                     <textarea id="in-address" placeholder="Address" required></textarea>
                 </div>
             </fieldset>
@@ -89,12 +89,13 @@
                       <td data-label="Percentage"><input type="number" id="i-perc" placeholder="80"></td>
                      </tr>
                     </tbody>
-                    </table>
-                </fieldset>
+                </table>
+            </fieldset>
 
-                     <button type="button" class="submit-btn" onclick="processAndPrint()">Submit</button>
-                 </form>
-         </div>
+            <button type="button" class="submit-btn" onclick="processAndPrint()">Submit</button>
+        </form>
+    </div>
+
     <script src="apply-2k26.js"></script>
 </body>
 </html>

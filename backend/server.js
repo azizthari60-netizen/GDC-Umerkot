@@ -8,7 +8,6 @@ const streamifier = require('streamifier');
 const cors = require('cors');
 const morgan = require('morgan');
 const multer = require('multer');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
@@ -297,6 +296,72 @@ app.post('/api/student/login', async (req, res) => {
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ message: "Login error" });
+    }
+});
+
+// --- 2.5 Submit Admission Form (New Route) ---
+app.post('/api/student/submit-form', upload.single('profileImage'), async (req, res) => {
+    try {
+        // 1. چیک کریں کہ ٹوکن موجود ہے یا نہیں
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ message: "Login expired. Please login again." });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // 2. ڈیٹا بیس میں اسٹوڈنٹ کو تلاش کریں
+        let student = await Student.findById(decoded.id);
+        if (!student) {
+            return res.status(404).json({ message: "Student record not found." });
+        }
+
+        // 3. تصویر اپلوڈ کرنے کا عمل (Cloudinary)
+        let imageUrl = student.profileImage; 
+        if (req.file) {
+            try {
+                const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/profiles');
+                imageUrl = uploadResult.secure_url;
+            } catch (uploadErr) {
+                console.error("Cloudinary Error:", uploadErr);
+                return res.status(500).json({ message: "Error uploading profile image." });
+            }
+        }
+
+        // 4. فرنٹ اینڈ سے آنے والے ڈیٹا کو نکالنا
+        const {
+            fName, caste, cnic, domicile, dob, gender, email, mobile, address,
+            gName, gOcc, gJobAddr, gContact, gAddress, matric, inter
+        } = req.body;
+
+        // 5. اسٹوڈنٹ کے ڈیٹا کو اپڈیٹ کرنا
+        student.profileImage = imageUrl;
+        student.isFormFilled = true;
+        student.challanStatus = 'Generated';
+        student.status = 'Pending';
+        
+        // یونیک آئی ڈی جنریٹ کرنا چالان کے لیے
+        const serialNo = Math.floor(1000 + Math.random() * 9000);
+        student.uniqueId = generateUniqueId(serialNo);
+
+        // فارم کا ڈیٹا محفوظ کرنا
+        student.formData = {
+            fName, caste, domicile, dob, gender, email, mobile, address,
+            gName, gOcc, gJobAddr, gContact, gAddress,
+            matric: JSON.parse(matric), // String سے Object میں بدلنا
+            inter: JSON.parse(inter)
+        };
+
+        await student.save();
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Form submitted successfully! You can now generate your challan." 
+        });
+
+    } catch (err) {
+        console.error("Form Submission Error:", err);
+        res.status(500).json({ message: "Server error: " + err.message });
     }
 });
 

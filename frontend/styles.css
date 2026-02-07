@@ -941,6 +941,159 @@ img {
         color: #333; 
     }
 
+    /* downloads page */
+/* Fonts & Root Colors */
+:root {
+    --primary-blue: #003366;
+    --accent-blue: #007bff;
+    --success-green: #28a745;
+    --soft-gray: #f8f9fa;
+    --border-color: #e1e4e8;
+}
+
+.main-download-area {
+    padding: 60px 20px;
+    background: #f4f7fa;
+    min-height: 80vh;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.custom-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header & Search Bar */
+.download-header-box {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.main-heading {
+    color: var(--primary-blue);
+    font-size: 2.5rem;
+    margin-bottom: 25px;
+    font-weight: 700;
+}
+
+.search-wrapper {
+    display: flex;
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 5px;
+    border-radius: 50px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.search-wrapper input {
+    flex: 1;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    outline: none;
+    font-size: 1rem;
+}
+
+.search-btn {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 0 25px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+/* Grid & Cards */
+.download-grid-system {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+}
+
+.dl-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.dl-card:hover {
+    transform: translateY(-8px);
+}
+
+.dl-card-head {
+    padding: 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.syllabus-bg { background: linear-gradient(135deg, #003366 0%, #0056b3 100%); }
+.policy-bg { background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%); }
+
+.dl-icon { font-size: 1.8rem; }
+.dl-card-head h3 { margin: 0; font-size: 1.3rem; }
+
+/* Table Style */
+.dl-card-body { padding: 10px; }
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-table th {
+    text-align: left;
+    padding: 15px;
+    background: var(--soft-gray);
+    color: #666;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.modern-table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    color: #444;
+}
+
+/* Action Buttons */
+.action-btn {
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    transition: 0.2s;
+}
+
+.pdf-type {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.img-type {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.action-btn:hover {
+    filter: brightness(0.9);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .download-grid-system { grid-template-columns: 1fr; }
+    .main-heading { font-size: 1.8rem; }
+    .modern-table th, .modern-table td { padding: 10px; font-size: 0.8rem; }
+}
 
 /* Contact form */
 

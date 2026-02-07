@@ -36,12 +36,118 @@
     </div>
   </header>
 
-  <section class="page-hero">
-    <div class="container">
-      <h1>Syllabus For BS Chemistry Program</h1>
-      <p>The syllabus for Four Year BS Chemistry program according to the curriculum of University of Sindh Jamshoro.</p>
+ 
+    <div class="main-download-area">
+    <div class="custom-container">
+        
+        <div class="download-header-box">
+            <h2 class="main-heading">Chemistry Department Downloads</h2>
+            <div class="search-wrapper">
+                <input type="text" id="dlSearch" placeholder="Search by semester or file name..." onkeyup="smartSearch()">
+                <button class="search-btn">🔍</button>
+            </div>
+        </div>
+
+        <div class="download-grid-system">
+            
+            <div class="dl-card">
+                <div class="dl-card-head syllabus-bg">
+                    <span class="dl-icon">📄</span>
+                    <h3>Syllabus Outlines</h3>
+                </div>
+                <div class="dl-card-body">
+                    <table class="modern-table" id="syllabusTable">
+                        <thead>
+                            <tr>
+                                <th>Semester</th>
+                                <th>Subject Title</th>
+                                <th>Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Semester 01</td>
+                                <td>All Subjects Outlines</td>
+                                <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                            <tr>
+                                <td>Semester 02</td>
+                                <td>All Subjects Outlines</td>
+                                <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                            <tr>
+                                <td>Semester 03</td>
+                                <td>All Subjects Outlines</td>
+                                <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                             <tr>
+                                <td>Semester 04</td>
+                                <td>All Subjects Outlines</td>
+                                <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                            <tr>
+                                 <td>Semester 05</td>
+                                 <td>All Subjects Outlines</td>
+                                 <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                            <tr>
+                                 <td>Semester 06</td>
+                                 <td>All Subjects Outlines</td>
+                                 <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                            <tr>
+                                 <td>Semester 07</td>
+                                 <td>All Subjects Outlines</td>
+                                 <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                             <tr>
+                                 <td>Semester 08</td>
+                                 <td>All Subjects Outlines</td>
+                                 <td><a href="#" class="action-btn pdf-type">PDF ⬇</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dl-card">
+                <div class="dl-card-head policy-bg">
+                    <span class="dl-icon">📋</span>
+                    <h3>Department Documents</h3>
+                </div>
+                <div class="dl-card-body">
+                    <table class="modern-table" id="policyTable">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Format</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Academic Calendar 2026</td>
+                                <td>PDF</td>
+                                <td><a href="#" class="action-btn pdf-type">Download</a></td>
+                            </tr>
+                            <tr>
+                                <td>Faculty Contact List</td>
+                                <td>Image</td>
+                                <td><a href="#" class="action-btn img-type">View/DL</a></td>
+                            </tr>
+                            <tr>
+                                <td>Lab Regulations</td>
+                                <td>PDF</td>
+                                <td><a href="#" class="action-btn pdf-type">Download</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+         </div>
+        </div>
     </div>
-  </section>
 
  <footer class="site-footer">
     <div class="container footer-grid">
@@ -103,7 +209,15 @@
       </div>
     </div>
   </footer>
-  
+     <script>
+      function smartSearch() {
+        let input = document.getElementById('dlSearch').value.toLowerCase();
+        let rows = document.querySelectorAll('.modern-table tbody tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+        });
+     }
+    </script>
   <script src="script.js"></script>
 </body>
 </html>

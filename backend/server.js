@@ -548,7 +548,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.font('Helvetica-Bold').fillColor('#424242');
             doc.text('Last Date:', contentX, currentY, { width: labelWidth });
             doc.font('Helvetica').fillColor('#212121');
-            doc.text('15-02-2026', contentX + labelWidth, currentY, { width: valueWidth });
+            doc.text('25-02-2026', contentX + labelWidth, currentY, { width: valueWidth });
             currentY += 18;
             
             // Divider

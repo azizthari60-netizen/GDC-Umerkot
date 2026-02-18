@@ -949,6 +949,13 @@ img {
         color: #333; 
     }
 
+    /* register old students */
+    .form-group {
+       display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+    }
+
     /* downloads page */
 /* Fonts & Root Colors */
 :root {

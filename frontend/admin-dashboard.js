@@ -16,25 +16,22 @@ document.addEventListener('DOMContentLoaded', () => {
   loadChallans();
 
   // Search functionality
-  const searchInput = document.getElementById('search-query');
-  if (searchInput) {
-    searchInput.addEventListener('input', () => {
-      const query = searchInput.value.toLowerCase();
-      const studentItems = document.querySelectorAll('.student-item');
-      studentItems.forEach(item => {
-        const name = item.querySelector('.student-name').textContent.toLowerCase();
-        const cnic = item.querySelector('.student-cnic').textContent.toLowerCase();
-        const rollNumber = item.querySelector('.student-roll-number').textContent.toLowerCase();
-        const batch = item.querySelector('.student-batch').textContent.toLowerCase();
+  const searchInput = document.getElementById('stdntSearch');
+        searchInput.addEventListener('input', () => {
+            const input = searchInput.value.toLowerCase();
+            const studentItems = document.querySelectorAll('#students-list .student-item');
+            studentItems.forEach(item => {
+                const name = item.querySelector('strong').textContent.toLowerCase();
+                const rollNumber = item.querySelector('.student-roll-number').textContent.toLowerCase();
+                const batch = item.querySelector('.student-batch').textContent.toLowerCase();
 
-        if (name.includes(query) || cnic.includes(query) || rollNumber.includes(query) || batch.includes(query)) {
-          item.style.display = 'flex';
-        } else {
-          item.style.display = item.classList.contains('not-registered') ? 'none' : 'flex'; // Keep non-registered students visible in challans tab
-        }
-      });
-    });
-  }
+                if (name.includes(input) || rollNumber.includes(input) || batch.includes(input)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
 
   // Register Old Student Form
   const registerOldStudentForm = document.getElementById('register-old-student-form');

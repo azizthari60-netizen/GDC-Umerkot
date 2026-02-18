@@ -15,6 +15,27 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAssignments();
   loadChallans();
 
+  // Search functionality
+  const searchInput = document.getElementById('search-query');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase();
+      const studentItems = document.querySelectorAll('.student-item');
+      studentItems.forEach(item => {
+        const name = item.querySelector('.student-name').textContent.toLowerCase();
+        const cnic = item.querySelector('.student-cnic').textContent.toLowerCase();
+        const rollNumber = item.querySelector('.student-roll-number').textContent.toLowerCase();
+        const batch = item.querySelector('.student-batch').textContent.toLowerCase();
+
+        if (name.includes(query) || cnic.includes(query) || rollNumber.includes(query) || batch.includes(query)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = item.classList.contains('not-registered') ? 'none' : 'flex'; // Keep non-registered students visible in challans tab
+        }
+      });
+    });
+  }
+
   // Register Old Student Form
   const registerOldStudentForm = document.getElementById('register-old-student-form');
   if (registerOldStudentForm) {
@@ -24,13 +45,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = new FormData(registerOldStudentForm);
       const data = {
         fullName: formData.get('fullName'),
+        fatherName: formData.get('fatherName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        address: formData.get('address'),
         cnic: formData.get('cnic'),
         password: formData.get('password') || formData.get('cnic'),
         batch: formData.get('batch'),
         rollNumber: formData.get('rollNumber'),
         dob: formData.get('dob'),
-        gender: formData.get('gender')
+        gender: formData.get('gender'),
+        image: formData.get('userImage') ? await fileToBase64(formData.get('userImage')) : null // Convert image to Base64 if uploaded
       };
+
 
       const submitButton = registerOldStudentForm.querySelector('button[type="submit"]');
       const originalText = submitButton ? submitButton.textContent : 'Register Old Student';

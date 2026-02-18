@@ -1229,6 +1229,7 @@ app.post('/api/admin/old-students', async (req, res) => {
             dob,
             gender,
             address,
+            image: image || null,
             formData: formData || {}
         });
         await oldStudent.save();
@@ -1243,6 +1244,7 @@ app.post('/api/admin/old-students', async (req, res) => {
         console.error("Register old student error:", err);
         res.status(500).json({ message: "Register old student error" });
     }
+
 });
 
 // 18. Approve Student (Admin)

@@ -197,6 +197,18 @@
         </div>
       </div>
 
+      <!-- Search for Students -->
+      <div class="admin-card" style="margin-bottom: 2rem;">
+        <h3>Search Students</h3>
+        <form id="search-students-form">
+          <div class="form-group"></div>
+            <label for="search-query">Search by Name, CNIC, Roll Number, or Batch</label>
+            <input type="text" id="search-query" name="searchQuery" placeholder="Enter search query..." />
+          </div>
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+      </div>
+      
       <!-- Challan Management & Verification (FIRST SECTION) -->
       <div class="admin-card" style="margin-bottom: 2rem;">
         <h3>Challan Management & Verification</h3>
@@ -210,36 +222,46 @@
         <h3>Register Old Student</h3>
         <form id="register-old-student-form">
           <div class="form-group">
+                <label>Upload Student Image:</label>
+                <input type="file" id="userImage" accept="image/*" required onchange="previewImage(event)">
+            </div>
+          <div class="form-group">
             <label for="old-student-name">Full Name</label>
             <input type="text" id="old-student-name" name="fullName" required />
+            <label for="old-student-father-name">Father's Name</label>
+            <input type="text" id="old-student-father-name" name="fatherName" required />
           </div>
           <div class="form-group">
             <label for="old-student-cnic">CNIC</label>
             <input type="text" id="old-student-cnic" name="cnic" required />
-          </div>
-          <div class="form-group">
             <label for="old-student-password">Password (leave empty to use CNIC)</label>
             <input type="password" id="old-student-password" name="password" />
           </div>
           <div class="form-group">
             <label for="old-student-batch">Batch</label>
             <input type="text" id="old-student-batch" name="batch" />
-          </div>
-          <div class="form-group">
             <label for="old-student-roll">Roll Number</label>
             <input type="text" id="old-student-roll" name="rollNumber" />
           </div>
           <div class="form-group">
+            <label for="old-student-email">Email</label>
+            <input type="email" id="old-student-email" name="email" required />
             <label for="old-student-dob">Date of Birth</label>
             <input type="date" id="old-student-dob" name="dob" />
           </div>
           <div class="form-group">
+            <label for="old-student-phone">Phone Number</label>
+            <input type="text" id="old-student-phone" name="phone" />
             <label for="old-student-gender">Gender</label>
             <select id="old-student-gender" name="gender">
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label for="old-student-address">Address</label>
+            <input type="text" id="old-student-address" name="address" />
           </div>
           <button type="submit" class="btn btn-primary full-width">Register Old Student</button>
         </form>

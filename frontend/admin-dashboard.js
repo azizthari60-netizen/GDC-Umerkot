@@ -570,19 +570,6 @@ function gradeAssignment(assignmentId) {
 
 async function uploadSlip(studentId) {
   try {
-    // First prompt: Test Date
-    const testDateInput = prompt('Enter Test Date (YYYY-MM-DD):');
-    if (!testDateInput) {
-      return; // User cancelled
-    }
-    
-    // Validate date format
-    const testDate = new Date(testDateInput);
-    if (isNaN(testDate.getTime())) {
-      alert('Invalid date format. Please use YYYY-MM-DD format.');
-      return;
-    }
-    
     // Second prompt: Roll Number Suffix (last part: 001, 002, etc.)
     const rollNumberSuffix = prompt('Enter Roll Number Suffix (e.g., 001, 002, 003...):');
     if (!rollNumberSuffix) {
@@ -603,7 +590,6 @@ async function uploadSlip(studentId) {
         'Authorization': `Bearer ${adminToken}`
       },
       body: JSON.stringify({
-        testDate: testDateInput,
         rollNumberSuffix: rollNumberSuffix
       })
     });

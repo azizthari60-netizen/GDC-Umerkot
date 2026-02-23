@@ -14,7 +14,8 @@ const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-
+const https = require('https');
+const http = require('http');
 const app = express();
 
 // --- Configuration ---
@@ -883,11 +884,14 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         doc.pipe(res);
         
-        // Helper function to fetch image
+        // --- تصویر کھینچنے کا بہتر فنکشن (تصویر لانے کے لیے) ---
         function fetchImage(url) {
             return new Promise((resolve) => {
+                if (!url) return resolve(null);
                 const protocol = url.startsWith('https') ? https : http;
-                protocol.get(url, (response) => {
+                protocol.get(url, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' } // کلاؤڈینیری سیکیورٹی بائی پاس کے لیے
+                }, (response) => {
                     if (response.statusCode === 200) {
                         const chunks = [];
                         response.on('data', (chunk) => chunks.push(chunk));
@@ -895,9 +899,11 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
                             resolve(Buffer.concat(chunks));
                         });
                     } else {
+                        console.error('Image status error:', response.statusCode);
                         resolve(null);
                     }
-                }).on('error', () => {
+                }).on('error', (err) => {
+                    console.error('Fetch error:', err.message);
                     resolve(null);
                 });
             });
@@ -924,12 +930,10 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         const rightMargin = 50;
         const qrX = pageWidth - rightMargin - qrSize;
         
-        // Logo on top left
         if (logoBuffer) {
             doc.image(logoBuffer, leftMargin, headerY, { width: logoSize, height: logoSize, fit: [logoSize, logoSize] });
         }
         
-        // QR Code on top right
         const qrY = headerY;
         if (slip.qrCode) {
             doc.image(Buffer.from(slip.qrCode, 'base64'), qrX, qrY, { width: qrSize, height: qrSize });
@@ -941,7 +945,6 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             }
         }
         
-        // Header text positioned between logo and QR code (centered vertically with logo/QR)
         const logoRightEdge = leftMargin + logoSize;
         const qrLeftEdge = qrX;
         const headerTextStartX = logoRightEdge + 10;
@@ -958,15 +961,11 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
         doc.text('BATCH 2K26', startX, headerTextY + 52, { align: 'center', width: headerTextWidth });
         
-        // Set Y position for next content
         doc.y = headerY + logoSize + 15;
-        
-        // Divider line
         doc.strokeColor('#757575').lineWidth(1);
         doc.moveTo(50, doc.y).lineTo(pageWidth - rightMargin, doc.y).stroke();
         doc.moveDown(1);
         
-        // Candidate Information Section
         const startY = doc.y;
         let currentY = startY;
         
@@ -978,72 +977,60 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         const valueWidth = 290;
         let xPos = 50;
         
-        // Name
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
         doc.text('NAME:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica').fillColor('#212121');
         doc.text(student.fullName || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // Father's Name
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('FATHER\'S NAME:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica').fillColor('#212121');
         doc.text(student.formData?.fName || student.fatherName || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // Surname/Caste
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('SURNAME:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica').fillColor('#212121');
         doc.text(student.formData?.caste || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // CNIC
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('CNIC:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica').fillColor('#212121');
         doc.text(student.cnic || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // Program
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('PROGRAM:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica-Bold').fillColor('#1565c0');
         doc.text('BS CHEMISTRY', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // Seat No / Roll Number
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('SEAT NO:', xPos, currentY, { width: labelWidth });
         doc.font('Helvetica-Bold').fillColor('#c62828');
         doc.text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // Held In
+        // --- ٹیسٹ کی تاریخ فکس (2 مارچ 2026) ---
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('HELD IN:', xPos, currentY, { width: labelWidth });
-        let heldIn = '-';
-        if (slip.testDate) {
-            const testDate = new Date(slip.testDate);
-            const day = testDate.getDate();
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const month = monthNames[testDate.getMonth()];
-            const year = testDate.getFullYear();
-            heldIn = `${day}: ${month}: ${year}`;
-        }
+        
+        // تاریخ کو 02-Mar-2026 پر فکس کر دیا گیا ہے
+        const heldIn = "02: Mar: 2026"; 
+        
         doc.font('Helvetica').fillColor('#212121');
         doc.text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 24;
         
-        // Photo (right side) - try to load student photo if available
+        // Photo Section
         const photoX = 420;
         const photoY = startY + 25;
         const photoWidth = 85;
         const photoHeight = 105;
         const borderWidth = 3;
         
-        // Draw border first
         doc.strokeColor('#424242').lineWidth(borderWidth);
         doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
         
@@ -1051,36 +1038,32 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
             try {
                 const imageBuffer = await fetchImage(student.profileImage);
                 if (imageBuffer) {
-                    // Draw photo with fit to fill the box properly
                     doc.image(imageBuffer, photoX, photoY, { 
                         width: photoWidth, 
                         height: photoHeight,
                         fit: [photoWidth, photoHeight]
                     });
                 } else {
-                    // Fallback to placeholder
                     doc.fontSize(9).font('Helvetica').fillColor('#757575');
                     doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
                 }
             } catch (err) {
-                console.error('Error loading profile image:', err);
+                console.error('Error loading image:', err);
                 doc.fontSize(9).font('Helvetica').fillColor('#757575');
                 doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
             }
         } else {
-            // No photo available, show placeholder
             doc.fontSize(9).font('Helvetica').fillColor('#757575');
             doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
         }
         
-        // Exam Centre
+        // باقی انسٹرکشنز اور فوٹر (آپ کے اصل ڈیزائن کے مطابق)
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('EXAM CENTRE:', xPos, currentY);
         doc.fontSize(10).font('Helvetica').fillColor('#212121');
         doc.text('BS CHEMISTRY BUILDING GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 110, currentY);
         currentY += 26;
         
-        // Notes
         const noteTextWidth = pageWidth - rightMargin - xPos - 35;
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#c62828');
         doc.text('NOTE:', xPos, currentY);
@@ -1088,7 +1071,6 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 35, currentY, { width: noteTextWidth });
         currentY += 22;
         
-        // Instructions
         const instructionTextWidth = pageWidth - rightMargin - xPos - 25;
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('INSTRUCTIONS:', xPos, currentY);
@@ -1105,17 +1087,12 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.text('(v) The duration of the test will be 2 hours.', xPos + 25, currentY, { width: instructionTextWidth });
         currentY += 12;
         doc.text('(vi) Use of unfair means during examination is strictly prohibited and will lead to disqualification.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 12;
-
-        // Footer - positioned at bottom of page
-        const pageHeight = 841.89; // A4 height in points
-        const footerY = doc.y + 30
+        
+        const footerY = doc.y + 30;
         doc.strokeColor('#e0e0e0').lineWidth(0.5);
         doc.moveTo(leftMargin, footerY - 5).lineTo(pageWidth - rightMargin, footerY - 5).stroke();
         doc.fontSize(8).font('Helvetica').fillColor('#757575');
-        // Footer text in one line
-        const footerText = 'CREATED BY: IT TEAM - DEPARTMENT OF CHEMISTRY';
-        doc.text(footerText, leftMargin, footerY, { width: pageWidth - leftMargin - rightMargin, align: 'left' });
+        doc.text('CREATED BY: IT TEAM - DEPARTMENT OF CHEMISTRY', leftMargin, footerY, { width: pageWidth - leftMargin - rightMargin, align: 'left' });
         
         doc.end();
     } catch (err) {

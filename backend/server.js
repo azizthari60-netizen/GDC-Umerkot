@@ -1036,7 +1036,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         if (student.profileImage) {
             try {
-                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_300,w_400/');
+                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_600,w_400/');
                 const imageBuffer = await fetchImage(smartImageUrl);
                 if (imageBuffer) {
                     doc.image(imageBuffer, photoX, photoY, { 

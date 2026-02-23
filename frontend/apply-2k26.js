@@ -1,5 +1,32 @@
 const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
 
+// --- نیا فنکشن: تصویر کو کمپریس کرنے کے لیے ---
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800; // چوڑائی 800px تک محدود
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // 70% کوالٹی پر JPEG میں تبدیل کریں تاکہ سائز کم ہو جائے
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name.split('.')[0] + ".jpg", { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.7);
+            };
+        };
+    });
+}
+
 // Check if student is logged in
 document.addEventListener('DOMContentLoaded', async () => {
   const studentToken = localStorage.getItem('studentToken');
@@ -9,7 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Load student data and pre-fill form
   try {
     const res = await fetch(`${API_BASE_URL}/student/profile`, {
       headers: {
@@ -27,11 +53,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function preFillForm(student) {
-  // Pre-fill name and CNIC
   document.getElementById('in-name').value = student.fullName || '';
   document.getElementById('in-cnic').value = student.cnic || '';
   
-  // If form was already filled, pre-fill all fields
   if (student.isFormFilled && student.formData) {
     const fd = student.formData;
     document.getElementById('in-fname').value = fd.fName || '';
@@ -43,14 +67,12 @@ function preFillForm(student) {
     document.getElementById('in-mobile').value = fd.mobile || '';
     document.getElementById('in-address').value = fd.address || '';
     
-    // Guardian info
     document.getElementById('in-gname').value = fd.gName || '';
     document.getElementById('in-gjob').value = fd.gOcc || '';
     document.getElementById('in-gjob-addr').value = fd.gJobAddr || '';
     document.getElementById('in-gcontact').value = fd.gContact || '';
     document.getElementById('in-gperm-addr').value = fd.gAddress || '';
     
-    // Academic info
     if (fd.matric) {
       document.getElementById('m-board').value = fd.matric.brd || '';
       document.getElementById('m-year').value = fd.matric.yr || '';
@@ -67,7 +89,6 @@ function preFillForm(student) {
       document.getElementById('i-perc').value = fd.inter.per || '';
     }
     
-    // Profile image
     if (student.profileImage) {
       document.getElementById('student-photo-preview').src = student.profileImage;
       document.getElementById('student-photo-preview').style.display = 'block';
@@ -91,6 +112,7 @@ function previewImage(event) {
   }
 }
 
+// --- اپ ڈیٹ شدہ مین فنکشن ---
 async function processAndPrint() {
   const studentToken = localStorage.getItem('studentToken');
   const admissionForm = document.getElementById('admissionForm');
@@ -108,7 +130,7 @@ async function processAndPrint() {
 
   const submitFormData = new FormData();
   
-  // بنیادی ڈیٹا
+  // ڈیٹا اکٹھا کرنا
   submitFormData.append('fName', document.getElementById('in-fname').value);
   submitFormData.append('caste', document.getElementById('in-caste').value);
   submitFormData.append('cnic', document.getElementById('in-cnic').value);
@@ -119,14 +141,12 @@ async function processAndPrint() {
   submitFormData.append('mobile', document.getElementById('in-mobile').value);
   submitFormData.append('address', document.getElementById('in-address').value);
   
-  // گارڈین ڈیٹا
   submitFormData.append('gName', document.getElementById('in-gname').value);
   submitFormData.append('gOcc', document.getElementById('in-gjob').value);
   submitFormData.append('gJobAddr', document.getElementById('in-gjob-addr').value);
   submitFormData.append('gContact', document.getElementById('in-gcontact').value);
   submitFormData.append('gAddress', document.getElementById('in-gperm-addr').value);
   
-  // اکیڈمک ڈیٹا (JSON Stringify لازمی ہے)
   submitFormData.append('matric', JSON.stringify({
     brd: document.getElementById('m-board').value,
     yr: document.getElementById('m-year').value,
@@ -143,10 +163,22 @@ async function processAndPrint() {
     per: document.getElementById('i-perc').value
   }));
    
-  // پروفائل امیج
+  // --- تصویر کو کمپریس کر کے شامل کرنا ---
   const imageInput = document.getElementById('userImage');
   if (imageInput && imageInput.files[0]) {
-    submitFormData.append('profileImage', imageInput.files[0]);
+    try {
+      const originalFile = imageInput.files[0];
+      // صرف بڑی تصاویر کو کمپریس کریں (مثلاً 500KB سے بڑی)
+      if (originalFile.size > 500 * 1024) {
+        const compressedFile = await compressImage(originalFile);
+        submitFormData.append('profileImage', compressedFile);
+      } else {
+        submitFormData.append('profileImage', originalFile);
+      }
+    } catch (e) {
+      console.error("Image compression failed, sending original", e);
+      submitFormData.append('profileImage', imageInput.files[0]);
+    }
   }
 
   try {
@@ -161,12 +193,17 @@ async function processAndPrint() {
       alert("Success! Form Submitted.");
       window.location.href = 'student-portal.html';
     } else {
-      alert(data.message);
+      alert(data.message || "Error occurred");
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit';
+      }
+    }
+  } catch (err) {
+    alert("Network Error or Timeout!");
+    if (submitButton) {
       submitButton.disabled = false;
       submitButton.textContent = 'Submit';
     }
-  } catch (err) {
-    alert("Network Error!");
-    submitButton.disabled = false;
   }
 }

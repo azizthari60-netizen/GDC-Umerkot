@@ -12,7 +12,7 @@ const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
-const bcrypt = require('bcryptjs'); // ✅ یہاں غلطی تھی، اب ٹھیک کر دیا
+const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
 const app = express();
@@ -24,7 +24,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ✅ بہتر کنکشن سیٹنگز (تاکہ ٹائم آؤٹ نہ آئے)
+
 mongoose.connect(process.env.MONGODB_URI, {
     serverSelectionTimeoutMS: 30000,
 })

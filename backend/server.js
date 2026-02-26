@@ -549,7 +549,7 @@ app.get('/api/student/challan/:studentId', async (req, res) => {
             doc.font('Helvetica-Bold').fillColor('#424242');
             doc.text('Last Date:', contentX, currentY, { width: labelWidth });
             doc.font('Helvetica').fillColor('#212121');
-            doc.text('25-02-2026', contentX + labelWidth, currentY, { width: valueWidth });
+            doc.text('02-03-2026', contentX + labelWidth, currentY, { width: valueWidth });
             currentY += 18;
             
             // Divider
@@ -1013,12 +1013,10 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 20;
         
-        // --- ٹیسٹ کی تاریخ فکس (2 مارچ 2026) ---
         doc.font('Helvetica-Bold').fillColor('#424242');
         doc.text('HELD IN:', xPos, currentY, { width: labelWidth });
-        
-        // تاریخ کو 02-Mar-2026 پر فکس کر دیا گیا ہے
-        const heldIn = "02: Mar: 2026"; 
+    
+        const heldIn = "07: Mar: 2026"; 
         
         doc.font('Helvetica').fillColor('#212121');
         doc.text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });

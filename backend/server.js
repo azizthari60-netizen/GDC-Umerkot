@@ -1020,6 +1020,13 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         doc.font('Helvetica').fillColor('#212121');
         doc.text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
+        currentY += 20;
+
+        doc.font('Helvetica-Bold').fillColor('#424242');
+        doc.text('TIME:', xPos, currentY, { width: labelWidth });
+        const time = "10:00 AM to 12:00 PM";
+        doc.font('Helvetica').fillColor('#212121');
+        doc.text(time, xPos + labelWidth, currentY, { width: valueWidth });
         currentY += 24;
         
         // Photo Section
@@ -1034,7 +1041,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         if (student.profileImage) {
             try {
-                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_600,w_400,e_background_removal,b_rgb:0000FF/');
+                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_600,w_450,e_background_removal,b_rgb:0000FF/');
                 const imageBuffer = await fetchImage(smartImageUrl);
                 if (imageBuffer) {
                     doc.image(imageBuffer, photoX, photoY, { 
@@ -1068,7 +1075,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.text('NOTE:', xPos, currentY);
         doc.font('Helvetica').fillColor('#424242');
         doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 35, currentY, { width: noteTextWidth });
-        currentY += 22;
+        currentY += 28;
         
         const instructionTextWidth = pageWidth - rightMargin - xPos - 25;
         doc.fontSize(10).font('Helvetica-Bold').fillColor('#1a237e');

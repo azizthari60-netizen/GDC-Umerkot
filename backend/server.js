@@ -1032,7 +1032,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         // Photo Section
         const photoX = 420;
         const photoY = startY + 25;
-        const photoWidth = 100;
+        const photoWidth = 80;
         const photoHeight = 100;
         const borderWidth = 3;
         

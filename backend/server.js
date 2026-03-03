@@ -1014,7 +1014,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         currentY += 20;
         
         doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('HELD IN:', xPos, currentY, { width: labelWidth });
+        doc.text('HELD ON:', xPos, currentY, { width: labelWidth });
     
         const heldIn = "07: Mar: 2026"; 
         
@@ -1032,8 +1032,8 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         // Photo Section
         const photoX = 420;
         const photoY = startY + 25;
-        const photoWidth = 85;
-        const photoHeight = 105;
+        const photoWidth = 100;
+        const photoHeight = 100;
         const borderWidth = 3;
         
         doc.strokeColor('#424242').lineWidth(borderWidth);
@@ -1041,7 +1041,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         
         if (student.profileImage) {
             try {
-                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_600,w_450,e_background_removal,b_rgb:0000FF/');
+                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_800,w_600,e_background_removal,b_rgb:0000FF/');
                 const imageBuffer = await fetchImage(smartImageUrl);
                 if (imageBuffer) {
                     doc.image(imageBuffer, photoX, photoY, { 
@@ -1067,7 +1067,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#1a237e');
         doc.text('EXAM CENTRE:', xPos, currentY);
         doc.fontSize(10).font('Helvetica').fillColor('#212121');
-        doc.text('BS CHEMISTRY BUILDING GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 110, currentY);
+        doc.text('DEPARTMENT OF CHEMISTRY, GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 110, currentY);
         currentY += 26;
         
         const noteTextWidth = pageWidth - rightMargin - xPos - 35;

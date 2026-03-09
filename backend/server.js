@@ -1442,16 +1442,16 @@ app.get('/api/admin/download-results-template', async (req, res) => {
 });
 
 // 24. Bulk Upload Results for Student
-app.post('/api/admin/upload-results', 
+app.post('/api/admin/upload-results', upload.any(), 
     async (req, res) => {
     try {
-      // accept either 'file' or 'resultsFile' as field name
-      if(!req.files || (!req.files.file && !req.files.resultsFile)) {
+      // multer stores all uploaded files in req.files array
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      const file = req.files.resultsFile || req.files.file;
-      const workbook = xlsx.read(file.data, { type: 'buffer' });
+      const file = req.files[0];
+      const workbook = xlsx.read(file.buffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const rows = xlsx.utils.sheet_to_json(sheet);

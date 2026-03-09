@@ -505,9 +505,9 @@ uploadForm.addEventListener('submit', async (e) => {
   const fileInput = document.getElementById('results-file');
   const formData = new FormData();
 
-// send file under a predictable key that backend accepts
+// send file under predictable keys so server middleware catches it
 formData.append('resultsFile', fileInput.files[0]);
-
+formData.append('file', fileInput.files[0]); // older versions might expect 'file'
 try {
   const submitBtn = uploadForm.querySelector('button');
   submitBtn.innerText = 'uploading.....'

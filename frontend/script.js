@@ -238,13 +238,6 @@ if (switchToSignup && signupModal && signinModal) {
   });
 }
 
-// Announcement "Apply Now" button opens signup modal
-const announcementApplyBtn = document.getElementById('announcement-apply-now-btn');
-if (announcementApplyBtn && signupModal) {
-  announcementApplyBtn.addEventListener('click', () => {
-    openModal(signupModal);
-  });
-}
 
 // Close modals on backdrop/close click
 [signupModal, signinModal, recoveryModal].forEach(modal => {

@@ -106,6 +106,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Download Results Template button
+  const downloadTemplateBtn = document.getElementById('btn-download-template');
+  if (downloadTemplateBtn) {
+    downloadTemplateBtn.addEventListener('click', async () => {
+      const adminToken = localStorage.getItem('adminToken');
+      try {
+        downloadTemplateBtn.disabled = true;
+        downloadTemplateBtn.textContent = 'Downloading...';
+        
+        const res = await fetch(`${API_BASE_URL}/admin/download-results-template`, {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        });
+
+        if (res.ok) {
+          // Create a blob from the response
+          const blob = await res.blob();
+          
+          // Create a temporary download link
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'resultsTemplate.xlsx';
+          
+          // Trigger download
+          document.body.appendChild(link);
+          link.click();
+          
+          // Cleanup
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          
+          alert('Template downloaded successfully!');
+        } else {
+          alert('Failed to download template');
+        }
+      } catch (err) {
+        console.error('Error downloading template:', err);
+        alert('Network error. Please try again.');
+      } finally {
+        downloadTemplateBtn.disabled = false;
+        downloadTemplateBtn.textContent = '📥 Download Results Template';
+      }
+    });
+  }
+
   // Logout button
   const logoutBtn = document.getElementById('btn-logout');
   if (logoutBtn) {

@@ -1396,7 +1396,52 @@ app.post('/api/admin/students/:id/slip', async (req, res) => {
     }
 });
 
-// 23. Bulk Upload Results for Student
+// 23. Download Results Template (Excel)
+app.get('/api/admin/download-results-template', async (req, res) => {
+    try {
+        const adminToken = req.headers.authorization?.replace('Bearer ', '');
+        if (!adminToken) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        // Verify admin token
+        jwt.verify(adminToken, JWT_SECRET);
+        
+        // Create a new workbook
+        const workbook = xlsx.utils.book_new();
+        
+        // Create sample data with headers
+        const sampleData = [
+            { CNIC: '12345-6789012-3', Marks: 45 },
+            { CNIC: '12345-6789012-4', Marks: 35 }
+        ];
+        
+        // Create worksheet from data
+        const worksheet = xlsx.utils.json_to_sheet(sampleData);
+        
+        // Set column widths for better readability
+        worksheet['!cols'] = [
+            { wch: 20 },  // CNIC column
+            { wch: 12 }   // Marks column
+        ];
+        
+        // Add worksheet to workbook
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Results');
+        
+        // Generate buffer
+        const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+        
+        // Send file as response
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="resultsTemplate.xlsx"');
+        res.send(buffer);
+    } catch (err) {
+        console.error('Download template error:', err);
+        res.status(500).json({ message: 'Download template error' });
+    }
+});
+
+// 24. Bulk Upload Results for Student
 app.post('/api/admin/upload-results', 
     async (req, res) => {
     try {

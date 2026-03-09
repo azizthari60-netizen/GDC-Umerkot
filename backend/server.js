@@ -17,6 +17,7 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const app = express();
+const xlsx = require('xlsx');
 
 // --- Configuration ---
 cloudinary.config({
@@ -1395,31 +1396,32 @@ app.post('/api/admin/students/:id/slip', async (req, res) => {
     }
 });
 
-// 23. Add Result
-app.post('/api/admin/students/:id/results', async (req, res) => {
+// 23. Bulk Upload Results for Student
+app.post('/api/admin/upload-results', 
+    async (req, res) => {
     try {
-        let student = await Student.findById(req.params.id);
-        if (!student) {
-            student = await OldStudent.findById(req.params.id);
-        }
-        
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        const result = new Result({
-            studentCnic: student.cnic,
-            course: req.body.course,
-            marks: req.body.marks,
-            grade: req.body.grade,
-            semester: req.body.semester
-        });
-        await result.save();
-        
-        res.status(201).json({ success: true, message: "Result added", result });
+      if(!req.files || !req.files.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      const file = req.files.resultsFile;
+        const workbook = xlsx.read(file.data, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = xlsx.utils.sheet_to_json(sheet);
+
+        const operations = rows.map(row => ({
+            updateOne: {
+                filter: { studentCnic: row.CNIC,},
+                update: {marks: row.Marks, status: row.Marks >= 40 ? 'Qualified' : 'Not-Qualified', interviewDate: row.Marks >= 40 ? '14th March 2023' : null},
+                upsert: true
+            }
+        }));
+        await Result.bulkWrite(operations);
+        res.status(200).json({ success: true, message: "Results uploaded successfully" });
     } catch (err) {
-        console.error("Add result error:", err);
-        res.status(500).json({ message: "Add result error" });
+        console.error("Upload results error:", err);
+        res.status(500).json({ message: "Upload results error" });
     }
 });
 

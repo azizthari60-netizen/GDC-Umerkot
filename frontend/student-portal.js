@@ -1,3 +1,5 @@
+const { result } = require("lodash");
+
 // Student Portal JavaScript - Complete Implementation
 const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
 
@@ -344,46 +346,24 @@ async function loadAssignments() {
   }
 }
 
-async function loadResults() {
-  try {
-    const studentToken = localStorage.getItem('studentToken');
-    const res = await fetch(`${API_BASE_URL}/student/results`, {
-      headers: {
-        'Authorization': `Bearer ${studentToken}`
-      }
-    });
-
-    const data = await res.json();
-    const resultsDiv = document.getElementById('results-display');
+// results
+async function displayResult(result) {
+  const displayDiv = document.getElementById('results-display');
+  const statusClass = result.marks >= 40 ? 'text-success' : 'text-danger';
+  const statusText = result.marks >= 40 ? 'Qualified' : 'Not Qualified';
+  let html = `
+  <div class="result-card">
+  <h4> Your Entry test Marks: ${result.marks}<h4>
+  <h3 class="${statusClass}">${statusText}<h3>`;
+  if(result.marks >= 40){
+    html += `<p>Congratulations! You have qualified for the next stage. Your interview is scheduled for<strong>${result.interviewDate}.</strong></p>`;
     
-    if (res.ok && data.success && data.results && data.results.length > 0) {
-      resultsDiv.innerHTML = `
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Course</th>
-              <th>Marks</th>
-              <th>Grade</th>
-              <th>Semester</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.results.map(result => `
-              <tr>
-                <td>${result.course}</td>
-                <td>${result.marks}</td>
-                <td>${result.grade}</td>
-                <td>${result.semester}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    } else {
-      resultsDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results available yet.</p>';
-    }
-  } catch (err) {
-    console.error('Error loading results:', err);
+    html += `</div>`;
+    displayDiv.innerHTML = html;
+  } else {
+    html += `<p>Unfortunately, you did not qualify for the next stage. Please review your performance and consider reapplying in the future.</p>`;
+    html += `</div>`;
+    displayDiv.innerHTML = html;
   }
 }
 

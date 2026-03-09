@@ -1,3 +1,5 @@
+const { response } = require("express");
+
 // Admin Dashboard JavaScript - Complete Implementation
 const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
 
@@ -226,135 +228,6 @@ async function loadChallans() {
   }
 }
 
-async function verifyChallan(studentId) {
-  if (!confirm('Verify this challan and update status to "Challan Verified"?')) return;
-  
-  try {
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/verify-challan`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Challan verified successfully! Student status updated to "Challan Verified".');
-      loadChallans();
-      loadStats();
-    } else {
-      alert(data.message || 'Failed to verify challan');
-    }
-  } catch (err) {
-    console.error('Error verifying challan:', err);
-    alert('Network error. Please try again.');
-  }
-}
-
-async function approveApplication(studentId) {
-  if (!confirm('Approve this student application? This will change the status to "Approved".')) return;
-  
-  try {
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/approve`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Application approved successfully! Student status updated to "Approved".');
-      loadChallans();
-      loadStats();
-    } else {
-      alert(data.message || 'Failed to approve application');
-    }
-  } catch (err) {
-    console.error('Error approving application:', err);
-    alert('Network error. Please try again.');
-  }
-}
-
-async function approveStudent(studentId) {
-  if (!confirm('Approve this student?')) return;
-  
-  try {
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/approve`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Student approved successfully!');
-      loadStudents();
-      loadStats();
-    } else {
-      alert(data.message || 'Failed to approve student');
-    }
-  } catch (err) {
-    console.error('Error approving student:', err);
-    alert('Network error. Please try again.');
-  }
-}
-
-async function rejectStudent(studentId) {
-  if (!confirm('Reject this student?')) return;
-  
-  try {
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/reject`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Student rejected successfully!');
-      loadStudents();
-      loadStats();
-    } else {
-      alert(data.message || 'Failed to reject student');
-    }
-  } catch (err) {
-    console.error('Error rejecting student:', err);
-    alert('Network error. Please try again.');
-  }
-}
-
-async function rejectApplication(studentId) {
-  if (!confirm('Reject this student application? This action cannot be undone.')) return;
-  
-  try {
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/reject`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Application rejected successfully!');
-      loadChallans();
-      loadStats();
-    } else {
-      alert(data.message || 'Failed to reject application');
-    }
-  } catch (err) {
-    console.error('Error rejecting application:', err);
-    alert('Network error. Please try again.');
-  }
-}
 
 async function viewStudentProfile(studentId) {
   try {
@@ -495,6 +368,7 @@ async function loadContactSubmissions() {
   }
 }
 
+
 async function loadAssignments() {
   try {
     const adminToken = localStorage.getItem('adminToken');
@@ -567,42 +441,33 @@ function replyToContact(submissionId) {
 function gradeAssignment(assignmentId) {
   alert('Grading functionality will be added soon!');
 }
+//  result
 
-async function uploadSlip(studentId) {
-  try {
-    // Second prompt: Roll Number Suffix (last part: 001, 002, etc.)
-    const rollNumberSuffix = prompt('Enter Roll Number Suffix (e.g., 001, 002, 003...):');
-    if (!rollNumberSuffix) {
-      return; // User cancelled
-    }
-    
-    // Validate roll number suffix (should be numeric)
-    if (!/^\d+$/.test(rollNumberSuffix)) {
-      alert('Invalid roll number suffix. Please enter numbers only (e.g., 001, 002).');
-      return;
-    }
-    
-    const adminToken = localStorage.getItem('adminToken');
-    const res = await fetch(`${API_BASE_URL}/admin/students/${studentId}/slip`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
-      },
-      body: JSON.stringify({
-        rollNumberSuffix: rollNumberSuffix
-      })
-    });
+const uploadForm = document.getElementById('upload-results-form');
+uploadForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('Slip created successfully! The student can now download their admit card.');
-      loadChallans();
-    } else {
-      alert(data.message || 'Failed to create slip');
-    }
-  } catch (err) {
-    console.error('Error uploading slip:', err);
-    alert('Network error. Please try again.');
-  }
+  const fileInput = document.getElementById('results-file');
+  const formData = new FormData();
+
+formData.append('resultsfile', fileInput.files[0]);
+
+try {
+  const submitBtn = uploadForm.querySelector('button');
+  submitBtn.innerText = 'uploading.....'
+  submitBtn.disabled = true;
+  const response = await fetch('/api/admin/upload-results', {method: 'POST', body: formData});
+
+  const result = await response.json();
+  if(response.ok){
+    alert('Results uploaded successfully!');
+    uploadForm.reset();
+  } else {
+    alert(result.message || 'Failed to upload results');
+  } 
+  submitBtn.innerText = 'Upload Results';
+  submitBtn.disabled = false
+} catch (error) {console.error('Upload Error:', error);
+  alert('Server Not working');
 }
+})

@@ -1,4 +1,3 @@
-const { result } = require("lodash");
 
 // Student Portal JavaScript - Complete Implementation
 const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
@@ -319,6 +318,10 @@ async function loadAssignments() {
 
     const data = await res.json();
     const assignmentsDiv = document.getElementById('my-assignments');
+    if (!assignmentsDiv) {
+      // assignments section is not present (maybe commented out), nothing to do
+      return;
+    }
     
     if (res.ok && data.success) {
       if (data.assignments.length === 0) {
@@ -346,6 +349,31 @@ async function loadAssignments() {
   }
 }
 
+// Fetch results from server and render using displayResult()
+async function loadResults() {
+  try {
+    const studentToken = localStorage.getItem('studentToken');
+    const res = await fetch(`${API_BASE_URL}/student/results`, {
+      headers: {
+        'Authorization': `Bearer ${studentToken}`
+      }
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const displayDiv = document.getElementById('results-display');
+      if (!displayDiv) return;
+      if (!data.results || data.results.length === 0) {
+        displayDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results available.</p>';
+      } else {
+        // show the first result (entry test) and ignore others if present
+        displayResult(data.results[0]);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading results:', err);
+  }
+}
+
 // results
 async function displayResult(result) {
   const displayDiv = document.getElementById('results-display');
@@ -353,8 +381,8 @@ async function displayResult(result) {
   const statusText = result.marks >= 40 ? 'Qualified' : 'Not Qualified';
   let html = `
   <div class="result-card">
-  <h4> Your Entry test Marks: ${result.marks}<h4>
-  <h3 class="${statusClass}">${statusText}<h3>`;
+  <h4> Your Entry test Marks: ${result.marks}</h4>
+  <h3 class="${statusClass}">${statusText}</h3>`;
   if(result.marks >= 40){
     html += `<p>Congratulations! You have qualified for the next stage. Your interview is scheduled for<strong>${result.interviewDate}.</strong></p>`;
     

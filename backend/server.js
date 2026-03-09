@@ -1400,25 +1400,26 @@ app.post('/api/admin/students/:id/slip', async (req, res) => {
 app.post('/api/admin/upload-results', 
     async (req, res) => {
     try {
-      if(!req.files || !req.files.file) {
+      // accept either 'file' or 'resultsFile' as field name
+      if(!req.files || (!req.files.file && !req.files.resultsFile)) {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      const file = req.files.resultsFile;
-        const workbook = xlsx.read(file.data, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = xlsx.utils.sheet_to_json(sheet);
+      const file = req.files.resultsFile || req.files.file;
+      const workbook = xlsx.read(file.data, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = xlsx.utils.sheet_to_json(sheet);
 
-        const operations = rows.map(row => ({
-            updateOne: {
-                filter: { studentCnic: row.CNIC,},
-                update: {marks: row.Marks, status: row.Marks >= 40 ? 'Qualified' : 'Not-Qualified', interviewDate: row.Marks >= 40 ? '14th March 2023' : null},
-                upsert: true
-            }
-        }));
-        await Result.bulkWrite(operations);
-        res.status(200).json({ success: true, message: "Results uploaded successfully" });
+      const operations = rows.map(row => ({
+          updateOne: {
+              filter: { studentCnic: row.CNIC,},
+              update: {marks: row.Marks, status: row.Marks >= 40 ? 'Qualified' : 'Not-Qualified', interviewDate: row.Marks >= 40 ? '14th March 2023' : null},
+              upsert: true
+          }
+      }));
+      await Result.bulkWrite(operations);
+      res.status(200).json({ success: true, message: "Results uploaded successfully" });
     } catch (err) {
         console.error("Upload results error:", err);
         res.status(500).json({ message: "Upload results error" });

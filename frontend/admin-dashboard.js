@@ -1,7 +1,16 @@
-const { response } = require("express");
 
 // Admin Dashboard JavaScript - Complete Implementation
 const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
+
+// Utility to convert File object to Base64 string (used when registering old students)
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = err => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
 
 // Check if admin is logged in
 document.addEventListener('DOMContentLoaded', () => {
@@ -126,16 +135,15 @@ async function loadStudents() {
     const studentsList = document.getElementById('students-list');
     
     if (res.ok && data.success && data.students.length > 0) {
-      // Filter to show ONLY old students (isOldStudent: true)
-      const oldStudents = data.students.filter(student => student.isOldStudent === true);
-      
-      if (oldStudents.length > 0) {
-        studentsList.innerHTML = oldStudents.map(student => {
+        // Show all students (old and new)
+      if (data.students.length > 0) {
+        studentsList.innerHTML = data.students.map(student => {
+          const typeLabel = student.isOldStudent ? 'Old Student' : 'New Student';
           return `
             <div class="student-item">
               <div style="flex: 1;">
                 <strong>${student.fullName}</strong> (${student.cnic})<br>
-                <small>Batch: ${student.batch || 'N/A'} | Roll: ${student.rollNumber || 'N/A'} | Status: Active</small>
+                <small>Batch: <span class="student-batch">${student.batch || 'N/A'}</span> | Roll: <span class="student-roll-number">${student.rollNumber || 'N/A'}</span> | ${typeLabel}</small>
               </div>
               <div class="student-actions">
                 <span style="color: #059669;">✓ Registered</span>
@@ -144,7 +152,7 @@ async function loadStudents() {
           `;
         }).join('');
       } else {
-        studentsList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No old students registered yet.</p>';
+        studentsList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No students found.</p>';
       }
     } else {
       studentsList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No students found.</p>';
@@ -450,7 +458,8 @@ uploadForm.addEventListener('submit', async (e) => {
   const fileInput = document.getElementById('results-file');
   const formData = new FormData();
 
-formData.append('resultsfile', fileInput.files[0]);
+// send file under a predictable key that backend accepts
+formData.append('resultsFile', fileInput.files[0]);
 
 try {
   const submitBtn = uploadForm.querySelector('button');

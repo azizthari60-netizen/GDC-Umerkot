@@ -358,7 +358,6 @@ async function loadResults() {
       }
     });
     const data = await res.json();
-    console.log('Results API response:', data); // Debug log
     if (res.ok && data.success) {
       const displayDiv = document.getElementById('results-display');
       if (!displayDiv) return;
@@ -368,8 +367,6 @@ async function loadResults() {
         // show the first result (entry test) and ignore others if present
         displayResult(data.results[0]);
       }
-    } else {
-      console.error('Results API error:', data);
     }
   } catch (err) {
     console.error('Error loading results:', err);

@@ -801,24 +801,42 @@ app.get('/api/student/results', async (req, res) => {
         if (!token) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        
+
         const decoded = jwt.verify(token, JWT_SECRET);
+        console.log('🔍 STUDENT RESULTS DEBUG:');
+        console.log('Token decoded ID:', decoded.id);
+
         let student = await Student.findById(decoded.id);
+        console.log('Found in Student collection:', !!student);
+
         if (!student) {
             student = await OldStudent.findById(decoded.id);
+            console.log('Found in OldStudent collection:', !!student);
         }
-        
+
         if (!student) {
+            console.log('❌ No student found with ID:', decoded.id);
             return res.status(404).json({ message: "Student not found" });
         }
-        
-        console.log('Student CNIC from profile:', student.cnic);
-        const results = await Result.find({ studentCnic: student.cnic }).sort({ semester: 1 });
-        console.log('Found results for student:', results.length, 'for CNIC:', student.cnic);
-        res.status(200).json({ success: true, results });
+
+        console.log('✅ Student found - CNIC:', student.cnic, 'Type:', student.constructor.modelName);
+
+        const results = await Result.find({ studentCnic: student.cnic });
+        console.log('🔍 Results query for CNIC:', student.cnic);
+        console.log('📊 Results found:', results.length);
+
+        if (results.length === 0) {
+            // Show some debug info
+            const allResults = await Result.find({}).limit(5);
+            console.log('📋 Total results in DB:', await Result.countDocuments());
+            console.log('📋 Sample result CNICs:', allResults.map(r => r.studentCnic));
+        }
+
+        res.json({ success: true, results });
+
     } catch (err) {
-        console.error("Get results error:", err);
-        res.status(500).json({ message: "Get results error" });
+        console.error("Get student results error:", err);
+        res.status(500).json({ message: "Get student results error" });
     }
 });
 
@@ -1115,16 +1133,50 @@ app.post('/api/results/check', async (req, res) => {
     try {
         const { cnic } = req.body;
         console.log('Checking results for CNIC:', cnic);
+
+        // Simple exact match
         const results = await Result.find({ studentCnic: cnic }).sort({ semester: 1 });
-        console.log('Found results:', results.length, 'for CNIC:', cnic);
-        res.status(200).json({ success: true, results });
+        console.log('Query:', { studentCnic: cnic });
+        console.log('Found results count:', results.length);
+
+        if (results.length > 0) {
+            console.log('First result:', results[0]);
+            res.json({ success: true, results });
+        } else {
+            res.status(404).json({ message: "No results found" });
+        }
+
     } catch (err) {
-        console.error("Check result error:", err);
-        res.status(500).json({ message: "Check result error" });
+        console.error("Check results error:", err);
+        res.status(500).json({ message: "Check results error" });
     }
 });
 
-// --- ADMIN ROUTES ---
+// Debug endpoint to check all results
+app.get('/api/debug/results', async (req, res) => {
+    try {
+        const allResults = await Result.find({}).limit(10);
+        const resultCnics = allResults.map(r => r.studentCnic);
+
+        const allStudents = await Student.find({}).limit(10);
+        const studentCnics = allStudents.map(s => s.cnic);
+
+        const allOldStudents = await OldStudent.find({}).limit(10);
+        const oldStudentCnics = allOldStudents.map(s => s.cnic);
+
+        res.json({
+            results: allResults,
+            resultCnics: resultCnics,
+            studentCnics: studentCnics,
+            oldStudentCnics: oldStudentCnics,
+            totalResults: await Result.countDocuments(),
+            totalStudents: await Student.countDocuments(),
+            totalOldStudents: await OldStudent.countDocuments()
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // 15. Get All Students (Admin)
 app.get('/api/admin/students', async (req, res) => {

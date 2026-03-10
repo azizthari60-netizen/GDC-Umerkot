@@ -803,37 +803,25 @@ app.get('/api/student/results', async (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        console.log('🔍 STUDENT RESULTS DEBUG:');
-        console.log('Token decoded ID:', decoded.id);
-
         let student = await Student.findById(decoded.id);
-        console.log('Found in Student collection:', !!student);
-
         if (!student) {
             student = await OldStudent.findById(decoded.id);
-            console.log('Found in OldStudent collection:', !!student);
         }
 
         if (!student) {
-            console.log('❌ No student found with ID:', decoded.id);
             return res.status(404).json({ message: "Student not found" });
         }
 
-        console.log('✅ Student found - CNIC:', student.cnic, 'Type:', student.constructor.modelName);
-
-        const results = await Result.find({ studentCnic: student.cnic });
-        console.log('🔍 Results query for CNIC:', student.cnic);
-        console.log('📊 Results found:', results.length);
-
+        // try exact CNIC first, then stripped version without dashes
+        let results = await Result.find({ studentCnic: student.cnic });
         if (results.length === 0) {
-            // Show some debug info
-            const allResults = await Result.find({}).limit(5);
-            console.log('📋 Total results in DB:', await Result.countDocuments());
-            console.log('📋 Sample result CNICs:', allResults.map(r => r.studentCnic));
+            const alt = student.cnic.replace(/[-\s]/g, '');
+            if (alt !== student.cnic) {
+                results = await Result.find({ studentCnic: alt });
+            }
         }
 
         res.json({ success: true, results });
-
     } catch (err) {
         console.error("Get student results error:", err);
         res.status(500).json({ message: "Get student results error" });
@@ -1132,20 +1120,20 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 app.post('/api/results/check', async (req, res) => {
     try {
         const { cnic } = req.body;
-        console.log('Checking results for CNIC:', cnic);
-
-        // Simple exact match
-        const results = await Result.find({ studentCnic: cnic }).sort({ semester: 1 });
-        console.log('Query:', { studentCnic: cnic });
-        console.log('Found results count:', results.length);
+        // try exact and stripped-dash versions
+        let results = await Result.find({ studentCnic: cnic }).sort({ semester: 1 });
+        if (results.length === 0) {
+            const alt = cnic.replace(/[-\s]/g, '');
+            if (alt !== cnic) {
+                results = await Result.find({ studentCnic: alt }).sort({ semester: 1 });
+            }
+        }
 
         if (results.length > 0) {
-            console.log('First result:', results[0]);
             res.json({ success: true, results });
         } else {
             res.status(404).json({ message: "No results found" });
         }
-
     } catch (err) {
         console.error("Check results error:", err);
         res.status(500).json({ message: "Check results error" });

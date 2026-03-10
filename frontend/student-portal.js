@@ -358,37 +358,22 @@ async function loadResults() {
       }
     });
     const data = await res.json();
-    if (res.ok && data.success) {
-      const displayDiv = document.getElementById('results-display');
-      if (!displayDiv) return;
-      if (!data.results || data.results.length === 0) {
-        displayDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results available.</p>';
-      } else {
-        // show the first result (entry test) and ignore others if present
-        displayResult(data.results[0]);
-      }
+    const displayDiv = document.getElementById('results-display');
+    if (!displayDiv) return;
+    if (res.ok && data.success && data.results && data.results.length > 0) {
+      displayResult(data.results[0]);
     } else {
-      const displayDiv = document.getElementById('results-display');
-      if (displayDiv) {
-        displayDiv.innerHTML = '<p style="color: #dc3545; padding: 1rem 0; text-align: center;">Error loading results: ' + (data.message || 'Unknown error') + '</p>';
-      }
+      displayDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results available.</p>';
     }
   } catch (err) {
     console.error('Error loading results:', err);
-    const displayDiv = document.getElementById('results-display');
-    if (displayDiv) {
-      displayDiv.innerHTML = '<p style="color: #dc3545; padding: 1rem 0; text-align: center;">Network error loading results. Please try again.</p>';
-    }
   }
 }
 
 // results
 function displayResult(result) {
   const displayDiv = document.getElementById('results-display');
-  if (!displayDiv) {
-    console.error('Results display div not found');
-    return;
-  }
+  if (!displayDiv) return;
 
   const statusClass = result.marks >= 33 ? 'text-success' : 'text-danger';
   const statusText = result.marks >= 33 ? 'Qualified' : 'Not Qualified';
@@ -397,7 +382,7 @@ function displayResult(result) {
   <h4> Your Entry test Marks: ${result.marks}</h4>
   <h3 class="${statusClass}">${statusText}</h3>`;
 
-  if(result.marks >= 33){
+  if (result.marks >= 33) {
     html += `<p>Congratulations! You have qualified the Pre-Admission Test. You are eligible for the Interview.</p>
     <p>Note: Interview date is 14 March 2026, Time: 09:00am</p>`;
   } else {
@@ -407,5 +392,6 @@ function displayResult(result) {
   html += `</div>`;
   displayDiv.innerHTML = html;
 }
+
 
 

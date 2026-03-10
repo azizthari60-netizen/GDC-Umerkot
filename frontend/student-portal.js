@@ -365,7 +365,8 @@ async function loadResults() {
         displayDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results available.</p>';
       } else {
         // show the first result (entry test) and ignore others if present
-        displayResult(data.results[0]);
+        const gender = currentStudent.formData?.gender || currentStudent.gender || 'Male';
+        displayResult(data.results[0], gender);
       }
     }
   } catch (err) {
@@ -374,7 +375,7 @@ async function loadResults() {
 }
 
 // results
-function displayResult(result) {
+function displayResult(result, gender) {
   const displayDiv = document.getElementById('results-display');
   if (!displayDiv) {
     console.error('Results display div not found');
@@ -389,9 +390,12 @@ function displayResult(result) {
   <h3 class="${statusClass}">${statusText}</h3>`;
 
   if(result.marks >= 33){
-  
-    html += `<p>Congratulations! You have qualified the Pre-Admission Test. You are eligible for the Interview.</p>
-    <p>Note: Interview date for Girls 14 March 2026 and for Boys 16 March 2026, Time: 09:00am</p>`;
+    html += `<p>Congratulations! You have qualified the Pre-Admission Test. You are eligible for the Interview.</p>`;
+    if (gender.toLowerCase() === 'female' || gender.toLowerCase() === 'girl') {
+      html += `<p>Note: Interview date for Girls 14 March 2026, Time: 09:00am</p>`;
+    } else {
+      html += `<p>Note: Interview date for Boys 16 March 2026, Time: 09:00am</p>`;
+    }
   } else {
     html += `<p>Unfortunately, you did not qualify Pre-Admission Test. Please review your performance and consider reapplying in the future.</p>`;
   }

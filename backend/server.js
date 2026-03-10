@@ -1512,15 +1512,51 @@ app.post('/api/admin/upload-results', upload.any(),
       const sheet = workbook.Sheets[sheetName];
       const rows = xlsx.utils.sheet_to_json(sheet);
 
-      const operations = rows.map(row => ({
-          updateOne: {
-              filter: { studentCnic: row.CNIC },
-              update: {marks: row.Marks},
-              upsert: true
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+
+      for (const row of rows) {
+        try {
+          const cnic = row.CNIC || row.cnic;
+          const marks = row.Marks || row.marks;
+          const course = row.Course || row.course || 'Entry Test';
+          const semester = row.Semester || row.semester || 1;
+
+          if (!cnic || marks === undefined || marks === null) {
+            errors.push(`Row ${rows.indexOf(row) + 2}: Missing CNIC or Marks`);
+            errorCount++;
+            continue;
           }
-      }));
-      await Result.bulkWrite(operations);
-      res.status(200).json({ success: true, message: "Results uploaded successfully" });
+
+          // Find existing result or create new
+          let result = await Result.findOne({ studentCnic: cnic, course, semester });
+          if (result) {
+            result.marks = marks;
+            await result.save();
+          } else {
+            result = new Result({
+              studentCnic: cnic,
+              course,
+              marks,
+              semester
+            });
+            await result.save();
+          }
+
+          successCount++;
+        } catch (rowErr) {
+          console.error("Row error:", rowErr);
+          errors.push(`Row ${rows.indexOf(row) + 2}: ${rowErr.message}`);
+          errorCount++;
+        }
+      }
+
+      res.status(200).json({ 
+        success: true, 
+        message: `Results uploaded: ${successCount} success, ${errorCount} errors`,
+        errors: errors.length > 0 ? errors : undefined
+      });
     } catch (err) {
         console.error("Upload results error:", err);
         res.status(500).json({ message: "Upload results error" });

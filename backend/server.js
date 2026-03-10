@@ -129,8 +129,6 @@ const resultSchema = new mongoose.Schema({
     marks: Number,
     grade: String,
     semester: Number,
-    status: String,
-    interviewDate: String,
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -1458,29 +1456,13 @@ app.post('/api/admin/upload-results', upload.any(),
       const sheet = workbook.Sheets[sheetName];
       const rows = xlsx.utils.sheet_to_json(sheet);
 
-      const operations = rows.map(row => {
-          // Determine interview date based on CNIC last digit (gender)
-          let interviewDate = null;
-          if (row.Marks >= 33) {
-              const cnic = row.CNIC.toString().trim();
-              const lastChar = cnic.slice(-1);
-              const lastDigit = parseInt(lastChar, 10);
-              // Even last digit = female (14th March), Odd last digit = male (16th March)
-              interviewDate = (!isNaN(lastDigit) && lastDigit % 2 === 0) ? '14-March-2026' : '16-March-2026';
+      const operations = rows.map(row => ({
+          updateOne: {
+              filter: { studentCnic: row.CNIC },
+              update: {marks: row.Marks},
+              upsert: true
           }
-          
-          return {
-              updateOne: {
-                  filter: { studentCnic: row.CNIC },
-                  update: {
-                      marks: row.Marks, 
-                      status: row.Marks >= 33 ? 'Qualified' : 'Not-Qualified', 
-                      interviewDate: interviewDate
-                  },
-                  upsert: true
-              }
-          }
-      });
+      }));
       await Result.bulkWrite(operations);
       res.status(200).json({ success: true, message: "Results uploaded successfully" });
     } catch (err) {

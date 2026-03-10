@@ -6,14 +6,14 @@ let currentStudent = null;
 let isOldStudent = false;
 
 // Check if student is logged in
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const studentToken = localStorage.getItem('studentToken');
   if (!studentToken) {
     window.location.href = 'index.html';
     return;
   }
 
-  loadStudentData();
+  await loadStudentData(); // Wait for student data to load first
   loadAssignments();
   loadResults();
   loadNotifications();

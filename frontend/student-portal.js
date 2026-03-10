@@ -399,9 +399,9 @@ function displayResult(result, gender) {
   <h3 class="${statusClass}">${statusText}</h3>`;
 
   if (result.marks >= 33) {
-    html += `<p>Congratulations! You have qualified the Pre-Admission Test. and eligible for the Interview.</p>`;
+    html += `<p>Congratulations! You have qualified the Pre-Admission Test, and eligible for the Interview.</p>`;
     const interviewDate = (gender && gender.toLowerCase().startsWith('f')) ? '14 March 2026' : '16 March 2026';
-    html += `<p>Note: Interview date is ${interviewDate}, Time: 09:00am</p>`;
+    html += `<p>Your Interview will be held on ${interviewDate}, Time: 09:00am</p>`;
   } else {
     html += `<p>Unfortunately, you did not qualify Pre-Admission Test. Please review your performance and consider reapplying in the future.</p>`;
   }

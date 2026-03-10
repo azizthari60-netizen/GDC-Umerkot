@@ -377,19 +377,19 @@ async function loadResults() {
 // results
 async function displayResult(result) {
   const displayDiv = document.getElementById('results-display');
-  const statusClass = result.marks >= 40 ? 'text-success' : 'text-danger';
-  const statusText = result.marks >= 40 ? 'Qualified' : 'Not Qualified';
+  const statusClass = result.marks >= 33 ? 'text-success' : 'text-danger';
+  const statusText = result.marks >= 33 ? 'Qualified' : 'Not Qualified';
   let html = `
   <div class="result-card">
   <h4> Your Entry test Marks: ${result.marks}</h4>
   <h3 class="${statusClass}">${statusText}</h3>`;
-  if(result.marks >= 40){
-    html += `<p>Congratulations! You have qualified for the next stage. Your interview is scheduled for<strong>${result.interviewDate}.</strong></p>`;
+  if(result.marks >= 33){
+    html += `<p>Congratulations! You have qualified Pre-Admission Test. Your interview is scheduled on 14-March-2026, Time:09:00am</p>`;
     
     html += `</div>`;
     displayDiv.innerHTML = html;
   } else {
-    html += `<p>Unfortunately, you did not qualify for the next stage. Please review your performance and consider reapplying in the future.</p>`;
+    html += `<p>Unfortunately, you did not qualify Pre-Admission Test. Please review your performance and consider reapplying in the future.</p>`;
     html += `</div>`;
     displayDiv.innerHTML = html;
   }

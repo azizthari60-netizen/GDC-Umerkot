@@ -1459,7 +1459,7 @@ app.post('/api/admin/upload-results', upload.any(),
       const operations = rows.map(row => ({
           updateOne: {
               filter: { studentCnic: row.CNIC,},
-              update: {marks: row.Marks, status: row.Marks >= 40 ? 'Qualified' : 'Not-Qualified', interviewDate: row.Marks >= 40 ? '14th March 2023' : null},
+              update: {marks: row.Marks, status: row.Marks >= 33 ? 'Qualified' : 'Not-Qualified', interviewDate: row.Marks >= 33 ? '14th March 2023' : null},
               upsert: true
           }
       }));

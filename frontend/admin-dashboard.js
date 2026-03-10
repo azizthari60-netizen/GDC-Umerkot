@@ -496,6 +496,7 @@ function replyToContact(submissionId) {
 function gradeAssignment(assignmentId) {
   alert('Grading functionality will be added soon!');
 }
+
 //  result
 
 const uploadForm = document.getElementById('upload-results-form');

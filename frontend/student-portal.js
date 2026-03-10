@@ -6,14 +6,14 @@ let currentStudent = null;
 let isOldStudent = false;
 
 // Check if student is logged in
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const studentToken = localStorage.getItem('studentToken');
   if (!studentToken) {
     window.location.href = 'index.html';
     return;
   }
 
-  await loadStudentData(); // Wait for student data to load first
+  loadStudentData();
   loadAssignments();
   loadResults();
   loadNotifications();
@@ -351,6 +351,16 @@ async function loadAssignments() {
 
 // Fetch results from server and render using displayResult()
 async function loadResults() {
+  // Wait for currentStudent to be loaded
+  if (!currentStudent) {
+    // Wait a bit for loadStudentData to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (!currentStudent) {
+      console.error('Student data not loaded yet');
+      return;
+    }
+  }
+  
   try {
     const studentToken = localStorage.getItem('studentToken');
     const res = await fetch(`${API_BASE_URL}/student/results`, {
@@ -384,32 +394,33 @@ async function displayResult(result) {
   <h4> Your Entry test Marks: ${result.marks}</h4>
   <h3 class="${statusClass}">${statusText}</h3>`;
   if(result.marks >= 33){
-    // Use interview date from database if available, otherwise determine from CNIC
-    let interviewDate = result.interviewDate || '14-March-2026'; // fallback
-    if (!result.interviewDate) {
-      // Fallback logic if interviewDate not set in database
-      let cnic = currentStudent?.cnic;
-      if (!cnic) {
-        const stored = localStorage.getItem('studentData');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            cnic = parsed.cnic;
-          } catch (e) {
-            console.error('Error parsing studentData from localStorage', e);
-          }
-        }
-      }
-      
-      if (cnic) {
-        const lastChar = cnic.trim().slice(-1);
-        const lastDigit = parseInt(lastChar, 10);
-        if (!isNaN(lastDigit)) {
-          interviewDate = (lastDigit % 2 === 0) ? '14-March-2026' : '16-March-2026';
+    // determine interview date based on gender derived from CNIC last digit
+    let interviewDate = '14-March-2026'; // default female
+    let cnic = currentStudent?.cnic;
+    if (!cnic) {
+      // try to read from localStorage if not yet loaded
+      const stored = localStorage.getItem('studentData');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          cnic = parsed.cnic;
+        } catch (e) {
+          console.error('Error parsing studentData from localStorage', e);
         }
       }
     }
-    
+
+    if (cnic) {
+      const lastChar = cnic.trim().slice(-1);
+      const lastDigit = parseInt(lastChar, 10);
+      if (!isNaN(lastDigit)) {
+        // even -> female, odd -> male
+        if (lastDigit % 2 === 1) {
+          interviewDate = '16-March-2026';
+        }
+      }
+    }
+
     html += `<p>Congratulations! You have qualified the Pre-Admission Test. Your interview is scheduled on ${interviewDate}, Time: 09:00am</p>`;
     html += `</div>`;
     displayDiv.innerHTML = html;
@@ -425,6 +436,11 @@ async function loadNotifications() {
     const res = await fetch(`${API_BASE_URL}/student/notifications`);
     const data = await res.json();
     const announcementsDiv = document.getElementById('announcements');
+    
+    if (!announcementsDiv) {
+      console.error('Announcements div not found');
+      return;
+    }
     
     if (res.ok && data.success && data.notifications && data.notifications.length > 0) {
       announcementsDiv.innerHTML = data.notifications

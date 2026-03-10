@@ -389,37 +389,9 @@ function displayResult(result) {
   <h3 class="${statusClass}">${statusText}</h3>`;
 
   if(result.marks >= 33){
-    // determine interview date based on gender derived from CNIC last digit
-    let interviewDate = '14-March-2026'; // default female
-    let cnic = currentStudent?.cnic;
-
-    if (!cnic) {
-      // try to read from localStorage if not yet loaded
-      const stored = localStorage.getItem('studentData');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          cnic = parsed.cnic;
-        } catch (e) {
-          console.error('Error parsing studentData from localStorage', e);
-        }
-      }
-    }
-
-    if (cnic) {
-      // CNIC format: 44401-2434420-1
-      // Gender determined by last digit after final dash
-      const cnicParts = cnic.toString().split('-');
-      const lastPart = cnicParts[cnicParts.length - 1];
-      const genderDigit = parseInt(lastPart, 10);
-
-      if (!isNaN(genderDigit)) {
-        // even = female (14th March), odd = male (16th March)
-        interviewDate = (genderDigit % 2 === 0) ? '14-March-2026' : '16-March-2026';
-      }
-    }
-
-    html += `<p>Congratulations! You have qualified the Pre-Admission Test. Your interview is scheduled on ${interviewDate}, Time: 09:00am</p>`;
+  
+    html += `<p>Congratulations! You have qualified the Pre-Admission Test. You are eligible for the Interview.</p>
+    <p>Note: Interview date for Girls 14 March 2026 and for Boys 16 March 2026, Time: 09:00am</p>`;
   } else {
     html += `<p>Unfortunately, you did not qualify Pre-Admission Test. Please review your performance and consider reapplying in the future.</p>`;
   }

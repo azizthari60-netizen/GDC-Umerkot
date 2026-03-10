@@ -812,7 +812,9 @@ app.get('/api/student/results', async (req, res) => {
             return res.status(404).json({ message: "Student not found" });
         }
         
+        console.log('Student CNIC from profile:', student.cnic);
         const results = await Result.find({ studentCnic: student.cnic }).sort({ semester: 1 });
+        console.log('Found results for student:', results.length, 'for CNIC:', student.cnic);
         res.status(200).json({ success: true, results });
     } catch (err) {
         console.error("Get results error:", err);
@@ -1112,7 +1114,9 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 app.post('/api/results/check', async (req, res) => {
     try {
         const { cnic } = req.body;
+        console.log('Checking results for CNIC:', cnic);
         const results = await Result.find({ studentCnic: cnic }).sort({ semester: 1 });
+        console.log('Found results:', results.length, 'for CNIC:', cnic);
         res.status(200).json({ success: true, results });
     } catch (err) {
         console.error("Check result error:", err);

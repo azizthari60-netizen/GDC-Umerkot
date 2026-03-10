@@ -371,7 +371,7 @@ async function loadResults() {
   } catch (err) {
     console.error('Error loading results:', err);
   }
-
+}
 
 // results
 async function displayResult(result) {

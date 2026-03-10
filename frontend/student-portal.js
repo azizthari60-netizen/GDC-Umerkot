@@ -407,13 +407,15 @@ function displayResult(result) {
     }
 
     if (cnic) {
-      // Clean CNIC and get last digit
-      const cleanCnic = cnic.toString().replace(/[^0-9]/g, '');
-      const lastDigit = parseInt(cleanCnic.slice(-1), 10);
+      // CNIC format: 44401-2434420-1
+      // Gender determined by last digit after final dash
+      const cnicParts = cnic.toString().split('-');
+      const lastPart = cnicParts[cnicParts.length - 1];
+      const genderDigit = parseInt(lastPart, 10);
 
-      if (!isNaN(lastDigit)) {
-        // even -> female (14th March), odd -> male (16th March)
-        interviewDate = (lastDigit % 2 === 0) ? '14-March-2026' : '16-March-2026';
+      if (!isNaN(genderDigit)) {
+        // even = female (14th March), odd = male (16th March)
+        interviewDate = (genderDigit % 2 === 0) ? '14-March-2026' : '16-March-2026';
       }
     }
 

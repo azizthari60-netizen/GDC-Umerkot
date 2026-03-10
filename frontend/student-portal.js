@@ -349,6 +349,21 @@ async function loadAssignments() {
 }
 
 // Fetch results from server and render using displayResult()
+// determine gender using profile or CNIC last digit
+function determineGender(student) {
+  if (student.formData?.gender) return student.formData.gender;
+  if (student.gender) return student.gender;
+  // derive from CNIC last digit after final dash
+  const parts = student.cnic ? student.cnic.split('-') : [];
+  const lastPart = parts[parts.length - 1] || '';
+  const lastDigit = lastPart.charAt(lastPart.length - 1);
+  const num = parseInt(lastDigit, 10);
+  if (!isNaN(num)) {
+    return num % 2 === 0 ? 'Female' : 'Male';
+  }
+  return 'Male';
+}
+
 async function loadResults() {
   try {
     const studentToken = localStorage.getItem('studentToken');
@@ -361,7 +376,8 @@ async function loadResults() {
     const displayDiv = document.getElementById('results-display');
     if (!displayDiv) return;
     if (res.ok && data.success && data.results && data.results.length > 0) {
-      displayResult(data.results[0]);
+      const gender = determineGender(currentStudent || {});
+      displayResult(data.results[0], gender);
     } else {
       displayDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results available.</p>';
     }
@@ -371,7 +387,7 @@ async function loadResults() {
 }
 
 // results
-function displayResult(result) {
+function displayResult(result, gender) {
   const displayDiv = document.getElementById('results-display');
   if (!displayDiv) return;
 
@@ -383,8 +399,9 @@ function displayResult(result) {
   <h3 class="${statusClass}">${statusText}</h3>`;
 
   if (result.marks >= 33) {
-    html += `<p>Congratulations! You have qualified the Pre-Admission Test. You are eligible for the Interview.</p>
-    <p>Note: Interview date is 14 March 2026, Time: 09:00am</p>`;
+    html += `<p>Congratulations! You have qualified the Pre-Admission Test. and eligible for the Interview.</p>`;
+    const interviewDate = (gender && gender.toLowerCase().startsWith('f')) ? '14 March 2026' : '16 March 2026';
+    html += `<p>Note: Interview date is ${interviewDate}, Time: 09:00am</p>`;
   } else {
     html += `<p>Unfortunately, you did not qualify Pre-Admission Test. Please review your performance and consider reapplying in the future.</p>`;
   }

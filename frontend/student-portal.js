@@ -374,18 +374,25 @@ async function loadResults() {
 }
 
 // results
-async function displayResult(result) {
+function displayResult(result) {
   const displayDiv = document.getElementById('results-display');
+  if (!displayDiv) {
+    console.error('Results display div not found');
+    return;
+  }
+
   const statusClass = result.marks >= 33 ? 'text-success' : 'text-danger';
   const statusText = result.marks >= 33 ? 'Qualified' : 'Not Qualified';
   let html = `
   <div class="result-card">
   <h4> Your Entry test Marks: ${result.marks}</h4>
   <h3 class="${statusClass}">${statusText}</h3>`;
+
   if(result.marks >= 33){
     // determine interview date based on gender derived from CNIC last digit
     let interviewDate = '14-March-2026'; // default female
     let cnic = currentStudent?.cnic;
+
     if (!cnic) {
       // try to read from localStorage if not yet loaded
       const stored = localStorage.getItem('studentData');
@@ -400,24 +407,23 @@ async function displayResult(result) {
     }
 
     if (cnic) {
-      const lastChar = cnic.trim().slice(-1);
-      const lastDigit = parseInt(lastChar, 10);
+      // Clean CNIC and get last digit
+      const cleanCnic = cnic.toString().replace(/[^0-9]/g, '');
+      const lastDigit = parseInt(cleanCnic.slice(-1), 10);
+
       if (!isNaN(lastDigit)) {
-        // even -> female, odd -> male
-        if (lastDigit % 2 === 1) {
-          interviewDate = '16-March-2026';
-        }
+        // even -> female (14th March), odd -> male (16th March)
+        interviewDate = (lastDigit % 2 === 0) ? '14-March-2026' : '16-March-2026';
       }
     }
 
     html += `<p>Congratulations! You have qualified the Pre-Admission Test. Your interview is scheduled on ${interviewDate}, Time: 09:00am</p>`;
-    html += `</div>`;
-    displayDiv.innerHTML = html;
   } else {
     html += `<p>Unfortunately, you did not qualify Pre-Admission Test. Please review your performance and consider reapplying in the future.</p>`;
-    html += `</div>`;
-    displayDiv.innerHTML = html;
   }
+
+  html += `</div>`;
+  displayDiv.innerHTML = html;
 }
 
 

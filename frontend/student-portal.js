@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadStudentData();
   loadAssignments();
   loadResults();
-  loadNotifications();
 
   // Assignment upload form
   const assignmentForm = document.getElementById('assignment-upload-form');
@@ -351,16 +350,6 @@ async function loadAssignments() {
 
 // Fetch results from server and render using displayResult()
 async function loadResults() {
-  // Wait for currentStudent to be loaded
-  if (!currentStudent) {
-    // Wait a bit for loadStudentData to complete
-    await new Promise(resolve => setTimeout(resolve, 100));
-    if (!currentStudent) {
-      console.error('Student data not loaded yet');
-      return;
-    }
-  }
-  
   try {
     const studentToken = localStorage.getItem('studentToken');
     const res = await fetch(`${API_BASE_URL}/student/results`, {
@@ -382,7 +371,7 @@ async function loadResults() {
   } catch (err) {
     console.error('Error loading results:', err);
   }
-}
+
 
 // results
 async function displayResult(result) {
@@ -431,31 +420,4 @@ async function displayResult(result) {
   }
 }
 
-async function loadNotifications() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/student/notifications`);
-    const data = await res.json();
-    const announcementsDiv = document.getElementById('announcements');
-    
-    if (!announcementsDiv) {
-      console.error('Announcements div not found');
-      return;
-    }
-    
-    if (res.ok && data.success && data.notifications && data.notifications.length > 0) {
-      announcementsDiv.innerHTML = data.notifications
-        .filter(notif => notif.isActive)
-        .slice(0, 5)
-        .map(notif => `
-          <div style="padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6;">
-            <strong>${notif.title}</strong><br>
-            <small style="color: #6b7280;">${notif.message}</small>
-          </div>
-        `).join('');
-    } else {
-      announcementsDiv.innerHTML = '<p style="color: #6b7280; padding: 1rem 0;">No announcements at this time.</p>';
-    }
-  } catch (err) {
-    console.error('Error loading notifications:', err);
-  }
-}
+

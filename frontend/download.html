@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Downloads Department of Chemistry</title>
+  <title>Downloads - Government Boys Degree College Umerkot</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,21 +15,25 @@
       <a href="index.html" class="brand">
         <div class="brand-logo"> <img src="logo.png" alt="Logo"></div>
         <div class="brand-text">
-          <span class="brand-title">Department of Chemistry</span>
-          <span class="brand-subtitle">Government Boys Degree College Umerkot</span>
+          <span class="brand-title">Government Boys Degree College Umerkot</span>
+          <span class="brand-subtitle">College Education Department, Sindh</span>
         </div>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <ul>
           <li><a href="index.html">Home</a></li>
+          <li><a href="academic-programs.html">Programs</a></li>
           <li><a href="faculty.html">Faculty</a></li>
-          <li><a href="syllabus.html">Syllabus</a></li>
-          <li><a href="academic-policy.html">Academic Policy</a></li>
+          <li><a href="policy.html">Policies</a></li>
           <li><a href="about.html">About Us</a></li>
           <li><a href="contact.html">Contact Us</a></li>
           <li><a href="download.html" class="active">Downloads</a></li>
+          <li><a href="results.html">Results</a></li>
         </ul>
       </nav>
+      <div class="auth-buttons">
+        <button class="btn btn-primary" id="btn-register">Apply Now</button>
+      </div>
       <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -40,8 +44,8 @@
     <div class="main-download-area">
     <div class="custom-container">
         
-        <div class="download-header-box">
-            <h2 class="main-heading">Chemistry Department Downloads</h2>
+        <div class="page-hero">
+            <h2 class="main-heading">Government Degree College Downloads</h2>
             <div class="search-wrapper">
                 <input type="text" id="dlSearch" placeholder="Search by semester or file name..." onkeyup="smartSearch()">
                 <button class="search-btn">🔍</button>
@@ -145,67 +149,71 @@
                 </div>
             </div>
 
+            <div class="dl-card">
+                <div class="dl-card-head-slip-bg">
+                    <span class="dl-icon">🧾</span>
+                    <h3>Download Admission Slip</h3>
+                </div>
+                <div class="dl-card-body">
+                    <p>Enter your CNIC to download your admission slip or application PDF.</p>
+                    <div class="slip-search-row">
+                        <input type="text" id="slipCnic" placeholder="12345-6789012-3" pattern="[0-9]{5}-[0-9]{7}-[0-9]">
+                        <button type="button" id="downloadSlipBtn" class="action-btn pdf-type">Get Slip</button>
+                    </div>
+                    <div id="slipResult" class="slip-result"></div>
+                </div>
+            </div>
+
          </div>
         </div>
     </div>
 
- <footer class="site-footer">
+  <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
         <div class="brand footer-brand">
           <div class="brand-logo"><img src="logo.png" alt="logo"></div>
           <div class="brand-text">
-            <span class="brand-title">Department of Chemistry</span>
-            <span class="brand-subtitle">Government Boys Degree College Umerkot</span>
+            <span class="brand-title">Government Boys Degree College Umerkot</span>
+            <span class="brand-subtitle">College Education Department, Sindh</span>
           </div>
         </div>
-        <div class="map-embed">
-              <iframe
-                title="Department Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
-                style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-              </iframe>
-            </div>
       </div>
       <div class="footer-col">
         <h4>About Us</h4>
         <p>
-          The BS Chemistry program prepares graduates with strong foundations in physical, organic, inorganic, analytical, and environmental chemistry, along with practical laboratory skills.
+          Government Boys Degree College Umerkot offers quality education and student support services for college programs in Sindh.
         </p>
       </div>
       <div class="footer-col">
         <h4>Quick Links</h4>
         <ul class="footer-links">
           <li><a href="index.html">Home</a></li>
-           <li><a href="faculty.html">Faculty</a></li>
-           <li><a href="syllabus.html">Syllabus</a></li>
-          <li><a href="academic-policy.html">Academic Policy</a></li>
+          <li><a href="academic-programs.html">Academic Programs</a></li>
+          <li><a href="faculty.html">Faculty</a></li>
+          <li><a href="policy.html">Policies</a></li>
           <li><a href="about.html">About Us</a></li>
           <li><a href="contact.html">Contact Us</a></li>
-         <li><a href="download.html" class="active">Downloads</a></li>
+          <li><a href="download.html" class="active">Downloads</a></li>
+          <li><a href="results.html">Results</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Contact Info</h4>
+        <h4>Contact Information</h4>
         <p class="contact-info">
-          Department of Chemistry<br />
-          Faculty of Science, Government Boys Degree College Umerkot<br />
+          Government Boys Degree College Umerkot<br />
+          College Education Department, Sindh<br />
           Sindh, Pakistan
         </p>
         <p class="contact-info">
           Phone: <a href="tel:+923451331965">+92-345-1331965</a><br />
-          Email: <a href="mailto:chemisrty.gdcu@gmail.com">chemisrty.gdcu@gmail.com</a>
-        </p>
-        <p class="contact-info">
-          Office Hours:<br />
-          Monday to Friday, 9:00 AM - 3:00 PM<br />
-          Saturday & Sunday: Closed
+          Email: <a href="mailto:chemisrty_gdcu@gmail.com">chemisrty_gdcu@gmail.com</a>
         </p>
       </div>
     </div>
     <div class="footer-copyright">
       <div class="container">
-        <p>&copy; <span id="year"></span> IT team Department of Chemistry. All rights reserved.</p>
+        <p>&copy; <span id="year"></span> Government Boys Degree College Umerkot. All rights reserved.</p>
       </div>
     </div>
   </footer>
@@ -217,6 +225,35 @@
             row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
         });
      }
+
+     async function fetchSlipByCnic() {
+         const cnic = document.getElementById('slipCnic').value.trim();
+         const slipResult = document.getElementById('slipResult');
+         slipResult.innerHTML = '';
+         if (!cnic) {
+             slipResult.innerHTML = '<p style="color:#c62828;">Please enter a CNIC.</p>';
+             return;
+         }
+
+         try {
+             const response = await fetch(`${API_BASE_URL}/applications/slip/${encodeURIComponent(cnic)}`);
+             const data = await response.json();
+             if (!response.ok) {
+                 slipResult.innerHTML = `<p style="color:#c62828;">${data.message || 'Slip not found.'}</p>`;
+                 return;
+             }
+             slipResult.innerHTML = `
+                 <div><strong>${data.application.fullName}</strong> found.</div>
+                 <div style="margin-top:10px;">CNIC: ${data.application.cnic}</div>
+                 <div style="margin-top:12px;"><a href="${API_BASE_URL}/applications/slip/${encodeURIComponent(cnic)}/pdf" target="_blank" class="action-btn pdf-type">Download PDF Slip</a></div>
+             `;
+         } catch (error) {
+             console.error('Slip fetch error:', error);
+             slipResult.innerHTML = '<p style="color:#c62828;">Unable to retrieve slip at this time.</p>';
+         }
+     }
+
+     document.getElementById('downloadSlipBtn')?.addEventListener('click', fetchSlipByCnic);
     </script>
   <script src="script.js"></script>
 </body>

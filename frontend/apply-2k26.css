@@ -125,6 +125,88 @@ input:focus {
     font-size: 1.2rem;
 }
 
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 28px;
+    border-radius: 16px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+}
+
+.modal-content h2 {
+    margin: 0 0 12px;
+    color: var(--main-blue);
+}
+
+.modal-content p {
+    margin: 0 0 20px;
+    color: #334155;
+    line-height: 1.55;
+}
+
+.close-btn {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.form-row label {
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.checkbox-row input {
+    width: auto;
+    margin-top: 3px;
+}
+
+.photo-preview-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.required-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: #333;
+}
+
 /* موبائل اسکرین کے لیے خاص سیٹنگ */
 @media screen and (max-width: 600px) {
     /* ٹیبل کے ہیڈر (کالم نام) کو چھپا دیں */

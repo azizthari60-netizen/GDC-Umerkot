@@ -1,7 +1,7 @@
 {
-  "name": "chem-dept-site-backend",
+  "name": "gdcumerkot-backend",
   "version": "1.0.0",
-  "description": "Backend for Chemistry Department site",
+  "description": "Backend for gdc umerkot site",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -27,8 +27,8 @@
     "nodemon": "^3.1.0"
   },
   "keywords": [
-    "chemistry",
-    "department",
+    "gdcumerkot",
+    "college",
     "university"
   ],
   "author": "",

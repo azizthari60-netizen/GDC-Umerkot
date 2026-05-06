@@ -26,13 +26,132 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// --- Database Models ---
+const adminSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, default: 'admin' },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const studentSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    cnic: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    batch: { type: String, default: "2026" },
+    status: { type: String, enum: ['Pending', 'Challan Verified', 'Approved', 'Rejected'], default: 'Pending' },
+    isFormFilled: { type: Boolean, default: false },
+    challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded', 'Verified'], default: 'Not Generated' },
+    profileImage: String,
+    challanImage: String,
+    registrationDate: { type: Date, default: Date.now },
+    formData: {
+        fName: String,
+        caste: String,
+        domicile: String,
+        dob: String,
+        gender: String,
+        email: String,
+        mobile: String,
+        address: String,
+        gName: String,
+        gOcc: String,
+        gJobAddr: String,
+        gContact: String,
+        gAddress: String,
+        matric: { brd: String, yr: String, roll: String, grp: String, per: String },
+        inter: { brd: String, yr: String, roll: String, grp: String, per: String }
+    },
+    uniqueId: String,
+    isOldStudent: { type: Boolean, default: false }
+});
+
+const resultSchema = new mongoose.Schema({
+    studentCnic: { type: String, required: true },
+    course: String,
+    marks: Number,
+    grade: String,
+    semester: Number,
+    createdAt: { type: Date, default: Date.now }
+});
+
+const contactSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    subject: String,
+    message: String,
+    submittedAt: { type: Date, default: Date.now },
+    replied: { type: Boolean, default: false }
+});
+
+const slipSchema = new mongoose.Schema({
+    studentId: mongoose.Schema.Types.ObjectId,
+    studentCnic: String,
+    qrCode: String,
+    testDate: Date,
+    rollNumber: String,
+    isAvailable: { type: Boolean, default: false },
+    availableDate: Date
+});
+
+const oldStudentSchema = new mongoose.Schema({
+    fullName: String,
+    cnic: String,
+    batch: String,
+    registrationDate: Date,
+    profileImage: String
+});
+
+const admissionSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    fatherName: { type: String, required: true },
+    gender: { type: String, required: true },
+    email: { type: String },
+    cnic: { type: String, required: true },
+    mobile: { type: String, required: true },
+    dob: { type: String, required: true },
+    placeOfBirth: { type: String },
+    nationality: { type: String },
+    religion: { type: String },
+    domicileDistrict: { type: String, required: true },
+    fathersDomicileDistrict: { type: String, required: true },
+    fatherGuardianCnic: { type: String, required: true },
+    fatherGuardianMobile: { type: String, required: true },
+    homeAddress: { type: String, required: true },
+    ninthRollNo: String,
+    ninthPassingYear: String,
+    matricRollNo: String,
+    matricPassingYear: String,
+    province: String,
+    board: String,
+    studyGroup: String,
+    subject: String,
+    schoolName: String,
+    totalMarks: String,
+    obtainedMarks: String,
+    scaledTotalMarks: String,
+    scaledObtainedMarks: String,
+    collegeBoard: String,
+    zone: String,
+    choiceOfFaculty: String,
+    chosenColleges: String,
+    profileImage: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Admin = mongoose.model('Admin', adminSchema);
+const Student = mongoose.model('Student', studentSchema);
+const Result = mongoose.model('Result', resultSchema);
+const Contact = mongoose.model('Contact', contactSchema);
+const Slip = mongoose.model('Slip', slipSchema);
+const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
+const Admission = mongoose.model('Admission', admissionSchema);
 
 mongoose.connect(process.env.MONGODB_URI, {
     serverSelectionTimeoutMS: 30000,
 })
 .then(async () => {
     console.log("🚀 MongoDB Connected Successfully");
-    // Initialize admin if not exists
     const adminCount = await Admin.countDocuments();
     if (adminCount === 0) {
         const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -51,131 +170,6 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 const upload = multer({ storage: multer.memoryStorage() });
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// --- Database Models ---
-
-// Student Schema (New Students - Batch 2026)
-const studentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    cnic: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    batch: { type: String, default: "2026" },
-    status: { type: String, enum: ['Pending', 'Challan Verified', 'Approved', 'Rejected'], default: 'Pending' },
-    isFormFilled: { type: Boolean, default: false },
-    challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded', 'Verified'], default: 'Not Generated' },
-    profileImage: String,
-    challanImage: String,
-    registrationDate: { type: Date, default: Date.now },
-    // Form data
-    formData: {
-        fName: String,
-        caste: String,
-        domicile: String,
-        dob: String,
-        gender: String,
-        email: String,
-        mobile: String,
-        address: String,
-        gName: String,
-        gOcc: String,
-        gJobAddr: String,
-        gContact: String,
-        gAddress: String,
-        matric: { brd: String, yr: String, roll: String, grp: String, per: String },
-        inter: { brd: String, yr: String, roll: String, grp: String, per: String }
-    },
-    uniqueId: String, // For challan
-    isOldStudent: { type: Boolean, default: false }
-});
-
-// Old Student Schema (Registered by Admin)
-const oldStudentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    cnic: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    batch: String,
-    rollNumber: String,
-    email: String,
-    mobile: String,
-    fatherName: String,
-    caste: String,
-    domicile: String,
-    dob: String,
-    gender: String,
-    address: String,
-    profileImage: String,
-    // All form data
-    formData: mongoose.Schema.Types.Mixed,
-    registrationDate: { type: Date, default: Date.now },
-    isOldStudent: { type: Boolean, default: true }
-});
-
-// Assignment Schema
-const assignmentSchema = new mongoose.Schema({
-    studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    studentCnic: String,
-    title: String,
-    course: String,
-    fileUrl: String,
-    uploadedAt: { type: Date, default: Date.now },
-    status: { type: String, enum: ['pending', 'graded'], default: 'pending' },
-    grade: String
-});
-
-// Result Schema
-const resultSchema = new mongoose.Schema({
-    studentCnic: { type: String, required: true },
-    course: String,
-    marks: Number,
-    grade: String,
-    semester: Number,
-    createdAt: { type: Date, default: Date.now }
-});
-
-// Slip Schema
-const slipSchema = new mongoose.Schema({
-    studentCnic: { type: String, required: true },
-    studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    qrCode: String,
-    testDate: Date,
-    rollNumber: String, // Format: Chem/batch/2026/001
-    availableDate: Date, // Date when slip becomes downloadable
-    isAvailable: { type: Boolean, default: true }, // Default to true for immediate availability
-    createdAt: { type: Date, default: Date.now }
-});
-
-// Notification Schema
-const notificationSchema = new mongoose.Schema({
-    title: String,
-    message: String,
-    createdAt: { type: Date, default: Date.now },
-    isActive: { type: Boolean, default: true }
-});
-
-const Student = mongoose.model('Student', studentSchema);
-const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
-const Assignment = mongoose.model('Assignment', assignmentSchema);
-const Result = mongoose.model('Result', resultSchema);
-const Slip = mongoose.model('Slip', slipSchema);
-const Notification = mongoose.model('Notification', notificationSchema);
-
-// Admin Schema
-const adminSchema = new mongoose.Schema({
-    username: { type: String, default: 'admin' },
-    password: { type: String, default: 'admin123' }
-});
-const Admin = mongoose.model('Admin', adminSchema);
-
-// Contact Schema
-const contactSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    subject: String,
-    message: String,
-    submittedAt: { type: Date, default: Date.now },
-    replied: { type: Boolean, default: false }
-});
-const Contact = mongoose.model('Contact', contactSchema);
 
 // Helper function to upload to Cloudinary
 function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
@@ -200,80 +194,9 @@ function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
     });
 }
 
-// Generate unique ID for challan
-function generateUniqueId(serialNo) {
-    const date = new Date();
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const dateStr = `${day}/${month}/${year}`;
-
-    return `CHEM-${dateStr}-S.No:___________`;
-}
 
 // --- ROUTES ---
 
-// 1. Student Sign Up
-app.post('/api/student/signup', async (req, res) => {
-    try {
-        const { fullName, cnic, password, confirmPassword } = req.body;
-        
-        if (password !== confirmPassword) {
-            return res.status(400).json({ message: "Passwords do not match" });
-        }
-        
-        const exists = await Student.findOne({ cnic });
-        if (exists) {
-            return res.status(400).json({ message: "CNIC already registered" });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newStudent = new Student({ 
-            fullName, 
-            cnic, 
-            password: hashedPassword 
-        });
-        await newStudent.save();
-        
-        res.status(201).json({ message: "Account created successfully! Please sign in." });
-    } catch (err) {
-        console.error("Signup error:", err);
-        res.status(500).json({ message: "Sign up error" });
-    }
-});
-
-// 2. Student Login (Fixed) ---
-app.post('/api/student/login', async (req, res) => {
-    try {
-        const { cnic, password } = req.body;
-        let student = await Student.findOne({ cnic });
-        let isOld = false;
-        
-        if (!student) {
-            student = await OldStudent.findOne({ cnic });
-            isOld = true;
-        }
-        
-        if (!student) {
-            return res.status(401).json({ message: "Invalid CNIC or password" });
-        }
-        
-        // ✅ پاسورڈ چیک کرنے کا صحیح طریقہ
-        const isPasswordValid = await bcrypt.compare(password, student.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid CNIC or password" });
-        }
-        
-        const token = jwt.sign({ id: student._id, cnic: student.cnic }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ 
-            message: "Login successful", 
-            token,
-            student: { _id: student._id, fullName: student.fullName, cnic: student.cnic, isOldStudent: isOld }
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Login server error" });
-    }
-});
 
 // --- 2.5 Submit Admission Form (New Route) ---
 app.post('/api/student/submit-form', upload.single('profileImage'), async (req, res) => {
@@ -341,532 +264,200 @@ app.post('/api/student/submit-form', upload.single('profileImage'), async (req, 
     }
 });
 
-// 3. Admin Login
-app.post('/api/admin/login', async (req, res) => {
+// New public route for admission form submissions
+app.post('/api/applications/submit', upload.single('profileImage'), async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const admin = await Admin.findOne({ username });
-        
-        if (!admin) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        
-        // Check if password is hashed or plain text
-        let isPasswordValid = false;
-        try {
-            isPasswordValid = await bcrypt.compare(password, admin.password);
-        } catch (bcryptError) {
-            // If bcrypt compare fails, might be plain text
-            isPasswordValid = admin.password === password;
-        }
-        
-        // Also check plain text for migration purposes
-        if (!isPasswordValid && admin.password !== password) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        
-        // If password is plain text, hash it for future use
-        if (admin.password === password && password !== 'admin123') {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            admin.password = hashedPassword;
-            await admin.save();
-        }
-        
-        const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ message: "Admin login successful", token });
-    } catch (err) {
-        console.error("Admin login error:", err);
-        res.status(500).json({ message: "Login error" });
-    }
-});
+        const {
+            fullName, fatherName, gender, email, cnic, mobile, dob, placeOfBirth,
+            nationality, religion, domicileDistrict, fathersDomicileDistrict,
+            fatherGuardianCnic, fatherGuardianMobile, homeAddress,
+            ninthRollNo, ninthPassingYear, matricRollNo, matricPassingYear,
+            province, board, studyGroup, subject, schoolName,
+            totalMarks, obtainedMarks, scaledTotalMarks, scaledObtainedMarks,
+            collegeBoard, zone, choiceOfFaculty, faculty, chosenColleges
+        } = req.body;
 
-/// --- 3.5. Password Recovery (Fixed) ---
-app.post('/api/student/recovery', async (req, res) => {
-    try {
-        const { 'recovery-id': recoveryId, 'new-password': newPassword } = req.body;
-        
-        let student = await Student.findOne({ cnic: recoveryId });
-        let modelType = Student;
-
-        if (!student) {
-            student = await OldStudent.findOne({ cnic: recoveryId });
-            modelType = OldStudent;
-        }
-        
-        if (!student) {
-            return res.status(404).json({ message: "CNIC not found in our records." });
+        let profileImageUrl = '';
+        if (req.file) {
+            try {
+                const uploadResult = await uploadToCloudinary(req.file.buffer, 'admissions/profiles');
+                profileImageUrl = uploadResult.secure_url;
+            } catch (uploadErr) {
+                console.error('Cloudinary upload failed:', uploadErr);
+            }
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await modelType.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
-
-        res.status(200).json({ message: "Password updated! You can now login." });
-    } catch (err) {
-        res.status(500).json({ message: "Recovery error: " + err.message });
-    }
-});
-
-// 5. Generate Challan PDF
-app.get('/api/student/challan/:studentId', async (req, res) => {
-    try {
-        const student = await Student.findById(req.params.studentId);
-        if (!student || !student.isFormFilled) {
-            return res.status(404).json({ message: "Student or form not found" });
-        }
-        
-        // Validate student has uniqueId
-        if (!student.uniqueId) {
-            return res.status(400).json({ message: "Student unique ID not found. Please submit the form first." });
-        }
-        
-        const doc = new PDFDocument({ 
-            size: 'A4', 
-            layout: 'landscape',
-            margin: 20
+        const application = new Admission({
+            fullName,
+            fatherName,
+            gender,
+            email,
+            cnic,
+            mobile,
+            dob,
+            placeOfBirth,
+            nationality,
+            religion,
+            domicileDistrict,
+            fathersDomicileDistrict,
+            fatherGuardianCnic,
+            fatherGuardianMobile,
+            homeAddress,
+            ninthRollNo,
+            ninthPassingYear,
+            matricRollNo,
+            matricPassingYear,
+            province,
+            board,
+            studyGroup,
+            subject,
+            schoolName,
+            totalMarks,
+            obtainedMarks,
+            scaledTotalMarks,
+            scaledObtainedMarks,
+            collegeBoard,
+            zone,
+            choiceOfFaculty: choiceOfFaculty || faculty,
+            chosenColleges,
+            profileImage: profileImageUrl
         });
-        
-        // Set headers before piping
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=challan-${student.uniqueId}.pdf`);
-        
-        // Handle PDF generation errors
-        doc.on('error', (err) => {
-            console.error("PDF generation error:", err);
-            if (!res.headersSent) {
-                res.status(500).json({ message: "Error generating PDF" });
-            }
-        });
-        
-        doc.pipe(res);
-        
-        // Load department logo
-        let logoBuffer = null;
-        try {
-            const logoPath = path.join(__dirname, '..', 'frontend', 'logo.png');
-            if (fs.existsSync(logoPath)) {
-                logoBuffer = fs.readFileSync(logoPath);
-            }
-        } catch (err) {
-            console.error('Error loading logo:', err);
-            // Continue without logo if it fails
-        }
-        
-        // Page dimensions for landscape A4
-        const pageWidth = 841.89;
-        const pageHeight = 595.28;
-        const margin = 20;
-        const gap = 10;
-        const challanWidth = (pageWidth - (margin * 2) - (gap * 2)) / 3;
-        const challanHeight = pageHeight - (margin * 2);
-        const startY = margin;
-        
-        // Helper function to draw dotted border
-        const drawDottedRect = (x, y, width, height) => {
-            doc.dash(2, 2);
-            doc.strokeColor('#9e9e9e').lineWidth(1);
-            doc.rect(x, y, width, height).stroke();
-            doc.undash(); // Reset dash to solid line
-        };
-        
-        // Helper function to draw a single challan
-        const drawChallan = (x, y, copyText, copyColor) => {
-            const padding = 10;
-            const headerHeight = 50;
-            const contentStartY = y + headerHeight;
-            
-            // Outer border (dotted for separation between copies)
-            drawDottedRect(x, y, challanWidth, challanHeight);
-            
-            // Header background with color
-            doc.fillColor(copyColor).rect(x, y, challanWidth, headerHeight).fill();
-            
-            // Logo in header - ensure it's always visible
-            const logoSize = 32;
-            const logoX = x + padding;
-            const logoY = y + (headerHeight - logoSize) / 2;
-            if (logoBuffer) {
-                doc.image(logoBuffer, logoX, logoY, { width: logoSize, height: logoSize, fit: [logoSize, logoSize] });
-            }
-            
-            // Header text - positioned after logo for all copies (consistent across all three)
-            const headerTextX = x + (logoBuffer ? logoSize + padding + 5 : padding);
-            const headerTextWidth = challanWidth - headerTextX - padding;
-            
-            doc.fontSize(11).font('Helvetica-Bold').fillColor('#96880fff');
-            doc.text('DEPARTMENT OF CHEMISTRY', headerTextX, y + 6, { width: headerTextWidth });
-            doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#200491ff');
-            doc.text('GOVT. BOYS DEGREE COLLEGE UMERKOT', headerTextX, y + 20, { width: headerTextWidth });
-            // Copy text (BANK COPY, OFFICE COPY, STUDENT COPY) - consistent formatting
-            doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#96880fff');
-            doc.text(copyText, x, y + 33, { width: challanWidth, align: 'center' });
-        
-            // Divider line below header
-            doc.strokeColor('#757575').lineWidth(0.5);
-            doc.moveTo(x + padding, contentStartY).lineTo(x + challanWidth - padding, contentStartY).stroke();
-            
-            // Content area
-            let currentY = contentStartY + 12;
-            const labelWidth = 70;
-            const valueWidth = challanWidth - padding * 2 - labelWidth - 5;
-            const contentX = x + padding;
-            
-            // Student Information
-            doc.fontSize(8).font('Helvetica-Bold').fillColor('#424242');
-            doc.text('Unique ID:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica').fillColor('#212121');
-            doc.text(student.uniqueId || '-', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 14;
-            
-            doc.font('Helvetica-Bold').fillColor('#424242');
-            doc.text('Name:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica').fillColor('#212121');
-            doc.text(student.fullName || '-', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 14;
-            
-            doc.font('Helvetica-Bold').fillColor('#424242');
-            doc.text('Father\'s Name:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica').fillColor('#212121');
-            doc.text(student.formData?.fName || student.fatherName || 'N/A', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 14;
-            
-            doc.font('Helvetica-Bold').fillColor('#424242');
-            doc.text('CNIC:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica').fillColor('#212121');
-            doc.text(student.cnic || '-', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 14;
-            
-            doc.font('Helvetica-Bold').fillColor('#424242');
-            doc.text('Apply For:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica-Bold').fillColor('#1565c0');
-            doc.text('BS Chemistry (Batch 2026)', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 14;
-            
-            doc.font('Helvetica-Bold').fillColor('#424242');
-            doc.text('Fees:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica-Bold').fillColor('#c62828');
-            doc.text('Rs. 1500/-', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 14;
-            
-            doc.font('Helvetica-Bold').fillColor('#424242');
-            doc.text('Last Date:', contentX, currentY, { width: labelWidth });
-            doc.font('Helvetica').fillColor('#212121');
-            doc.text('02-03-2026', contentX + labelWidth, currentY, { width: valueWidth });
-            currentY += 18;
-            
-            // Divider
-            doc.strokeColor('#e0e0e0').lineWidth(0.5);
-            doc.moveTo(contentX, currentY).lineTo(x + challanWidth - padding, currentY).stroke();
-            currentY += 10;
-            
-            // Bank Information
-            doc.fontSize(8).font('Helvetica-Bold').fillColor('#1a237e');
-            doc.text('BANK DETAILS', contentX, currentY);
-            currentY += 12;
-            
-            doc.fontSize(7.5).font('Helvetica').fillColor('#424242');
-            doc.text('Bank: SINDH BANK UMERKOT', contentX, currentY);
-            currentY += 12;
-            doc.font('Helvetica-Bold').fillColor('#212121');
-            doc.text('Account: PRINCIPAL GOVT BOYS DEGREE COLLEGE UMERKOT \n (EXAMINATION FEES FOR DEGREE CLASSES)', contentX, currentY,{width: challanWidth - padding * 2});
-            currentY += 25;
-            doc.font('Helvetica-Bold').fillColor('#212121');
-            doc.text('Account No: 0419-156150-1000', contentX, currentY);
-            currentY += 18;
-            
-            // Signature line
-            const signatureY = currentY + 30;
-            doc.strokeColor('#9e9e9e').lineWidth(0.5);
-            doc.moveTo(contentX + 20, currentY).lineTo(x + challanWidth - padding - 20, currentY).stroke();
-            doc.fontSize(6.5).font('Helvetica').fillColor('#757575');
-            doc.text('Authorized Signature', contentX + 20, signatureY + 2, { width: challanWidth - padding * 2 - 40, align: 'left' });
-            doc.text('Bank Stamp', contentX + 20, signatureY + 2, { width: challanWidth - padding * 2 - 40, align: 'right' });
-        };
-        
-        // Draw three copies with different header colors
-        const copy1X = margin;
-        const copy2X = margin + challanWidth + gap;
-        const copy3X = margin + (challanWidth + gap) * 2;
-        
-        drawChallan(copy1X, startY, 'BANK COPY', '#1fb8dfff'); // Dark Blue
-        drawChallan(copy2X, startY, 'OFFICE COPY', '#1fb8dfff'); // Blue
-        drawChallan(copy3X, startY, 'STUDENT COPY', '#1fb8dfff'); // Red
-        
-        // Finalize PDF - this will trigger the stream to end
-        doc.end();
-        
+
+        await application.save();
+
+        res.status(201).json({ success: true, applicationId: application._id, message: 'Your application has been submitted successfully.' });
     } catch (err) {
-        console.error("Challan generation error:", err);
-        // Only send error response if headers haven't been sent yet
-        if (!res.headersSent) {
-            res.status(500).json({ message: "Challan generation error: " + err.message });
-        } else {
-            // If headers already sent (PDF headers set), destroy the response stream
-            if (!res.finished) {
-                res.destroy();
-            }
-            console.error("Cannot send error response - headers already sent. Response destroyed.");
-        }
+        console.error('Application submit error:', err);
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 });
 
-// 6. Upload Challan Image
-app.post('/api/student/upload-challan', upload.single('challanImage'), async (req, res) => {
+app.get('/api/applications/slip/:cnic', async (req, res) => {
     try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
+        const cnic = req.params.cnic;
+        const application = await Admission.findOne({ cnic: cnic });
+        if (!application) {
+            return res.status(404).json({ success: false, message: 'Application not found for this CNIC.' });
         }
-        
-        if (!req.file) {
-            return res.status(400).json({ message: "File missing" });
-        }
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        let student = await Student.findById(decoded.id);
-        let isOld = false;
-        
-        if (!student) {
-            student = await OldStudent.findById(decoded.id);
-            isOld = true;
-        }
-        
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        try {
-            const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/challans');
-            
-            // Only new students have challanStatus field
-            if (!isOld && student.challanStatus !== undefined) {
-                student.challanImage = uploadResult.secure_url;
-                student.challanStatus = 'Uploaded';
+        res.status(200).json({ success: true, application });
+    } catch (err) {
+        console.error('Slip lookup error:', err);
+        res.status(500).json({ message: 'Server error: ' + err.message });
+    }
+});
+
+async function fetchImage(url) {
+    if (!url) return null;
+    return new Promise((resolve) => {
+        const protocol = url.startsWith('https') ? https : http;
+        protocol.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        }, (response) => {
+            if (response.statusCode === 200) {
+                const chunks = [];
+                response.on('data', (chunk) => chunks.push(chunk));
+                response.on('end', () => resolve(Buffer.concat(chunks)));
             } else {
-                // For old students, just save the image URL
-                student.challanImage = uploadResult.secure_url;
+                resolve(null);
             }
-            
-            await student.save();
-            
-            res.status(200).json({ message: "Challan uploaded successfully", challanImage: uploadResult.secure_url });
-        } catch (uploadError) {
-            console.error("Challan upload error:", uploadError);
-            return res.status(500).json({ message: "Failed to upload challan image. Please check Cloudinary configuration." });
-        }
-    } catch (err) {
-        console.error("Challan upload error:", err);
-        res.status(500).json({ message: "Challan upload error" });
-    }
-});
+        }).on('error', () => resolve(null));
+    });
+}
 
-// 7. Verify Challan (Admin)
-app.post('/api/admin/verify-challan/:studentId', async (req, res) => {
+app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
     try {
-        const student = await Student.findById(req.params.studentId);
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        student.challanStatus = 'Verified';
-        student.status = 'Challan Verified';
-        await student.save();
-        
-        res.status(200).json({ success: true, message: "Challan verified successfully", student });
-    } catch (err) {
-        console.error("Challan verification error:", err);
-        res.status(500).json({ message: "Challan verification error" });
-    }
-});
-
-// 8. Approve Application (Admin)
-app.post('/api/admin/approve-application/:studentId', async (req, res) => {
-    try {
-        const student = await Student.findById(req.params.studentId);
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        student.status = 'Approved';
-        await student.save();
-        
-        res.status(200).json({ success: true, message: "Application approved successfully", student });
-    } catch (err) {
-        console.error("Application approval error:", err);
-        res.status(500).json({ message: "Application approval error" });
-    }
-});
-
-// 9. Get All Students with Challan Details (Admin)
-app.get('/api/admin/students-with-challans', async (req, res) => {
-    try {
-        const students = await Student.find({ isFormFilled: true }).select('_id fullName cnic challanStatus challanImage status formData profileImage');
-        res.status(200).json({ success: true, students });
-    } catch (err) {
-        console.error("Get students error:", err);
-        res.status(500).json({ message: "Get students error" });
-    }
-});
-
-// 7. Get Student Profile
-app.get('/api/student/profile', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        let student = await Student.findById(decoded.id);
-        let isOld = false;
-        
-        if (!student) {
-            student = await OldStudent.findById(decoded.id);
-            isOld = true;
-        }
-        
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        res.status(200).json({ success: true, student, isOldStudent: isOld || student.isOldStudent });
-    } catch (err) {
-        console.error("Profile error:", err);
-        res.status(500).json({ message: "Profile error" });
-    }
-});
-
-// 8. Upload Assignment
-app.post('/api/student/assignments/upload', upload.single('file'), async (req, res) => {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        let student = await Student.findById(decoded.id);
-        if (!student) {
-            student = await OldStudent.findById(decoded.id);
-        }
-        
-        if (!student || !req.file) {
-            return res.status(400).json({ message: "Student not found or file missing" });
-        }
-        
-        try {
-            const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/assignments');
-            
-            const assignment = new Assignment({
-                studentId: student._id,
-                studentCnic: student.cnic,
-                title: req.body.title,
-                course: req.body.course,
-                fileUrl: uploadResult.secure_url
-            });
-            await assignment.save();
-            
-            res.status(200).json({ success: true, message: "Assignment uploaded successfully" });
-        } catch (uploadError) {
-            console.error("Assignment upload error:", uploadError);
-            return res.status(500).json({ message: "Failed to upload assignment. Please check Cloudinary configuration." });
-        }
-    } catch (err) {
-        console.error("Assignment upload error:", err);
-        res.status(500).json({ message: "Assignment upload error" });
-    }
-});
-
-// 9. Get Student Assignments
-app.get('/api/student/assignments', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const assignments = await Assignment.find({ studentId: decoded.id }).sort({ uploadedAt: -1 });
-        
-        res.status(200).json({ success: true, assignments });
-    } catch (err) {
-        console.error("Get assignments error:", err);
-        res.status(500).json({ message: "Get assignments error" });
-    }
-});
-
-// 10. Get Student Results
-app.get('/api/student/results', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
+        const cnic = req.params.cnic;
+        const application = await Admission.findOne({ cnic: cnic });
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found.' });
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET);
-        let student = await Student.findById(decoded.id);
-        if (!student) {
-            student = await OldStudent.findById(decoded.id);
-        }
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=admission-slip-${cnic}.pdf`);
+        doc.pipe(res);
 
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
+        doc.fillColor('#1e3a8a').fontSize(18).text('Government Boys Degree College Umerkot', { align: 'center' });
+        doc.moveDown(0.2);
+        doc.fontSize(14).fillColor('#333').text('Admission Application Slip 2026', { align: 'center' });
+        doc.moveDown(0.6);
 
-        // try exact CNIC first, then stripped version without dashes
-        let results = await Result.find({ studentCnic: student.cnic });
-        if (results.length === 0) {
-            const alt = student.cnic.replace(/[-\s]/g, '');
-            if (alt !== student.cnic) {
-                results = await Result.find({ studentCnic: alt });
+        if (application.profileImage) {
+            const imageBuffer = await fetchImage(application.profileImage);
+            if (imageBuffer) {
+                try {
+                    doc.image(imageBuffer, 450, 110, { width: 90, height: 110, fit: [90, 110] });
+                } catch (imgErr) {
+                    console.error('PDF image embed error:', imgErr);
+                }
             }
         }
 
-        res.json({ success: true, results });
+        const printRows = [
+            ['Name', application.fullName],
+            ['Father Name', application.fatherName],
+            ['Gender', application.gender],
+            ['Email', application.email || '-'],
+            ['CNIC / B-Form', application.cnic],
+            ['Mobile No', application.mobile],
+            ['Date of Birth', application.dob],
+            ['Place of Birth', application.placeOfBirth],
+            ['Nationality', application.nationality],
+            ['Religion', application.religion],
+            ['Domicile District', application.domicileDistrict],
+            ['Father\'s Domicile District', application.fathersDomicileDistrict],
+            ['Father/Guardian CNIC', application.fatherGuardianCnic],
+            ['Father/Guardian Mobile No', application.fatherGuardianMobile],
+            ['Home Address', application.homeAddress],
+            ['Ninth Roll No', application.ninthRollNo || '-'],
+            ['Ninth Passing Year', application.ninthPassingYear || '-'],
+            ['Matric Roll No', application.matricRollNo || '-'],
+            ['Matric Passing Year', application.matricPassingYear || '-'],
+            ['Province', application.province || '-'],
+            ['Board', application.board || '-'],
+            ['Study Group', application.studyGroup || '-'],
+            ['Subject', application.subject || '-'],
+            ['School Name', application.schoolName || '-'],
+            ['Total Marks', application.totalMarks || '-'],
+            ['Obtained Marks', application.obtainedMarks || '-'],
+            ['Scaled Total Marks', application.scaledTotalMarks || '-'],
+            ['Scaled Obtained Marks', application.scaledObtainedMarks || '-'],
+            ['College Board', application.collegeBoard || '-'],
+            ['Zone', application.zone || '-'],
+            ['Choice Of Faculty', application.choiceOfFaculty || '-'],
+            ['Chosen Colleges', application.chosenColleges || '-']
+        ];
+
+        const labelX = 50;
+        const valueX = 220;
+        let y = 160;
+        doc.fontSize(10).fillColor('#000');
+        printRows.forEach(([label, value]) => {
+            doc.text(label + ':', labelX, y, { continued: true, width: 160 });
+            doc.fillColor('#333').text(value || '-', valueX, y, { width: 330 });
+            y += 18;
+            if (y > 740) { doc.addPage(); y = 50; }
+            doc.fillColor('#000');
+        });
+
+        doc.moveDown(2);
+        doc.fontSize(10).fillColor('#1e3a8a').text('Required Documents:', labelX);
+        doc.fontSize(9).fillColor('#333');
+        doc.text('1) SSC or Ninth Marksheet', { indent: 15 });
+        doc.text('2) Detail Marks / Provisional Certificate of the last exam passed', { indent: 15 });
+        doc.text('3) Character Certificate', { indent: 15 });
+        doc.text('4) Self/Father/Guardian B-Form/CNIC', { indent: 15 });
+        doc.text('5) Colored Photograph', { indent: 15 });
+        doc.text('6) Undertaking to ensure 75% attendance in black and white by Parent/Guardian', { indent: 15 });
+
+        doc.end();
     } catch (err) {
-        console.error("Get student results error:", err);
-        res.status(500).json({ message: "Get student results error" });
+        console.error('Application slip PDF error:', err);
+        res.status(500).json({ message: 'Slip PDF error' });
     }
 });
 
-// 11. Get Notifications
-app.get('/api/student/notifications', async (req, res) => {
-    try {
-        const notifications = await Notification.find({ isActive: true }).sort({ createdAt: -1 }).limit(10);
-        res.status(200).json({ success: true, notifications });
-    } catch (err) {
-        console.error("Get notifications error:", err);
-        res.status(500).json({ message: "Get notifications error" });
-    }
-});
-
-// 12. Get Student Slip
-app.get('/api/student/slip', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const slip = await Slip.findOne({ studentId: decoded.id });
-        
-        if (!slip) {
-            return res.status(404).json({ message: "Slip not found" });
-        }
-        
-        // Slip is immediately available when created (no date restriction)
-        if (!slip.isAvailable) {
-            return res.status(403).json({ message: "Slip is not available yet." });
-        }
-        
-        res.status(200).json({ success: true, slip });
-    } catch (err) {
-        console.error("Get slip error:", err);
-        res.status(500).json({ message: "Get slip error" });
-    }
-});
-
-// 13. Generate Slip PDF
+//  Generate Slip PDF
 app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
     try {
         const slip = await Slip.findById(req.params.slipId);
@@ -1140,242 +731,6 @@ app.post('/api/results/check', async (req, res) => {
     }
 });
 
-// Debug endpoint to check all results
-app.get('/api/debug/results', async (req, res) => {
-    try {
-        const allResults = await Result.find({}).limit(10);
-        const resultCnics = allResults.map(r => r.studentCnic);
-
-        const allStudents = await Student.find({}).limit(10);
-        const studentCnics = allStudents.map(s => s.cnic);
-
-        const allOldStudents = await OldStudent.find({}).limit(10);
-        const oldStudentCnics = allOldStudents.map(s => s.cnic);
-
-        res.json({
-            results: allResults,
-            resultCnics: resultCnics,
-            studentCnics: studentCnics,
-            oldStudentCnics: oldStudentCnics,
-            totalResults: await Result.countDocuments(),
-            totalStudents: await Student.countDocuments(),
-            totalOldStudents: await OldStudent.countDocuments()
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 15. Get All Students (Admin)
-app.get('/api/admin/students', async (req, res) => {
-    try {
-        const newStudents = await Student.find().sort({ registrationDate: -1 });
-        const oldStudents = await OldStudent.find().sort({ registrationDate: -1 });
-        res.status(200).json({ 
-            success: true, 
-            students: [...newStudents, ...oldStudents.map(s => ({ ...s.toObject(), isOldStudent: true }))] 
-        });
-    } catch (err) {
-        console.error("Get students error:", err);
-        res.status(500).json({ message: "Get students error" });
-    }
-});
-
-// 16. Approve/Reject Student Registration
-app.put('/api/admin/students/:id/approve', async (req, res) => {
-    try {
-        const { status } = req.body;
-        const student = await Student.findByIdAndUpdate(req.params.id, { status }, { new: true });
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        // Send email
-        if (student.formData?.email) {
-            try {
-                await transporter.sendMail({
-                    from: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
-                    to: student.formData.email,
-                    subject: `Registration ${status}`,
-                    html: `<p>Your registration has been ${status.toLowerCase()}.</p>`
-                });
-            } catch (emailErr) {
-                console.error("Email error:", emailErr);
-            }
-        }
-        
-        res.status(200).json({ success: true, message: `Student ${status.toLowerCase()}` });
-    } catch (err) {
-        console.error("Approve student error:", err);
-        res.status(500).json({ message: "Approve student error" });
-    }
-});
-
-// 17. Verify Challan
-app.put('/api/admin/students/:id/verify-challan', async (req, res) => {
-    try {
-        const student = await Student.findByIdAndUpdate(
-            req.params.id, 
-            { 
-                challanStatus: 'Verified',
-                status: 'Challan Verified'
-            }, 
-            { new: true }
-        );
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        res.status(200).json({ success: true, message: "Challan verified", student });
-    } catch (err) {
-        console.error("Verify challan error:", err);
-        res.status(500).json({ message: "Verify challan error" });
-    }
-});
-
-// 18. Register Old Student (Admin)
-app.post('/api/admin/old-students', async (req, res) => {
-    try {
-        const { fullName, cnic, batch, rollNumber, email, mobile, fatherName, caste, domicile, dob, gender, address, formData, password } = req.body;
-        
-        const exists = await OldStudent.findOne({ cnic });
-        if (exists) {
-            return res.status(400).json({ message: "CNIC already registered" });
-        }
-        
-        const hashedPassword = await bcrypt.hash(password || cnic, 10);
-        const oldStudent = new OldStudent({
-            fullName,
-            cnic,
-            password: hashedPassword,
-            batch,
-            rollNumber,
-            email,
-            mobile,
-            fatherName,
-            caste,
-            domicile,
-            dob,
-            gender,
-            address,
-            image: image || null,
-            formData: formData || {}
-        });
-        await oldStudent.save();
-        
-        res.status(201).json({ 
-            success: true, 
-            message: "Old student registered successfully",
-            student: oldStudent,
-            password: password || cnic // Return password for admin to share
-        });
-    } catch (err) {
-        console.error("Register old student error:", err);
-        res.status(500).json({ message: "Register old student error" });
-    }
-
-});
-
-// 18. Approve Student (Admin)
-app.post('/api/admin/students/:id/approve', async (req, res) => {
-    try {
-        const student = await Student.findById(req.params.id);
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        student.status = 'Approved';
-        await student.save();
-        
-        res.status(200).json({ success: true, message: "Student approved", student });
-    } catch (err) {
-        console.error("Approve student error:", err);
-        res.status(500).json({ message: "Approve student error" });
-    }
-});
-
-// 18b. Reject Student (Admin)
-app.post('/api/admin/students/:id/reject', async (req, res) => {
-    try {
-        const student = await Student.findById(req.params.id);
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        student.status = 'Rejected';
-        await student.save();
-        
-        res.status(200).json({ success: true, message: "Student rejected", student });
-    } catch (err) {
-        console.error("Reject student error:", err);
-        res.status(500).json({ message: "Reject student error" });
-    }
-});
-
-// 19. Delete Student
-app.delete('/api/admin/students/:id', async (req, res) => {
-    try {
-        const { oldStudent } = req.query;
-        
-        if (oldStudent === 'true') {
-            await OldStudent.findByIdAndDelete(req.params.id);
-        } else {
-            await Student.findByIdAndDelete(req.params.id);
-        }
-        
-        res.status(200).json({ success: true, message: "Student deleted" });
-    } catch (err) {
-        console.error("Delete student error:", err);
-        res.status(500).json({ message: "Delete student error" });
-    }
-});
-
-// 20. Get All Assignments (Admin)
-app.get('/api/admin/assignments', async (req, res) => {
-  try {
-    const assignments = await Assignment.find().sort({ uploadedAt: -1 });
-    
-    // Populate student info
-    const assignmentsWithStudent = await Promise.all(assignments.map(async (assignment) => {
-      const assignmentObj = assignment.toObject();
-      let student = await Student.findById(assignment.studentId);
-      if (!student) {
-        student = await OldStudent.findById(assignment.studentId);
-      }
-      if (student) {
-        assignmentObj.studentId = {
-          _id: student._id,
-          fullName: student.fullName,
-          cnic: student.cnic
-        };
-      }
-      return assignmentObj;
-    }));
-    
-    res.status(200).json({ success: true, assignments: assignmentsWithStudent });
-  } catch (err) {
-    console.error("Get assignments error:", err);
-    res.status(500).json({ message: "Get assignments error" });
-  }
-});
-
-// 21. Grade Assignment
-app.post('/api/admin/assignments/:id/grade', async (req, res) => {
-    try {
-        const { grade } = req.body;
-        const assignment = await Assignment.findByIdAndUpdate(
-            req.params.id,
-            { grade, status: 'graded' },
-            { new: true }
-        );
-        if (!assignment) {
-            return res.status(404).json({ message: "Assignment not found" });
-        }
-        res.status(200).json({ success: true, message: "Assignment graded" });
-    } catch (err) {
-        console.error("Grade assignment error:", err);
-        res.status(500).json({ message: "Grade assignment error" });
-    }
-});
 
 // 22. Upload Slip for Student
 app.post('/api/admin/students/:id/slip', async (req, res) => {
@@ -1622,4 +977,9 @@ app.post('/api/contact', async (req, res) => {
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+
+if (require.main === module) {
+    app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+}
+
+module.exports = app;

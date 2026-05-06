@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact Us - Government Boys Degree College Umerkot</title>
+  <title>Academic Programs - Government Boys Degree College Umerkot</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,11 +22,11 @@
       <nav class="main-nav" aria-label="Main navigation">
         <ul>
           <li><a href="index.html">Home</a></li>
-          <li><a href="academic-programs.html">Academic Programs</a></li>
+          <li><a href="academic-programs.html" class="active">Academic Programs</a></li>
           <li><a href="faculty.html">Faculty</a></li>
           <li><a href="policy.html">Policies</a></li>
           <li><a href="about.html">About Us</a></li>
-          <li><a href="contact.html" class="active">Contact Us</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
           <li><a href="download.html">Downloads</a></li>
           <li><a href="results.html">Results</a></li>
         </ul>
@@ -40,61 +40,48 @@
     </div>
   </header>
 
-  <section class="page-hero">
-    <div class="container">
-      <h1>Contact Us</h1>
-      <p>Reach out for admissions, academic queries, or general information.</p>
-    </div>
-  </section>
-
-  <main class="page-content">
-    <div class="container contact-grid">
-      <div class="contact-card">
-        <h2>Send a Message</h2>
-        <p>
-          Use the form below to send your queries to Government Boys Degree College Umerkot. The office will respond to you via email or phone.
-        </p>
-        <form id="contact-form">
-          <div class="form-group">
-            <label for="name">Full Name</label>
-            <input type="text" id="name" name="name" required />
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required />
-          </div>
-          <div class="form-group">
-            <label for="subject">Subject</label>
-            <input type="text" id="subject" name="subject" required />
-          </div>
-          <div class="form-group">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" rows="4" required></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary full-width">Submit</button>
-        </form>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <h1>Academic Programs</h1>
+        <p>Explore the diverse academic programs offered by our college, designed to empower students with knowledge and skills for a successful future.</p>
       </div>
+    </section>
 
-      <div class="contact-card">
-        <h2>Department Contact</h2>
-        <p class="contact-info">
-          Government Boys Degree College Umerkot<br />
-          College Education Department, Sindh<br />
-          Sindh, Pakistan
-        </p>
-        <p class="contact-info">
-          Phone: +92-345-1331965<br />
-          Email: chemisrty_gdcu@gmail.com
-        </p>
-        <p class="contact-info">
-          Office Hours:<br />
-          Monday to Friday, 9:00 AM - 3:00 PM<br />
-          Saturday & Sunday: Closed
-        </p>
+    <section class="programs-section">
+      <div class="container">
+        <div class="programs-grid">
+          <div class="program-card">
+              <div class="program-card-header">
+                <h2>Intermediate Programs</h2>
+              </div>
+            <h2>Pre Medical</h2>
+                <p>A 2-year intermediate program that prepares students for medical and health science fields, covering subjects like Biology, Chemistry, and Physics.</p>
+            <h2>Pre Engineering</h2>
+                <p>A 2-year intermediate program that equips students with foundational knowledge in Mathematics, Physics, and Chemistry for engineering disciplines.</p>
+            <h2>Commerce</h2>
+                <p>A 2-year intermediate program focused on business studies, accounting, economics, and commerce-related subjects to prepare students for careers in business and finance.</p>
+            <h2>Arts</h2>
+                <p>A 2-year intermediate program that offers a broad range of subjects in humanities, social sciences, and languages to foster critical thinking and creativity.</p>
+          </div>
+
+            <div class="program-card">
+              <div class="program-card-header">
+                <h2>BS Programs</h2>
+              </div>
+            <div class="program-card-body">
+             <h2>BS Chemistry</h2>
+             <p>A comprehensive 4-year undergraduate program that provides in-depth knowledge of chemical principles, laboratory techniques, and research methodologies.</p>
+             </div>
+              <div class="program-card-body">
+             <h2>BS Computer Science</h2>
+             <p>An intensive 4-year undergraduate program that covers fundamental concepts of computer science, programming, and software engineering.</p>
+            </div>
+            </div>
+        </div> 
       </div>
-    </div>
-  </main>
-
+    </section>
+    </main>
   <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
@@ -143,8 +130,9 @@
         <p>&copy; <span id="year"></span> Government Boys Degree College Umerkot. All rights reserved.</p>
       </div>
     </div>
+    </div>
   </footer>
-
+  
   <script src="script.js"></script>
 </body>
 </html>

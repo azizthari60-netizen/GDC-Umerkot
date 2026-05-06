@@ -1,30 +1,44 @@
-const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
-// Mobile nav toggle
-const navToggle = document.querySelector(".nav-toggle");
-const mainNav = document.querySelector(".main-nav");
+﻿const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
+
+const navToggle = document.querySelector('.nav-toggle');
+const mainNav = document.querySelector('.main-nav');
 
 if (navToggle && mainNav) {
-  navToggle.addEventListener("click", () => {
-    const isOpen = mainNav.classList.toggle("open");
-    navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  navToggle.addEventListener('click', () => {
+    const isOpen = mainNav.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   });
 }
 
-// Hero slider
-const heroSlides = Array.from(document.querySelectorAll(".hero-slide"));
-const heroPrev = document.querySelector(".hero-prev");
-const heroNext = document.querySelector(".hero-next");
-const heroDotsContainer = document.querySelector(".hero-dots");
+const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+const navLinks = document.querySelectorAll('.main-nav a');
+navLinks.forEach(link => {
+  const href = link.getAttribute('href');
+  if (href === currentPath || (href === 'index.html' && currentPath === '')) {
+    link.classList.add('active');
+  }
+  link.addEventListener('click', () => {
+    if (mainNav && mainNav.classList.contains('open')) {
+      mainNav.classList.remove('open');
+      navToggle?.setAttribute('aria-expanded', 'false');
+    }
+  });
+});
+
+const heroSlides = Array.from(document.querySelectorAll('.hero-slide'));
+const heroPrev = document.querySelector('.hero-prev');
+const heroNext = document.querySelector('.hero-next');
+const heroDotsContainer = document.querySelector('.hero-dots');
 let heroIndex = 0;
 
 function renderHeroDots() {
   if (!heroDotsContainer || heroSlides.length <= 1) return;
-  heroDotsContainer.innerHTML = "";
+  heroDotsContainer.innerHTML = '';
   heroSlides.forEach((_, idx) => {
-    const dot = document.createElement("button");
-    dot.className = "hero-dot" + (idx === heroIndex ? " active" : "");
-    dot.type = "button";
-    dot.addEventListener("click", () => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'hero-dot' + (idx === heroIndex ? ' active' : '');
+    dot.addEventListener('click', () => {
       heroIndex = idx;
       updateHeroSlides();
     });
@@ -34,7 +48,7 @@ function renderHeroDots() {
 
 function updateHeroSlides() {
   heroSlides.forEach((slide, idx) => {
-    slide.classList.toggle("active", idx === heroIndex);
+    slide.classList.toggle('active', idx === heroIndex);
   });
   renderHeroDots();
 }
@@ -51,38 +65,35 @@ function prevHero() {
 
 if (heroSlides.length) {
   updateHeroSlides();
-  let heroTimer = setInterval(nextHero, 6000);
+  let heroTimer = setInterval(nextHero, 5500);
 
-  const resetTimer = () => {
+  const resetHeroTimer = () => {
     clearInterval(heroTimer);
-    heroTimer = setInterval(nextHero, 6000);
+    heroTimer = setInterval(nextHero, 5500);
   };
 
-  if (heroNext) {
-    heroNext.addEventListener("click", () => {
-      nextHero();
-      resetTimer();
-    });
-  }
+  heroNext?.addEventListener('click', () => {
+    nextHero();
+    resetHeroTimer();
+  });
 
-  if (heroPrev) {
-    heroPrev.addEventListener("click", () => {
-      prevHero();
-      resetTimer();
-    });
-  }
+  heroPrev?.addEventListener('click', () => {
+    prevHero();
+    resetHeroTimer();
+  });
 }
 
-// Notification Hero (like hero slider)
-const notificationSlides = Array.from(document.querySelectorAll(".notification-slide"));
-const notificationPrev = document.querySelector(".notification-prev");
-const notificationNext = document.querySelector(".notification-next");
+const notificationSlides = Array.from(document.querySelectorAll('.notification-slide'));
+const notificationPrev = document.querySelector('.notification-prev');
+const notificationNext = document.querySelector('.notification-next');
 let notificationIndex = 0;
 
 function updateNotifications() {
   if (!notificationSlides.length) return;
   notificationSlides.forEach((slide, idx) => {
-    slide.classList.toggle("active", idx === notificationIndex);
+    const isActive = idx === notificationIndex;
+    slide.classList.toggle('active', isActive);
+    slide.style.display = isActive ? 'block' : 'none';
   });
 }
 
@@ -98,412 +109,91 @@ function prevNotification() {
 
 if (notificationSlides.length) {
   updateNotifications();
-  let notificationTimer = setInterval(nextNotification, 5000); // Auto-change every 5 seconds
+  let notificationTimer = setInterval(nextNotification, 6000);
 
   const resetNotificationTimer = () => {
     clearInterval(notificationTimer);
-    notificationTimer = setInterval(nextNotification, 5000);
+    notificationTimer = setInterval(nextNotification, 6000);
   };
 
-  if (notificationNext) {
-    notificationNext.addEventListener("click", () => {
-      nextNotification();
-      resetNotificationTimer();
-    });
-  }
+  notificationNext?.addEventListener('click', () => {
+    nextNotification();
+    resetNotificationTimer();
+  });
 
-  if (notificationPrev) {
-    notificationPrev.addEventListener("click", () => {
-      prevNotification();
-      resetNotificationTimer();
-    });
-  }
-}
-
-// Loader
-const loader = document.getElementById("loader");
-if (loader) {
-  window.addEventListener("load", () => {
-    setTimeout(() => {
-      loader.classList.add("hidden");
-      setTimeout(() => {
-        loader.style.display = "none";
-      }, 400);
-    }, 1200); // Show loader for 1.2 seconds (shorter time)
+  notificationPrev?.addEventListener('click', () => {
+    prevNotification();
+    resetNotificationTimer();
   });
 }
 
-// Animations on scroll
+const loader = document.getElementById('loader');
+if (loader) {
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      loader.classList.add('hidden');
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 400);
+    }, 900);
+  });
+}
+
 const observerOptions = {
   threshold: 0.1,
-  rootMargin: "0px 0px -50px 0px"
+  rootMargin: '0px 0px -50px 0px'
 };
 
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
-      entry.target.classList.add("animated", "fade-in-up");
+      entry.target.classList.add('animated', 'fade-in-up');
     }
   });
 }, observerOptions);
 
-document.querySelectorAll(".animate-on-scroll").forEach(el => {
+document.querySelectorAll('.animate-on-scroll').forEach(el => {
   observer.observe(el);
 });
 
-// All galleries data and lightbox functionality
-const allGalleries = {
-  'academics': [
-    '/Public/academic.1.jpg', 
-    '/Public/academic.2.jpg', 
-    '/Public/academic.3.jpg'
-  ],
-  'seminars': [
-    '/Public/seminar.1.jpg',
-    '/Public/seminar.2.jpg',
-    '/Public/seminar.3.jpg',
-    '/Public/seminar.4.jpg',
-    '/Public/seminar.5.jpg',
-    '/Public/seminar.6.jpg'
-  ],
-  'activities': [
-    '/Public/activity.1.jpg',
-    '/Public/activity.2.jpg',
-    '/Public/activity.3.jpg'
-  ]
-};
-
-let currentGallery = [];
-let currentIndex = 0;
-
-function openLightbox(galleryType, index) {
-  currentGallery = allGalleries[galleryType];
-  currentIndex = index;
-  
-  document.getElementById('lightboxImg').src = currentGallery[currentIndex];
-  document.getElementById('lightboxOverlay').style.display = 'flex';
-}
-
-function closeLightbox() {
-  document.getElementById('lightboxOverlay').style.display = 'none';
-}
-
-function changeImage(step) {
-  currentIndex += step;
-  if (currentIndex >= currentGallery.length) currentIndex = 0;
-  if (currentIndex < 0) currentIndex = currentGallery.length - 1;
-  
-  document.getElementById('lightboxImg').src = currentGallery[currentIndex];
-}
-
-// Auth modals
-const signupModal = document.getElementById("signup-modal");
-const signinModal = document.getElementById("signin-modal");
-const recoveryModal = document.getElementById('recovery-modal');
-const registerBtn = document.getElementById("btn-register");
-const switchToSignin = document.getElementById("switch-to-signin");
-const switchToSignup = document.getElementById("switch-to-signup");
-
-function openModal(modal) {
-  if (!modal) return;
-  modal.classList.add("active");
-  modal.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
-}
-
-function closeModal(modal) {
-  if (!modal) return;
-  modal.classList.remove("active");
-  modal.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
-}
-
-// Register button opens signup modal
-if (registerBtn && signupModal) {
-  registerBtn.addEventListener("click", () => openModal(signupModal));
-}
-
-// Switch between signup and signin
-if (switchToSignin && signupModal && signinModal) {
-  switchToSignin.addEventListener("click", () => {
-    closeModal(signupModal);
-    openModal(signinModal);
-  });
-}
-
-if (switchToSignup && signupModal && signinModal) {
-  switchToSignup.addEventListener("click", () => {
-    closeModal(signinModal);
-    openModal(signupModal);
-  });
-}
-
-
-// Close modals on backdrop/close click
-[signupModal, signinModal, recoveryModal].forEach(modal => {
-  if (modal) {
-    modal.addEventListener("click", (e) => {
-      const target = e.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (target.matches("[data-close-modal]") || target.classList.contains("modal-backdrop")) {
-        closeModal(modal);
-      }
-    });
-  }
-});
-
-// Sign Up Form Handler
-const signupForm = document.getElementById("signup-form");
-if (signupForm) {
-  signupForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(signupForm);
-    const payload = {
-      fullName: formData.get("fullName"),
-      cnic: formData.get("cnic"),
-      password: formData.get("password"),
-      confirmPassword: formData.get("confirmPassword")
-    };
-
-    const submitButton = signupForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : "Register Now";
-    
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Registering...";
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/student/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(data.message || "Registration successful! Please sign in.");
-        closeModal(signupModal);
-        openModal(signinModal);
-        signupForm.reset();
-      } else {
-        alert(data.message || "Registration failed. Please try again.");
-      }
-    } catch (err) {
-      console.error("Signup error:", err);
-      alert("Network error. Please check your connection and try again.");
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
-    }
-  });
-}
-
-// Sign In Form Handler (Handles both Student and Admin login)
-const signinForm = document.getElementById("signin-form");
-if (signinForm) {
-  signinForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(signinForm);
-    const userValue = formData.get("cnic");
-    const passwordValue = formData.get("password");
-
-    const submitButton = signinForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : "Sign In";
-    
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Signing in...";
-    }
-
-    try {
-      // Check if it's admin login (username is "admin")
-      let apiUrl, payload;
-      if (userValue === "admin" || userValue.toLowerCase() === "admin") {
-        apiUrl = `${API_BASE_URL}/admin/login`;
-        payload = { username: userValue, password: passwordValue };
-      } else {
-        apiUrl = `${API_BASE_URL}/student/login`;
-        payload = { cnic: userValue, password: passwordValue };
-      }
-
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        if (userValue === "admin" || userValue.toLowerCase() === "admin") {
-          localStorage.setItem("adminToken", data.token);
-          closeModal(signinModal);
-          window.location.href = "admin-dashboard.html";
-        } else {
-          localStorage.setItem("studentToken", data.token);
-          localStorage.setItem("studentData", JSON.stringify(data.student));
-          closeModal(signinModal);
-          window.location.href = "student-portal.html";
-        }
-      } else {
-        alert(data.message || "Login failed. Please check your credentials.");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      alert("Network error. Please check your connection and try again.");
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
-    }
-  });
-}
-
-// Password toggle functionality
-const togglePasswordBtn = document.getElementById('toggle-password');
-const signinPasswordInput = document.getElementById('signin-password');
-
-if (togglePasswordBtn && signinPasswordInput) {
-  togglePasswordBtn.addEventListener('click', () => {
-    const isPassword = signinPasswordInput.type === 'password';
-    signinPasswordInput.type = isPassword ? 'text' : 'password';
-    
-    // Toggle eye icons
-    const eyeOpen = togglePasswordBtn.querySelector('.eye-open');
-    const eyeClosed = togglePasswordBtn.querySelector('.eye-closed');
-    
-    if (eyeOpen && eyeClosed) {
-      if (isPassword) {
-        eyeOpen.style.display = 'none';
-        eyeClosed.style.display = 'block';
-        togglePasswordBtn.setAttribute('aria-label', 'Hide password');
-      } else {
-        eyeOpen.style.display = 'block';
-        eyeClosed.style.display = 'none';
-        togglePasswordBtn.setAttribute('aria-label', 'Show password');
-      }
-    }
-  });
-}
-
-// Forgot Password button - open recovery modal
-const forgotPasswordBtn = document.getElementById('forgot-password-btn');
-
-if (forgotPasswordBtn && recoveryModal && signinModal) {
-  forgotPasswordBtn.addEventListener('click', () => {
-    closeModal(signinModal);
-    openModal(recoveryModal);
-  });
-}
-
-// Password Recovery Form Handler (Updated for CNIC & New Password)
-const recoveryForm = document.getElementById('recovery-form');
-if (recoveryForm) {
-  recoveryForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(recoveryForm);
-    const recoveryId = formData.get('recovery-id'); // یہ CNIC نمبر ہے
-    const newPassword = formData.get('new-password'); // یہ HTML میں شامل کی گئی نئی فیلڈ ہے
-    
-    const submitButton = recoveryForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : 'Update Password';
-    
-    // سیکیورٹی چیک: اگر اسٹوڈنٹ نے پاس ورڈ نہیں لکھا
-    if (!newPassword) {
-      alert('Please enter a new password to proceed.');
-      return;
-    }
-    
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = 'Updating...'; // ٹیکسٹ تبدیل کر دیا تاکہ اسٹوڈنٹ کو پتہ چلے کام ہو رہا ہے
-    }
-    
-    try {
-      const res = await fetch(`${API_BASE_URL}/student/recovery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // یہاں ہم اب دو چیزیں بھیج رہے ہیں: CNIC اور نیا پاس ورڈ
-        body: JSON.stringify({ 
-          'recovery-id': recoveryId,
-          'new-password': newPassword 
-        })
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        // کامیابی کا میسج
-        alert(data.message || 'Password updated successfully. You can now log in.');
-        recoveryForm.reset();
-        if (typeof closeModal === 'function') {
-          closeModal(recoveryModal);
-        }
-      } else {
-        // سرور سے آنے والا ایرر (مثلاً اگر CNIC غلط ہو)
-        alert(data.message || 'Failed to update password. Please try again.');
-      }
-    } catch (err) {
-      console.error('Recovery form error:', err);
-      alert('Network error. Please check your internet connection.');
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
-    }
-  });
-}
-
-// Contact form handler - connect to backend API
-const contactForm = document.getElementById("contact-form");
+const contactForm = document.getElementById('contact-form');
 if (contactForm) {
-  contactForm.addEventListener("submit", async (e) => {
+  contactForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const formData = new FormData(contactForm);
     const payload = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      subject: formData.get("subject"),
-      message: formData.get("message")
+      name: formData.get('name'),
+      email: formData.get('email'),
+      subject: formData.get('subject'),
+      message: formData.get('message')
     };
 
     const submitButton = contactForm.querySelector('button[type="submit"]');
-    const originalText = submitButton ? submitButton.textContent : "Submit";
-    
+    const originalText = submitButton ? submitButton.textContent : 'Submit';
+
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = "Sending...";
+      submitButton.textContent = 'Sending...';
     }
 
     try {
       const res = await fetch(`${API_BASE_URL}/contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       const data = await res.json();
-
       if (res.ok && data.success) {
-        alert(data.message || "Thank you for contacting us! We will get back to you soon.");
+        alert(data.message || 'Thank you for contacting us.');
         contactForm.reset();
       } else {
-        alert(data.error || "Failed to send message. Please try again.");
+        alert(data.error || 'Unable to send message. Please try again.');
       }
-    } catch (err) {
-      console.error("Contact form error:", err);
-      console.error("Error details:", err.message, err.stack);
-      alert(`Network error: ${err.message}. Please check your connection and try again.`);
+    } catch (error) {
+      console.error('Contact form error:', error);
+      alert('Network error. Please check your connection and try again.');
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -513,9 +203,14 @@ if (contactForm) {
   });
 }
 
-
-// Footer year
-const yearSpan = document.getElementById("year");
+const yearSpan = document.getElementById('year');
 if (yearSpan) {
-  yearSpan.textContent = String(new Date().getFullYear());
+  yearSpan.textContent = `${new Date().getFullYear()}`;
 }
+
+const applyButtons = document.querySelectorAll('#btn-register, #announcement-apply-now-btn');
+applyButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    window.location.href = 'apply-2k26.html';
+  });
+});

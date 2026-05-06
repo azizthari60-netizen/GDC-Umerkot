@@ -3,97 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admission Form 2026</title>
+    <title>Admission Form 2026 - Government Boys Degree College Umerkot</title>
     <link rel="stylesheet" href="apply-2k26.css">
 </head>
 <body>
-    
     <div class="form-container no-print">
-            <div class="form-header">
-             <div class="logo-div"><img src="logo.png" alt="Logo" style="width: 100px;"></div>
-                <div class="department-name-div">
-                    <h1 style="color: #1e3a8a; margin: 5px 0;">BS Chemistry Department</h1>
-                    <h2>Government Boys Degree College Umerkot</h2>
+        <div class="form-header">
+            <div class="logo-div"><img src="logo.png" alt="Logo" style="width: 100px;"></div>
+            <div class="department-name-div">
+                <h1 style="color: #16a34a; margin: 5px 0;">Government Boys Degree College Umerkot</h1>
+                <h2>Sindh Electronic Centralized College Admission Program 2025-26</h2>
+            </div>
+        </div>
+        <div class="form-title"><h2>Admission Application Form</h2></div>
+        <form id="admissionForm">
+            <div class="form-row">
+                <label for="userImage">Student Photograph</label>
+                <input type="file" id="userImage" accept="image/*" onchange="previewImage(event)">
+                <div class="photo-preview-container">
+                    <img id="student-photo-preview" src="" alt="Preview" style="width: 120px; height: 140px; border: 1px solid #ccc; display: none; margin-top: 10px; object-fit: cover;">
                 </div>
             </div>
-        <div class="form-title"><h2>Registration Form 2k26</h2></div>
-        <form id="admissionForm">
-            <div class="input-group">
-                <label>Upload Student Image:</label>
-                <input type="file" id="userImage" accept="image/*" required onchange="previewImage(event)">
-            </div>
-            
-            <div class="photo-preview-container">
-             <img id="student-photo-preview" src="" alt="Preview" style="width: 120px; height: 140px; border: 1px solid #ccc; display: none; margin-top: 10px; object-fit: cover;">
-            </div>
-
             <fieldset>
                 <legend>Personal Information</legend>
                 <div class="grid-inputs">
                     <input type="text" id="in-name" placeholder="Name" required>
                     <input type="text" id="in-fname" placeholder="Father's Name" required>
-                    <input type="text" id="in-caste" placeholder="Caste" required>
-                    <input type="text" id="in-cnic" placeholder="CNIC Number" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" title="Format: 12345-6789012-3">
-                    <input type="text" id="in-domicile" placeholder="Domicile District" required>
+                    <input type="text" id="in-cnic" placeholder="CNIC / B-Form No" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" title="Format: 12345-6789012-3">
                     <input type="date" id="in-dob" placeholder="Date of Birth" required>
                     <select id="in-gender" required>
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
+                        <option value="Other">Other</option>
                     </select>
-                    <input type="text" id="in-email" placeholder="Email Address" title="Enter a valid email address">
-                    <input type="text" id="in-mobile" placeholder="Mobile Number" title="Enter a valid mobile number">
-                    <textarea id="in-address" placeholder="Address" required></textarea>
+                    <input type="email" id="in-email" placeholder="Email Address">
+                    <input type="text" id="in-mobile" placeholder="Mobile Number">
+                    <input type="text" id="in-domicile" placeholder="Domicile District" required>
+                    <input type="text" id="in-fathers-domicile" placeholder="Father's Domicile District" required>
+                    <input type="text" id="in-fg-cnic" placeholder="Father / Guardian CNIC" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" title="Format: 12345-6789012-3">
+                    <input type="text" id="in-fg-mobile" placeholder="Father / Guardian Mobile No" required>
+                    <textarea id="in-address" placeholder="Home Address" required></textarea>
                 </div>
             </fieldset>
-
             <fieldset>
-                <legend>Parent or Guardian Information</legend>
+                <legend>Academic Information</legend>
                 <div class="grid-inputs">
-                    <input type="text" id="in-gname" placeholder="Guardian's Name" required>
-                    <input type="text" id="in-gjob" placeholder="Occupation" required>
-                    <input type="text" id="in-gjob-addr" placeholder="Occupation Address" required>
-                    <input type="text" id="in-gcontact" placeholder="Contact Number" required>
-                    <input type="text" id="in-gperm-addr" placeholder="Permanent Address" required>
+                    <input type="text" id="in-ninth-roll" placeholder="Ninth Roll No">
+                    <input type="text" id="in-ninth-year" placeholder="Ninth Passing Year">
+                    <input type="text" id="in-matric-roll" placeholder="Matric Roll No">
+                    <input type="text" id="in-matric-year" placeholder="Matric Passing Year">
+                    <input type="text" id="in-board" placeholder="Board">
+                    <select id="in-study-group" required>
+                        <option value="">Select Study Group</option>
+                        <option value="Science">Science</option>
+                        <option value="Commerce">Commerce</option>
+                        <option value="Arts">Arts</option>
+                        <option value="General Science">General Science</option>
+                    </select>
+                    <input type="text" id="in-school-name" placeholder="School Name">
+                    <input type="text" id="in-total-marks" placeholder="Total Marks">
+                    <input type="text" id="in-obtained-marks" placeholder="Obtained Marks">
+                    <input type="text" id="in-scaled-obtained" placeholder="Scaled Obtained Marks">
                 </div>
             </fieldset>
-
-           <fieldset>
-                <legend>Academic Information</legend>
-                <table class="input-table">
-                     <thead>
-                      <tr>
-                        <th>Class</th>
-                        <th>Board</th>
-                       <th>Year</th>
-                      <th>Roll No</th>
-                     <th>Group</th>
-                     <th>Percentage (%)</th>
-                   </tr>
-                 </thead>
-                     <tbody>
-                       <tr>
-                  <td data-label="Class" style="font-weight: bold; color: #1e3a8a;">Matriculation</td>
-                  <td data-label="Board"><input type="text" id="m-board" placeholder="BISE Mirpurkhas"></td>
-                  <td data-label="Year"><input type="number" id="m-year" placeholder="2022"></td>
-                 <td data-label="Roll No"><input type="text" id="m-roll" placeholder="123456"></td>
-                 <td data-label="Group"><input type="text" id="m-group" placeholder="Science"></td>
-                  <td data-label="Percentage"><input type="number" id="m-perc" placeholder="85"></td>
-                  </tr>
-                     <tr>
-                       <td data-label="Class" style="font-weight: bold; color: #1e3a8a;">Intermediate</td>
-                       <td data-label="Board"><input type="text" id="i-board" placeholder="BISE Mirpurkhas"></td>
-                      <td data-label="Year"><input type="number" id="i-year" placeholder="2024"></td>
-                      <td data-label="Roll No"><input type="text" id="i-roll" placeholder="654321"></td>
-                      <td data-label="Group"><input type="text" id="i-group" placeholder="Pre-Medical"></td>
-                      <td data-label="Percentage"><input type="number" id="i-perc" placeholder="80"></td>
-                     </tr>
-                    </tbody>
-                </table>
+            <fieldset>
+                <legend>Faculty Selection</legend>
+                <div class="grid-inputs">
+                    <select id="in-faculty" required>
+                        <option value="">Select Faculty</option>
+                        <option value="Pre-Engineering">Pre-Engineering</option>
+                        <option value="Pre-Medical">Pre-Medical</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Arts">Arts</option>
+                    </select>
+                </div>
             </fieldset>
-
-            <button type="button" class="submit-btn" onclick="processAndPrint()">Submit</button>
+            <fieldset>
+                <legend>Required Documents</legend>
+                <ol class="required-list">
+                    <li>SSC / Ninth Marksheet</li>
+                    <li>Matric Slip</li>
+                    <li>Detail Marks / Provisional Certificate of the last exam passed</li>
+                    <li>Character Certificate</li>
+                    <li>Self / Father / Guardian B-Form or CNIC</li>
+                    <li>Colored Photograph</li>
+                </ol>
+            </fieldset>
+            <div class="checkbox-row">
+                <label><input type="checkbox" id="agreement" required> I confirm that all provided information is true and correct.</label>
+            </div>
+            <button type="button" class="submit-btn" onclick="processAndPrint()">Submit Application</button>
         </form>
+    </div>
+    <div id="successModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+        <div class="modal-content">
+            <h2 id="successModalTitle">Application Submitted</h2>
+            <p>Your admission form has been submitted successfully. You can print or save the admission Form from the new window.</p>
+            <button id="closeModal" class="close-btn">Continue</button>
+        </div>
     </div>
     <script src="apply-2k26.js"></script>
 </body>

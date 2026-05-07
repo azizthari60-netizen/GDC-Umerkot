@@ -83,50 +83,6 @@ if (heroSlides.length) {
   });
 }
 
-const notificationSlides = Array.from(document.querySelectorAll('.notification-slide'));
-const notificationPrev = document.querySelector('.notification-prev');
-const notificationNext = document.querySelector('.notification-next');
-let notificationIndex = 0;
-
-function updateNotifications() {
-  if (!notificationSlides.length) return;
-  notificationSlides.forEach((slide, idx) => {
-    const isActive = idx === notificationIndex;
-    slide.classList.toggle('active', isActive);
-    slide.style.display = isActive ? 'block' : 'none';
-  });
-}
-
-function nextNotification() {
-  notificationIndex = (notificationIndex + 1) % notificationSlides.length;
-  updateNotifications();
-}
-
-function prevNotification() {
-  notificationIndex = (notificationIndex - 1 + notificationSlides.length) % notificationSlides.length;
-  updateNotifications();
-}
-
-if (notificationSlides.length) {
-  updateNotifications();
-  let notificationTimer = setInterval(nextNotification, 6000);
-
-  const resetNotificationTimer = () => {
-    clearInterval(notificationTimer);
-    notificationTimer = setInterval(nextNotification, 6000);
-  };
-
-  notificationNext?.addEventListener('click', () => {
-    nextNotification();
-    resetNotificationTimer();
-  });
-
-  notificationPrev?.addEventListener('click', () => {
-    prevNotification();
-    resetNotificationTimer();
-  });
-}
-
 const loader = document.getElementById('loader');
 if (loader) {
   window.addEventListener('load', () => {
@@ -213,4 +169,116 @@ applyButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     window.location.href = 'apply-2k26.html';
   });
+});
+
+// Mobile Services Carousel
+function initServicesCarousel() {
+  const servicesGrid = document.querySelector('.services-grid');
+  if (!servicesGrid) return;
+
+  // Check if we're on mobile
+  function isMobile() {
+    return window.innerWidth <= 768;
+  }
+
+  if (isMobile()) {
+    // Add carousel controls
+    const container = servicesGrid.closest('.quick-services');
+    if (container && !container.querySelector('.carousel-controls')) {
+      const controls = document.createElement('div');
+      controls.className = 'carousel-controls';
+      controls.innerHTML = `
+        <button class="carousel-prev" onclick="scrollServicesLeft()">&#10094;</button>
+        <button class="carousel-next" onclick="scrollServicesRight()">&#10095;</button>
+      `;
+      container.appendChild(controls);
+    }
+  }
+}
+
+function scrollServicesLeft() {
+  const servicesGrid = document.querySelector('.services-grid');
+  if (servicesGrid) {
+    servicesGrid.scrollBy({ left: -300, behavior: 'smooth' });
+  }
+}
+
+function scrollServicesRight() {
+  const servicesGrid = document.querySelector('.services-grid');
+  if (servicesGrid) {
+    servicesGrid.scrollBy({ left: 300, behavior: 'smooth' });
+  }
+}
+
+// Initialize carousel on page load
+window.addEventListener('load', initServicesCarousel);
+window.addEventListener('resize', initServicesCarousel);
+
+// Gallery Lightbox Functionality
+const galleryImages = [
+  'Public/test1.jpg',
+  'Public/test2.jpg',
+  'Public/test3.jpg',
+  'Public/test4.jpg',
+  'Public/test5.jpg',
+  'Public/test6.jpg',
+  'Public/hero1.jpg',
+  'Public/hero2.jpg',
+  'Public/hero3.jpg',
+  'Public/hero4.jpg',
+  'Public/seminar.1.jpg'
+];
+
+let currentImageIndex = 0;
+
+function openLightbox(index) {
+  currentImageIndex = index;
+  const lightboxOverlay = document.getElementById('lightboxOverlay');
+  const lightboxImg = document.getElementById('lightboxImg');
+  
+  lightboxImg.src = galleryImages[currentImageIndex];
+  lightboxOverlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  
+  // Add keyboard event listeners
+  document.addEventListener('keydown', handleKeyPress);
+}
+
+function closeLightbox() {
+  const lightboxOverlay = document.getElementById('lightboxOverlay');
+  lightboxOverlay.style.display = 'none';
+  document.body.style.overflow = 'auto'; // Restore scrolling
+  
+  // Remove keyboard event listeners
+  document.removeEventListener('keydown', handleKeyPress);
+}
+
+function changeImage(direction) {
+  currentImageIndex += direction;
+  
+  if (currentImageIndex < 0) {
+    currentImageIndex = galleryImages.length - 1;
+  } else if (currentImageIndex >= galleryImages.length) {
+    currentImageIndex = 0;
+  }
+  
+  const lightboxImg = document.getElementById('lightboxImg');
+  lightboxImg.src = galleryImages[currentImageIndex];
+}
+
+function handleKeyPress(event) {
+  if (event.key === 'ArrowLeft') {
+    changeImage(-1);
+  } else if (event.key === 'ArrowRight') {
+    changeImage(1);
+  } else if (event.key === 'Escape') {
+    closeLightbox();
+  }
+}
+
+// Close lightbox when clicking on overlay (but not on image)
+document.getElementById('lightboxOverlay').addEventListener('click', function(event) {
+  if (event.target === this) {
+    closeLightbox();
+  }
 });

@@ -414,7 +414,7 @@ main > section:not(:last-of-type)::after {
 /* Hero Slider */
 
 .hero-slider {
-  padding: 0;
+  padding: 2rem 0;
 }
 
 .hero-slider-inner {
@@ -528,7 +528,7 @@ main > section:not(:last-of-type)::after {
   /* Visionary Section */
 .visionary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 2.4rem;
 }
 

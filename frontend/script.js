@@ -216,6 +216,9 @@ window.addEventListener('resize', initServicesCarousel);
 
 // Gallery Lightbox Functionality
 const galleryImages = [
+  'Public/gal1.jpg',
+  'Public/gal2.jpg',
+  'Public/gal3.jpg',
   'Public/test1.jpg',
   'Public/test2.jpg',
   'Public/test3.jpg',

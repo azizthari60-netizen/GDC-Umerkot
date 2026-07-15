@@ -46,6 +46,7 @@ function renderHeroDots() {
   });
 }
 
+// hero section
 function updateHeroSlides() {
   heroSlides.forEach((slide, idx) => {
     slide.classList.toggle('active', idx === heroIndex);
@@ -83,6 +84,7 @@ if (heroSlides.length) {
   });
 }
 
+    // loader
 const loader = document.getElementById('loader');
 if (loader) {
   window.addEventListener('load', () => {
@@ -95,6 +97,7 @@ if (loader) {
   });
 }
 
+// animations
 const observerOptions = {
   threshold: 0.1,
   rootMargin: '0px 0px -50px 0px'
@@ -159,17 +162,11 @@ if (contactForm) {
   });
 }
 
+// footer year
 const yearSpan = document.getElementById('year');
 if (yearSpan) {
   yearSpan.textContent = `${new Date().getFullYear()}`;
 }
-
-const applyButtons = document.querySelectorAll('#btn-register, #announcement-apply-now-btn');
-applyButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    window.location.href = 'apply-2k26.html';
-  });
-});
 
 // Mobile Services Carousel
 function initServicesCarousel() {
@@ -285,3 +282,277 @@ document.getElementById('lightboxOverlay').addEventListener('click', function(ev
     closeLightbox();
   }
 });
+
+// // log in btn
+const applyButtons = document.querySelector('#btn-register');
+{applyButtons.addEventListener('click', () => openModal(signupModal))
+};
+
+
+// Auth modals
+const signupModal = document.getElementById("signup-modal");
+const signinModal = document.getElementById("signin-modal");
+const recoveryModal = document.getElementById('recovery-modal');
+const registerBtn = document.getElementById("btn-register");
+const switchToSignin = document.getElementById("switch-to-signin");
+const switchToSignup = document.getElementById("switch-to-signup");
+
+function openModal(modal) {
+  if (!modal) return;
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal(modal) {
+  if (!modal) return;
+  modal.classList.remove("active");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+// Register button opens signup modal
+if (registerBtn && signupModal) {
+  registerBtn.addEventListener("click", () => openModal(signupModal));
+}
+
+// Switch between signup and signin
+if (switchToSignin && signupModal && signinModal) {
+  switchToSignin.addEventListener("click", () => {
+    closeModal(signupModal);
+    openModal(signinModal);
+  });
+}
+
+if (switchToSignup && signupModal && signinModal) {
+  switchToSignup.addEventListener("click", () => {
+    closeModal(signinModal);
+    openModal(signupModal);
+  });
+}
+
+
+// Close modals on backdrop/close click
+[signupModal, signinModal, recoveryModal].forEach(modal => {
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.matches("[data-close-modal]") || target.classList.contains("modal-backdrop")) {
+        closeModal(modal);
+      }
+    });
+  }
+});
+
+// Sign Up Form Handler
+const signupForm = document.getElementById("signup-form");
+if (signupForm) {
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(signupForm);
+    const payload = {
+      fullName: formData.get("fullName"),
+      cnic: formData.get("cnic"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword")
+    };
+
+    const submitButton = signupForm.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : "Register Now";
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Registering...";
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/student/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.message || "Registration successful! Please sign in.");
+        closeModal(signupModal);
+        openModal(signinModal);
+        signupForm.reset();
+      } else {
+        alert(data.message || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      alert("Network error. Please check your connection and try again.");
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
+
+// Sign In Form Handler (Handles both Student and Admin login)
+const signinForm = document.getElementById("signin-form");
+if (signinForm) {
+  signinForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(signinForm);
+    const userValue = formData.get("cnic");
+    const passwordValue = formData.get("password");
+
+    const submitButton = signinForm.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : "Sign In";
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Signing in...";
+    }
+
+    try {
+      // Check if it's admin login (username is "admin")
+      let apiUrl, payload;
+      if (userValue === "admin" || userValue.toLowerCase() === "admin") {
+        apiUrl = `${API_BASE_URL}/admin/login`;
+        payload = { username: userValue, password: passwordValue };
+      } else {
+        apiUrl = `${API_BASE_URL}/student/login`;
+        payload = { cnic: userValue, password: passwordValue };
+      }
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        if (userValue === "admin" || userValue.toLowerCase() === "admin") {
+          localStorage.setItem("adminToken", data.token);
+          closeModal(signinModal);
+          window.location.href = "admin-dashboard.html";
+        } else {
+          localStorage.setItem("studentToken", data.token);
+          localStorage.setItem("studentData", JSON.stringify(data.student));
+          closeModal(signinModal);
+          window.location.href = "student-portal.html";
+        }
+      } else {
+        alert(data.message || "Login failed. Please check your credentials.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Network error. Please check your connection and try again.");
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
+
+// Password toggle functionality
+const togglePasswordBtn = document.getElementById('toggle-password');
+const signinPasswordInput = document.getElementById('signin-password');
+
+if (togglePasswordBtn && signinPasswordInput) {
+  togglePasswordBtn.addEventListener('click', () => {
+    const isPassword = signinPasswordInput.type === 'password';
+    signinPasswordInput.type = isPassword ? 'text' : 'password';
+    
+    // Toggle eye icons
+    const eyeOpen = togglePasswordBtn.querySelector('.eye-open');
+    const eyeClosed = togglePasswordBtn.querySelector('.eye-closed');
+    
+    if (eyeOpen && eyeClosed) {
+      if (isPassword) {
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = 'block';
+        togglePasswordBtn.setAttribute('aria-label', 'Hide password');
+      } else {
+        eyeOpen.style.display = 'block';
+        eyeClosed.style.display = 'none';
+        togglePasswordBtn.setAttribute('aria-label', 'Show password');
+      }
+    }
+  });
+}
+
+// Forgot Password button - open recovery modal
+const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+
+if (forgotPasswordBtn && recoveryModal && signinModal) {
+  forgotPasswordBtn.addEventListener('click', () => {
+    closeModal(signinModal);
+    openModal(recoveryModal);
+  });
+}
+
+// Password Recovery Form Handler (Updated for CNIC & New Password)
+const recoveryForm = document.getElementById('recovery-form');
+if (recoveryForm) {
+  recoveryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(recoveryForm);
+    const recoveryId = formData.get('recovery-id'); // یہ CNIC نمبر ہے
+    const newPassword = formData.get('new-password'); // یہ HTML میں شامل کی گئی نئی فیلڈ ہے
+    
+    const submitButton = recoveryForm.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : 'Update Password';
+    
+    // سیکیورٹی چیک: اگر اسٹوڈنٹ نے پاس ورڈ نہیں لکھا
+    if (!newPassword) {
+      alert('Please enter a new password to proceed.');
+      return;
+    }
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Updating...'; // ٹیکسٹ تبدیل کر دیا تاکہ اسٹوڈنٹ کو پتہ چلے کام ہو رہا ہے
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/student/recovery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // یہاں ہم اب دو چیزیں بھیج رہے ہیں: CNIC اور نیا پاس ورڈ
+        body: JSON.stringify({ 
+          'recovery-id': recoveryId,
+          'new-password': newPassword 
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        // کامیابی کا میسج
+        alert(data.message || 'Password updated successfully. You can now log in.');
+        recoveryForm.reset();
+        if (typeof closeModal === 'function') {
+          closeModal(recoveryModal);
+        }
+      } else {
+        // سرور سے آنے والا ایرر (مثلاً اگر CNIC غلط ہو)
+        alert(data.message || 'Failed to update password. Please try again.');
+      }
+    } catch (err) {
+      console.error('Recovery form error:', err);
+      alert('Network error. Please check your internet connection.');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
+

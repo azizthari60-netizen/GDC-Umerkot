@@ -34,37 +34,6 @@ const adminSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-const studentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    cnic: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    batch: { type: String, default: "2026" },
-    status: { type: String, enum: ['Pending', 'Challan Verified', 'Approved', 'Rejected'], default: 'Pending' },
-    isFormFilled: { type: Boolean, default: false },
-    challanStatus: { type: String, enum: ['Not Generated', 'Generated', 'Uploaded', 'Verified'], default: 'Not Generated' },
-    profileImage: String,
-    challanImage: String,
-    registrationDate: { type: Date, default: Date.now },
-    formData: {
-        fName: String,
-        caste: String,
-        domicile: String,
-        dob: String,
-        gender: String,
-        email: String,
-        mobile: String,
-        address: String,
-        gName: String,
-        gOcc: String,
-        gJobAddr: String,
-        gContact: String,
-        gAddress: String,
-        matric: { brd: String, yr: String, roll: String, grp: String, per: String },
-        inter: { brd: String, yr: String, roll: String, grp: String, per: String }
-    },
-    uniqueId: String,
-    isOldStudent: { type: Boolean, default: false }
-});
 
 const resultSchema = new mongoose.Schema({
     studentCnic: { type: String, required: true },
@@ -92,14 +61,6 @@ const slipSchema = new mongoose.Schema({
     rollNumber: String,
     isAvailable: { type: Boolean, default: false },
     availableDate: Date
-});
-
-const oldStudentSchema = new mongoose.Schema({
-    fullName: String,
-    cnic: String,
-    batch: String,
-    registrationDate: Date,
-    profileImage: String
 });
 
 const admissionSchema = new mongoose.Schema({
@@ -140,11 +101,9 @@ const admissionSchema = new mongoose.Schema({
 });
 
 const Admin = mongoose.model('Admin', adminSchema);
-const Student = mongoose.model('Student', studentSchema);
 const Result = mongoose.model('Result', resultSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 const Slip = mongoose.model('Slip', slipSchema);
-const OldStudent = mongoose.model('OldStudent', oldStudentSchema);
 const Admission = mongoose.model('Admission', admissionSchema);
 
 mongoose.connect(process.env.MONGODB_URI, {
@@ -196,73 +155,6 @@ function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
 
 
 // --- ROUTES ---
-
-
-// --- 2.5 Submit Admission Form (New Route) ---
-app.post('/api/student/submit-form', upload.single('profileImage'), async (req, res) => {
-    try {
-        // 1. چیک کریں کہ ٹوکن موجود ہے یا نہیں
-        const token = req.headers.authorization?.replace('Bearer ', '');
-        if (!token) {
-            return res.status(401).json({ message: "Login expired. Please login again." });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // 2. ڈیٹا بیس میں اسٹوڈنٹ کو تلاش کریں
-        let student = await Student.findById(decoded.id);
-        if (!student) {
-            return res.status(404).json({ message: "Student record not found." });
-        }
-
-        // 3. تصویر اپلوڈ کرنے کا عمل (Cloudinary)
-        let imageUrl = student.profileImage; 
-        if (req.file) {
-            try {
-                const uploadResult = await uploadToCloudinary(req.file.buffer, 'chemistry-dept/profiles');
-                imageUrl = uploadResult.secure_url;
-            } catch (uploadErr) {
-                console.error("Cloudinary Error:", uploadErr);
-                return res.status(500).json({ message: "Error uploading profile image." });
-            }
-        }
-
-        // 4. فرنٹ اینڈ سے آنے والے ڈیٹا کو نکالنا
-        const {
-            fName, caste, cnic, domicile, dob, gender, email, mobile, address,
-            gName, gOcc, gJobAddr, gContact, gAddress, matric, inter
-        } = req.body;
-
-        // 5. اسٹوڈنٹ کے ڈیٹا کو اپڈیٹ کرنا
-        student.profileImage = imageUrl;
-        student.isFormFilled = true;
-        student.challanStatus = 'Generated';
-        student.status = 'Pending';
-        
-        // یونیک آئی ڈی جنریٹ کرنا چالان کے لیے
-        const serialNo = Math.floor(1000 + Math.random() * 9000);
-        student.uniqueId = generateUniqueId(serialNo);
-
-        // فارم کا ڈیٹا محفوظ کرنا
-        student.formData = {
-            fName, caste, domicile, dob, gender, email, mobile, address,
-            gName, gOcc, gJobAddr, gContact, gAddress,
-            matric: JSON.parse(matric), // String سے Object میں بدلنا
-            inter: JSON.parse(inter)
-        };
-
-        await student.save();
-
-        res.status(200).json({ 
-            success: true, 
-            message: "Form submitted successfully! You can now generate your challan." 
-        });
-
-    } catch (err) {
-        console.error("Form Submission Error:", err);
-        res.status(500).json({ message: "Server error: " + err.message });
-    }
-});
 
 // New public route for admission form submissions
 app.post('/api/applications/submit', upload.single('profileImage'), async (req, res) => {

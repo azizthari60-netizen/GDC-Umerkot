@@ -106,19 +106,9 @@ const Contact = mongoose.model('Contact', contactSchema);
 const Slip = mongoose.model('Slip', slipSchema);
 const Admission = mongoose.model('Admission', admissionSchema);
 
-mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 30000,
-})
-.then(async () => {
-    console.log("🚀 MongoDB Connected Successfully");
-    const adminCount = await Admin.countDocuments();
-    if (adminCount === 0) {
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        await new Admin({ username: 'admin', password: hashedPassword }).save();
-        console.log("✅ Default admin created");
-    }
-})
-.catch(err => console.error("❌ DB Connection Error:", err));
+mongoose.connect(process.env.MONGODB_URI)
+.then(() => console.log("🚀 MongoDB Connected Successfully"))
+.catch(err => console.log(err));
 
 // --- Middleware ---
 app.use(cors());
@@ -155,6 +145,44 @@ function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
 
 
 // --- ROUTES ---
+
+// New admin Register
+app.post('api/admin/register', async (req, res) => {
+    try {
+        const {username, password} = req.body
+        const hashedPassword  = await bcrypt.hash(password, 10);
+        const newAmin = new Admin({
+            username,
+            password: hashedPassword
+        })
+
+        await newAdmin.save();
+        res.status(201).json({ message: "Admin Sing up Successfully"});
+    }
+    catch (error) {
+        res.status(500).json({message: "Server Not Responsed"});
+    }
+})
+
+// Admin Log in
+app.post('api/admin/login', async (req, res) => {
+    try {
+        const formData = new FormData(signinForm);
+        const userValue = formData.get("cnic");
+        const passwordValue = formData.get("password");
+
+        const username = userValue
+        const password = passwordValue
+        const admin = await Admin.findOne({username});
+
+        if (!admin){
+            return res.status(400).json({message: "Invalid Username or Password"})
+        }
+        res.status(200).json({message: "Admin Login successfully"})
+    } catch (error) {
+        res.status(500).json({ message: "Log in Problem"})
+    }
+})
 
 // New public route for admission form submissions
 app.post('/api/applications/submit', upload.single('profileImage'), async (req, res) => {

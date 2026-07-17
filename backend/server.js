@@ -27,14 +27,21 @@ cloudinary.config({
 });
 
 // --- Database Models ---
+// Admin Schema
 const adminSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, default: 'admin' },
-    createdAt: { type: Date, default: Date.now }
+    username: { type: String, default: 'admin' },
+    password: { type: String, default: 'admin123' }
 });
 
+// Student Schema
+const studentSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    cnic: { type: String, required: true },
+    password: { type: String, required: true },
+    confirmPassword: { type: String, required: true },
+});
 
+// result schema
 const resultSchema = new mongoose.Schema({
     studentCnic: { type: String, required: true },
     course: String,
@@ -44,6 +51,7 @@ const resultSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// contact schema
 const contactSchema = new mongoose.Schema({
     name: String,
     email: String,
@@ -53,6 +61,7 @@ const contactSchema = new mongoose.Schema({
     replied: { type: Boolean, default: false }
 });
 
+// slip schema
 const slipSchema = new mongoose.Schema({
     studentId: mongoose.Schema.Types.ObjectId,
     studentCnic: String,
@@ -63,6 +72,7 @@ const slipSchema = new mongoose.Schema({
     availableDate: Date
 });
 
+// admission schema
 const admissionSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     fatherName: { type: String, required: true },
@@ -101,6 +111,7 @@ const admissionSchema = new mongoose.Schema({
 });
 
 const Admin = mongoose.model('Admin', adminSchema);
+const Student = mongoose.model('Student', studentSchema);
 const Result = mongoose.model('Result', resultSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 const Slip = mongoose.model('Slip', slipSchema);
@@ -145,44 +156,120 @@ function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
 
 
 // --- ROUTES ---
-
-// New admin Register
-app.post('api/admin/register', async (req, res) => {
+// 1. Student Sign Up
+app.post('/api/student/signup', async (req, res) => {
     try {
-        const {username, password} = req.body
-        const hashedPassword  = await bcrypt.hash(password, 10);
-        const newAmin = new Admin({
-            username,
-            password: hashedPassword
-        })
-
-        await newAdmin.save();
-        res.status(201).json({ message: "Admin Sing up Successfully"});
-    }
-    catch (error) {
-        res.status(500).json({message: "Server Not Responsed"});
-    }
-})
-
-// Admin Log in
-app.post('api/admin/login', async (req, res) => {
-    try {
-        const formData = new FormData(signinForm);
-        const userValue = formData.get("cnic");
-        const passwordValue = formData.get("password");
-
-        const username = userValue
-        const password = passwordValue
-        const admin = await Admin.findOne({username});
-
-        if (!admin){
-            return res.status(400).json({message: "Invalid Username or Password"})
+        const { fullName, cnic, password, confirmPassword } = req.body;
+        
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: "Passwords do not match" });
         }
-        res.status(200).json({message: "Admin Login successfully"})
-    } catch (error) {
-        res.status(500).json({ message: "Log in Problem"})
+        
+        const exists = await Student.findOne({ cnic });
+        if (exists) {
+            return res.status(400).json({ message: "CNIC already registered" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newStudent = new Student({ 
+            fullName, 
+            cnic, 
+            password: hashedPassword 
+        });
+        await newStudent.save();
+        
+        res.status(201).json({ message: "Account created successfully! Please sign in." });
+    } catch (err) {
+        console.error("Signup error:", err);
+        res.status(500).json({ message: "Sign up error" });
     }
-})
+});
+
+// 2. Student Login (Fixed) ---
+app.post('/api/student/login', async (req, res) => {
+    try {
+        const { cnic, password } = req.body;
+        let student = await Student.findOne({ cnic });
+        
+        if (!student) {
+            return res.status(401).json({ message: "Invalid CNIC or password" });
+        }
+        
+        // ✅ پاسورڈ چیک کرنے کا صحیح طریقہ
+        const isPasswordValid = await bcrypt.compare(password, student.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid CNIC or password" });
+        }
+        
+        const token = jwt.sign({ id: student._id, cnic: student.cnic }, JWT_SECRET, { expiresIn: '7d' });
+        res.status(200).json({ 
+            message: "Login successful", 
+            token,
+            student: { _id: student._id, fullName: student.fullName, cnic: student.cnic }
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Login server error" });
+    }
+});
+
+// 3. Admin Login
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const admin = await Admin.findOne({ username });
+        
+        if (!admin) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+        
+        // Check if password is hashed or plain text
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await bcrypt.compare(password, admin.password);
+        } catch (bcryptError) {
+            // If bcrypt compare fails, might be plain text
+            isPasswordValid = admin.password === password;
+        }
+        
+        // Also check plain text for migration purposes
+        if (!isPasswordValid && admin.password !== password) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+        
+        // If password is plain text, hash it for future use
+        if (admin.password === password && password !== 'admin123') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            admin.password = hashedPassword;
+            await admin.save();
+        }
+        
+        const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
+        res.status(200).json({ message: "Admin login successful", token });
+    } catch (err) {
+        console.error("Admin login error:", err);
+        res.status(500).json({ message: "Login error" });
+    }
+});
+
+/// --- 3.5. Password Recovery (Fixed) ---
+app.post('/api/student/recovery', async (req, res) => {
+    try {
+        const { 'recovery-id': recoveryId, 'new-password': newPassword } = req.body;
+        
+        let student = await Student.findOne({ cnic: recoveryId });
+
+        if (!student) {
+            return res.status(404).json({ message: "CNIC not found in our records." });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await Student.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
+
+        res.status(200).json({ message: "Password updated! You can now login." });
+    } catch (err) {
+        res.status(500).json({ message: "Recovery error: " + err.message });
+    }
+});
 
 // New public route for admission form submissions
 app.post('/api/applications/submit', upload.single('profileImage'), async (req, res) => {

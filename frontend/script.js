@@ -368,7 +368,7 @@ if (signupForm) {
     }
 
     try {
-      const res = await fetch(`/api/student/signup`, {
+      const res = await fetch(`${API_BASE_URL}/api/student/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -418,10 +418,10 @@ if (signinForm) {
       // Check if it's admin login (username is "admin")
       let apiUrl, payload;
       if (userValue === "admin" || userValue.toLowerCase() === "admin") {
-        apiUrl = `/api/admin/login`;
+        apiUrl = `${API_BASE_URL}/api/admin/login`;
         payload = { username: userValue, password: passwordValue };
       } else {
-        apiUrl = `/api/student/login`;
+        apiUrl = `${API_BASE_URL}/api/student/login`;
         payload = { cnic: userValue, password: passwordValue };
       }
 

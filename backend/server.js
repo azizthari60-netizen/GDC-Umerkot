@@ -43,11 +43,12 @@ const studentSchema = new mongoose.Schema({
 
 // result schema
 const resultSchema = new mongoose.Schema({
-    studentCnic: { type: String, required: true },
-    course: String,
-    marks: Number,
-    grade: String,
-    semester: Number,
+    rollNo: { type: String, required: true },
+    name: String,
+    fatherName: String,
+    caste: String,
+    obtainedMarks: Number,
+    applyFor: String,
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -714,30 +715,30 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
     }
 });
 
-// 14. Check Result by CNIC (Public)
-app.post('/api/results/check', async (req, res) => {
-    try {
-        const { cnic } = req.body;
-        // try exact and stripped-dash versions
-        let results = await Result.find({ studentCnic: cnic }).sort({ semester: 1 });
-        if (results.length === 0) {
-            const alt = cnic.replace(/[-\s]/g, '');
-            if (alt !== cnic) {
-                results = await Result.find({ studentCnic: alt }).sort({ semester: 1 });
-            }
-        }
+// Route to fetch result by Roll Number
+app.get('/api/result/:rollNo', async (req, res) => {
+  try {
+    const rollNoInput = req.params.rollNo.trim();
+    
+    // Exact search using clean English field name: rollNo
+    const student = await db.collection('results').findOne({ rollNo: rollNoInput });
 
-        if (results.length > 0) {
-            res.json({ success: true, results });
-        } else {
-            res.status(404).json({ message: "No results found" });
-        }
-    } catch (err) {
-        console.error("Check results error:", err);
-        res.status(500).json({ message: "Check results error" });
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Result not found! Please check the Roll Number." 
+      });
     }
-});
 
+    res.json({ success: true, data: student });
+  } catch (error) {
+    console.error("Database Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal Server Error." 
+    });
+  }
+});
 
 // 22. Upload Slip for Student
 app.post('/api/admin/students/:id/slip', async (req, res) => {

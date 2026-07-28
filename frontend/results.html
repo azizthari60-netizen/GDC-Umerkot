@@ -8,101 +8,368 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- html2pdf Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
-    .results-container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 2rem;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
     }
-    .results-card {
-      background: white;
-      border-radius: 1rem;
-      padding: 2rem;
-      box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
-      margin-bottom: 2rem;
+
+    body {
+      background-color: #f3f4f6;
+      padding: 40px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .results-form {
-      margin-bottom: 2rem;
-    }
-    .results-table {
+
+    .search-box {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
+      max-width: 480px;
+      text-align: center;
+      margin-bottom: 30px;
     }
-    .results-table th,
-    .results-table td {
-      padding: 0.75rem;
-      text-align: left;
+
+    .search-box h2 {
+      color: #1e3a8a;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #cccccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    .btn-search {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .error-msg {
+      color: #dc2626;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .result-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    /* Professional Card Layout */
+    .card-container {
+      width: 650px;
+      background-color: #ffffff;
+      border: 2px solid #1e3a8a;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+
+    /* Blue Header */
+    .card-header {
+      background-color: #1e3a8a;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .college-logo {
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: #ffffff;
+      padding: 3px;
+      object-fit: contain;
+    }
+
+    .college-name {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .card-title-box {
+      text-align: center;
+      padding: 14px 0;
       border-bottom: 1px solid #e5e7eb;
     }
-    .results-table th {
-      background: #f3f4f6;
-      font-weight: 600;
+
+    .card-title {
+      font-size: 17px;
       color: #1e3a8a;
+      font-weight: bold;
     }
-    .notification-banner {
-      background: linear-gradient(135deg, #1e3a8a, #1e40af);
-      color: white;
-      padding: 1.5rem;
-      border-radius: 0.75rem;
-      margin-bottom: 2rem;
-      text-align: center;
+
+    /* Two Columns Grid */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 25px 35px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px dashed #d1d5db;
+      padding-bottom: 5px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .field-value {
+      font-size: 16px;
+      color: #111827;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .assigned-class-val {
+      color: #1e3a8a;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* Blue Footer Strip */
+    .card-footer {
+      background-color: #1e3a8a;
+      height: 20px;
+      margin-top: 10px;
+    }
+
+    .btn-download {
+      margin-top: 20px;
+      background-color: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 12px 25px;
+      font-size: 15px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
     }
   </style>
 </head>
+
 <body>
-  <header class="site-header">
+<header class="site-header">
     <div class="header-inner container">
       <a href="index.html" class="brand">
-        <div class="brand-logo"><img src="logo.png" alt="Logo"></div>
+        <div class="brand-logo"> <img src="logo.png" alt="Logo"></div>
         <div class="brand-text">
           <span class="brand-title">Government Boys Degree College Umerkot</span>
           <span class="brand-subtitle">College Education Department, Sindh</span>
         </div>
       </a>
+      <div class="social-links">
+        <a href="#" class="social-link" aria-label="YouTube">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2s-.2-1.7-.8-2.5c-.7-.9-1.5-.9-1.9-1C18.7 2.4 12 2.4 12 2.4h0s-6.7 0-8.8.3c-.4 0-1.2.1-1.9 1C.7 4.6.5 6.2.5 6.2S0 8.3 0 10.5v3c0 2.2.5 4.3.5 4.3s.2 1.7.8 2.5c.7.9 1.6.9 2 1 1.5.2 8 .3 8 .3s6.7 0 8.8-.3c.4 0 1.2-.1 1.9-1 .6-.8.8-2.5.8-2.5s.5-2.1.5-4.3v-3c0-2.2-.5-4.3-.5-4.3Zm-14.2 8.5V8.8l6.4 2.9-6.4 2.9Z"/></svg>
+        </a>
+        <a href="https://www.facebook.com/governmentboysdegreecollegeumerkot" class="social-link" aria-label="Facebook">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.5-4.5-10-10-10S2 6.5 2 12c0 4.9 3.6 8.9 8.3 9.8v-6.9h-2.5v-2.9h2.5V9.4c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.3 0-1.7.8-1.7 1.7v2h2.9l-.5 2.9h-2.4v6.9C18.4 20.9 22 16.9 22 12Z"/></svg>
+        </a>
+      </div>
       <nav class="main-nav" aria-label="Main navigation">
         <ul>
-          <li><a href="index.html">Home</a></li>
-          <li><a href="academic-programs.html">Academic Programs</a></li>
+          <li><a href="index.html" class="active">Home</a></li>
+          <li><a href="academic-programs.html">Programs</a></li>
           <li><a href="faculty.html">Faculty</a></li>
-          <li><a href="policy.html">Policies</a></li>
           <li><a href="about.html">About Us</a></li>
-          <li><a href="contact.html">Contact Us</a></li>
           <li><a href="download.html">Downloads</a></li>
-          <li><a href="results.html" class="active">Results</a></li>
+          <li><a href="results.html">Results</a></li>
         </ul>
       </nav>
-      <div class="auth-buttons">
-        <button class="btn btn-primary" id="btn-register">Apply Now</button>
-      </div>
       <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
   </header>
 
-  <main class="page-content">
-    <div class="results-container">
-      <div class="notification-banner">
-        <h1>Check Your Results</h1>
-        <p>Enter your CNIC number to view your results</p>
-      </div>
-
-      <div class="results-card">
-        <form class="results-form" id="results-form">
-          <div class="form-group">
-            <label for="cnic">CNIC Number</label>
-            <input type="text" id="cnic" name="cnic" placeholder="12345-1234567-1" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" />
-          </div>
-          <button type="submit" class="btn btn-primary full-width">Check Results</button>
-        </form>
-
-        <div id="results-display"></div>
-      </div>
+  <!-- Search Section -->
+  <div class="search-box">
+    <h2>Admission Test Result</h2>
+    <div class="form-group">
+      <input type="text" id="rollNoInput" class="input-field" placeholder="Enter Roll Number..." />
+      <button onclick="fetchResult()" class="btn-search" id="searchBtn">Search</button>
     </div>
-  </main>
+    <div id="errorMsg" class="error-msg"></div>
+  </div>
 
-  <footer class="site-footer">
+  <!-- Result Card Section -->
+  <div class="result-wrapper" id="resultWrapper">
+    <div class="card-container" id="resultCard">
+      
+      <!-- Header -->
+      <div class="card-header">
+        <img src="logo.png" alt="College Logo" class="college-logo" />
+        <h1 class="college-name">Government Degree College Umerkot</h1>
+      </div>
+
+      <!-- Title -->
+      <div class="card-title-box">
+        <h2 class="card-title">ADMISSION TEST RESULT CARD</h2>
+      </div>
+
+      <!-- Fields Grid -->
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="field-label">Roll No</span>
+          <span class="field-value" id="valRollNo">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Name</span>
+          <span class="field-value" id="valName">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Father Name</span>
+          <span class="field-value" id="valFatherName">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Caste</span>
+          <span class="field-value" id="valCaste">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Applied For</span>
+          <span class="field-value" id="valApplyFor">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Obtained Marks</span>
+          <span class="field-value" id="valObtainedMarks">-</span>
+        </div>
+        <div class="detail-item" style="grid-column: span 2;">
+          <span class="field-label">Assigned Class</span>
+          <span class="field-value assigned-class-val" id="valAssignedClass">-</span>
+        </div>
+      </div>
+
+      <!-- Footer Bar -->
+      <div class="card-footer"></div>
+    </div>
+
+    <!-- Download PDF -->
+    <button onclick="downloadPDF()" class="btn-download">Download PDF Card</button>
+  </div>
+
+  <script>
+    // Logic for Assigned Class
+    function calculateAssignedClass(applyFor, marks) {
+      const obtainedMarks = Number(marks);
+      const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
+
+      if (group.includes("engineering") || group.includes("computer science") || group.includes("ics")) {
+        return "Class D";
+      }
+
+      if (group.includes("medical")) {
+        if (obtainedMarks > 48) {
+          return "Class A";
+        } else if (obtainedMarks >= 33 && obtainedMarks <= 48) {
+          return "Class B";
+        } else {
+          return "Class C";
+        }
+      }
+
+      return "N/A";
+    }
+
+    // Fetch Result API Call
+    async function fetchResult() {
+      const rollNo = document.getElementById("rollNoInput").value.trim();
+      const errorDiv = document.getElementById("errorMsg");
+      const resultWrapper = document.getElementById("resultWrapper");
+      const searchBtn = document.getElementById("searchBtn");
+
+      errorDiv.innerText = "";
+      if (!rollNo) {
+        errorDiv.innerText = "Please enter a Roll Number.";
+        return;
+      }
+
+      searchBtn.innerText = "Searching...";
+      searchBtn.disabled = true;
+
+      try {
+        const response = await fetch(`/api/result/${encodeURIComponent(rollNo)}`);
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Result not found.");
+        }
+
+        const data = result.data;
+
+        document.getElementById("valRollNo").innerText = data.rollNo || rollNo;
+        document.getElementById("valName").innerText = data.name || "-";
+        document.getElementById("valFatherName").innerText = data.fatherName || "-";
+        document.getElementById("valCaste").innerText = data.caste || "-";
+        document.getElementById("valApplyFor").innerText = data.applyFor || "-";
+        document.getElementById("valObtainedMarks").innerText = data.obtainedMarks || 0;
+
+        document.getElementById("valAssignedClass").innerText = calculateAssignedClass(data.applyFor, data.obtainedMarks);
+
+        resultWrapper.style.display = "flex";
+
+      } catch (err) {
+        resultWrapper.style.display = "none";
+        errorDiv.innerText = err.message;
+      } finally {
+        searchBtn.innerText = "Search";
+        searchBtn.disabled = false;
+      }
+    }
+
+    // PDF Download Function
+    function downloadPDF() {
+      const element = document.getElementById("resultCard");
+      const rollNo = document.getElementById("valRollNo").innerText;
+
+      const opt = {
+        margin: 0,
+        filename: `ResultCard_${rollNo}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save();
+    }
+  </script>
+
+<footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
         <div class="brand footer-brand">
@@ -112,11 +379,18 @@
             <span class="brand-subtitle">College Education Department, Sindh</span>
           </div>
         </div>
+        <div class="map-embed">
+              <iframe
+                title="Department Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
+                style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+              </iframe>
+            </div>
       </div>
       <div class="footer-col">
         <h4>About Us</h4>
         <p>
-          Government Boys Degree College Umerkot offers quality education and student support services for college programs in Sindh.
+          Government Boys Degree College Umerkot provides modern programs and a transparent admission process for students across Sindh.
         </p>
       </div>
       <div class="footer-col">
@@ -136,97 +410,24 @@
         <h4>Contact Information</h4>
         <p class="contact-info">
           Government Boys Degree College Umerkot<br />
-          College Education Department, Sindh<br />
+          College Education Department<br />
           Sindh, Pakistan
         </p>
         <p class="contact-info">
-          Phone: <a href="tel:+923451331965">+92-345-1331965</a><br />
-          Email: <a href="mailto:chemisrty_gdcu@gmail.com">chemisrty_gdcu@gmail.com</a>
+          Phone: <a href="tel:(0238) 920101">(0238) 920101</a><br />
+          Email: <a href="mailto:info.gdcu@gmail.com">info.gdcu@gmail.com</a>
         </p>
       </div>
     </div>
     <div class="footer-copyright">
       <div class="container">
-        <p>&copy; <span id="year"></span> Government Boys Degree College Umerkot. All rights reserved.</p>
+        <p>&copy; <span id="year"></span> Built by Prof Azizullah Samejo GBDC Umerkot. All rights reserved.</p>
       </div>
     </div>
   </footer>
+  
+  <script src="script.js"></script>
 
-  <script>
-    const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
-
-    const resultsForm = document.getElementById('results-form');
-    const resultsDisplay = document.getElementById('results-display');
-
-    if (resultsForm) {
-      resultsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const cnic = document.getElementById('cnic').value;
-        const submitButton = resultsForm.querySelector('button[type="submit"]');
-        const originalText = submitButton ? submitButton.textContent : 'Check Results';
-        
-        if (submitButton) {
-          submitButton.disabled = true;
-          submitButton.textContent = 'Loading...';
-        }
-
-        try {
-          const res = await fetch(`${API_BASE_URL}/results/check`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cnic })
-          });
-
-          const data = await res.json();
-
-          if (res.ok && data.success) {
-            if (data.results && data.results.length > 0) {
-              resultsDisplay.innerHTML = `
-                <h3 style="margin-bottom: 1rem; color: #1e3a8a;">Your Results</h3>
-                <table class="results-table">
-                  <thead>
-                    <tr>
-                      <th>Course</th>
-                      <th>Marks</th>
-                      <th>Semester</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${data.results.map(result => `
-                      <tr>
-                        <td>${result.course}</td>
-                        <td>${result.marks}</td>
-                        <td>${result.semester}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              `;
-            } else {
-              resultsDisplay.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results found for this CNIC.</p>';
-            }
-          } else {
-            resultsDisplay.innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">' + (data.message || 'No results found.') + '</p>';
-          }
-        } catch (err) {
-          console.error('Error checking results:', err);
-          resultsDisplay.innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">Network error. Please try again.</p>';
-        } finally {
-          if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
-          }
-        }
-      });
-    }
-
-    // Footer year
-    const yearSpan = document.getElementById('year');
-    if (yearSpan) {
-      yearSpan.textContent = new Date().getFullYear();
-    }
-  </script>
 </body>
 </html>
 

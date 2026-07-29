@@ -20,11 +20,33 @@ const app = express();
 const xlsx = require('xlsx');
 
 // --- Configuration ---
+mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 30000,
+})
+.then(async () => {
+    console.log("🚀 MongoDB Connected Successfully");
+    // Initialize admin if not exists
+    const adminCount = await Admin.countDocuments();
+    if (adminCount === 0) {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await new Admin({ username: 'admin', password: hashedPassword }).save();
+        console.log("✅ Default admin created");
+    }
+})
+.catch(err => console.error("❌ DB Connection Error:", err));
+
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// --- Middleware ---
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // --- Database Models ---
 // Admin Schema
@@ -49,6 +71,8 @@ const resultSchema = new mongoose.Schema({
     caste: String,
     obtainedMarks: Number,
     applyFor: String,
+    cnic: Number,
+    mobileNo: Number,
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -117,17 +141,6 @@ const Result = mongoose.model('Result', resultSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 const Slip = mongoose.model('Slip', slipSchema);
 const Admission = mongoose.model('Admission', admissionSchema);
-
-mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log("🚀 MongoDB Connected Successfully"))
-.catch(err => console.log(err));
-
-// --- Middleware ---
-app.use(cors());
-app.use(morgan('dev'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 const upload = multer({ storage: multer.memoryStorage() });
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';

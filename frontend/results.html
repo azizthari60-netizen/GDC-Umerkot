@@ -8,180 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <!-- html2pdf Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    body {
-      background-color: #f3f4f6;
-      padding: 40px 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .search-box {
-      background: #ffffff;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 480px;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .search-box h2 {
-      color: #1e3a8a;
-      margin-bottom: 15px;
-    }
-
-    .form-group {
-      display: flex;
-      gap: 10px;
-    }
-
-    .input-field {
-      flex: 1;
-      padding: 10px 14px;
-      border: 1px solid #cccccc;
-      border-radius: 6px;
-      font-size: 15px;
-    }
-
-    .btn-search {
-      background-color: #1e3a8a;
-      color: #ffffff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .error-msg {
-      color: #dc2626;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .result-wrapper {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
-
-    /* Professional Card Layout */
-    .card-container {
-      width: 650px;
-      background-color: #ffffff;
-      border: 2px solid #1e3a8a;
-      border-radius: 6px;
-      overflow: hidden;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-
-    /* Blue Header */
-    .card-header {
-      background-color: #1e3a8a;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-    }
-
-    .college-logo {
-      width: 65px;
-      height: 65px;
-      border-radius: 50%;
-      background: #ffffff;
-      padding: 3px;
-      object-fit: contain;
-    }
-
-    .college-name {
-      color: #ffffff;
-      font-size: 20px;
-      font-weight: bold;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .card-title-box {
-      text-align: center;
-      padding: 14px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .card-title {
-      font-size: 17px;
-      color: #1e3a8a;
-      font-weight: bold;
-    }
-
-    /* Two Columns Grid */
-    .details-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      padding: 25px 35px;
-    }
-
-    .detail-item {
-      display: flex;
-      flex-direction: column;
-      border-bottom: 1px dashed #d1d5db;
-      padding-bottom: 5px;
-    }
-
-    .field-label {
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-
-    .field-value {
-      font-size: 16px;
-      color: #111827;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-
-    .assigned-class-val {
-      color: #1e3a8a;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    /* Blue Footer Strip */
-    .card-footer {
-      background-color: #1e3a8a;
-      height: 20px;
-      margin-top: 10px;
-    }
-
-    .btn-download {
-      margin-top: 20px;
-      background-color: #16a34a;
-      color: #ffffff;
-      border: none;
-      padding: 12px 25px;
-      font-size: 15px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-  </style>
 </head>
 
 <body>
@@ -217,159 +44,30 @@
       </button>
     </div>
   </header>
-
-  <!-- Search Section -->
-  <div class="search-box">
+  
+ <!-- MAIN SEARCH SECTION -->
+<main class="result-search-container">
+  <div class="search-card">
     <h2>Admission Test Result</h2>
-    <div class="form-group">
-      <input type="text" id="rollNoInput" class="input-field" placeholder="Enter Roll Number..." />
-      <button onclick="fetchResult()" class="btn-search" id="searchBtn">Search</button>
-    </div>
-    <div id="errorMsg" class="error-msg"></div>
+    <p>Enter your Roll Number or CNIC to view and download your result card.</p>
+    
+    <form id="resultSearchForm" class="search-form">
+      <div class="input-group">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Enter Roll No or CNIC (e.g. 44101-XXXXXXX-X)..." 
+          required 
+        />
+        <button type="submit" id="searchBtn">Check Result</button>
+      </div>
+    </form>
+    
+    <div id="statusMessage" class="status-msg"></div>
   </div>
-
-  <!-- Result Card Section -->
-  <div class="result-wrapper" id="resultWrapper">
-    <div class="card-container" id="resultCard">
-      
-      <!-- Header -->
-      <div class="card-header">
-        <img src="logo.png" alt="College Logo" class="college-logo" />
-        <h1 class="college-name">Government Degree College Umerkot</h1>
-      </div>
-
-      <!-- Title -->
-      <div class="card-title-box">
-        <h2 class="card-title">ADMISSION TEST RESULT CARD</h2>
-      </div>
-
-      <!-- Fields Grid -->
-      <div class="details-grid">
-        <div class="detail-item">
-          <span class="field-label">Roll No</span>
-          <span class="field-value" id="valRollNo">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Name</span>
-          <span class="field-value" id="valName">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Father Name</span>
-          <span class="field-value" id="valFatherName">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Caste</span>
-          <span class="field-value" id="valCaste">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Applied For</span>
-          <span class="field-value" id="valApplyFor">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Obtained Marks</span>
-          <span class="field-value" id="valObtainedMarks">-</span>
-        </div>
-        <div class="detail-item" style="grid-column: span 2;">
-          <span class="field-label">Assigned Class</span>
-          <span class="field-value assigned-class-val" id="valAssignedClass">-</span>
-        </div>
-      </div>
-
-      <!-- Footer Bar -->
-      <div class="card-footer"></div>
-    </div>
-
-    <!-- Download PDF -->
-    <button onclick="downloadPDF()" class="btn-download">Download PDF Card</button>
-  </div>
-
-  <script>
-    // Logic for Assigned Class
-    function calculateAssignedClass(applyFor, marks) {
-      const obtainedMarks = Number(marks);
-      const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
-
-      if (group.includes("engineering") || group.includes("computer science") || group.includes("ics")) {
-        return "Class D";
-      }
-
-      if (group.includes("medical")) {
-        if (obtainedMarks > 48) {
-          return "Class A";
-        } else if (obtainedMarks >= 33 && obtainedMarks <= 48) {
-          return "Class B";
-        } else {
-          return "Class C";
-        }
-      }
-
-      return "N/A";
-    }
-
-    // Fetch Result API Call
-    async function fetchResult() {
-      const rollNo = document.getElementById("rollNoInput").value.trim();
-      const errorDiv = document.getElementById("errorMsg");
-      const resultWrapper = document.getElementById("resultWrapper");
-      const searchBtn = document.getElementById("searchBtn");
-
-      errorDiv.innerText = "";
-      if (!rollNo) {
-        errorDiv.innerText = "Please enter a Roll Number.";
-        return;
-      }
-
-      searchBtn.innerText = "Searching...";
-      searchBtn.disabled = true;
-
-      try {
-        const response = await fetch(`/api/result/${encodeURIComponent(rollNo)}`);
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.message || "Result not found.");
-        }
-
-        const data = result.data;
-
-        document.getElementById("valRollNo").innerText = data.rollNo || rollNo;
-        document.getElementById("valName").innerText = data.name || "-";
-        document.getElementById("valFatherName").innerText = data.fatherName || "-";
-        document.getElementById("valCaste").innerText = data.caste || "-";
-        document.getElementById("valApplyFor").innerText = data.applyFor || "-";
-        document.getElementById("valObtainedMarks").innerText = data.obtainedMarks || 0;
-
-        document.getElementById("valAssignedClass").innerText = calculateAssignedClass(data.applyFor, data.obtainedMarks);
-
-        resultWrapper.style.display = "flex";
-
-      } catch (err) {
-        resultWrapper.style.display = "none";
-        errorDiv.innerText = err.message;
-      } finally {
-        searchBtn.innerText = "Search";
-        searchBtn.disabled = false;
-      }
-    }
-
-    // PDF Download Function
-    function downloadPDF() {
-      const element = document.getElementById("resultCard");
-      const rollNo = document.getElementById("valRollNo").innerText;
-
-      const opt = {
-        margin: 0,
-        filename: `ResultCard_${rollNo}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-
-      html2pdf().set(opt).from(element).save();
-    }
-  </script>
-
-<footer class="site-footer">
+</main>
+  
+  <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
         <div class="brand footer-brand">

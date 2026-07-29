@@ -555,48 +555,113 @@ if (recoveryForm) {
     }
   });
 }
-// results page 
 document.addEventListener("DOMContentLoaded", () => {
   const searchForm = document.getElementById("resultSearchForm");
   const searchInput = document.getElementById("searchInput");
   const searchBtn = document.getElementById("searchBtn");
   const statusMessage = document.getElementById("statusMessage");
+  const resultCardWrapper = document.getElementById("resultCardWrapper");
+  const downloadPdfBtn = document.getElementById("downloadPdfBtn");
 
+  // Logic for Assigned Class calculation
+  function calculateAssignedClass(applyFor, marks) {
+    const obtainedMarks = Number(marks);
+    const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
+
+    if (group.includes("P.E")) {
+      return "XI E";
+    }
+    if (group.includes("C.S")) {
+      return "XI F";
+    }
+
+    if (group.includes("P.M")) {
+      if (obtainedMarks >= 48) {
+        return "XI A";
+      } else if (obtainedMarks >= 33 && obtainedMarks < 48) {
+        return "Class B";
+      } else if (obtainedMarks >= 20 && obtainedMarks < 33) {
+        return "Class C";
+      } else {
+        return "Class D";
+      }
+    }
+
+    return "N/A";
+  }
+
+  // Submit Search Form
   if (searchForm) {
-    searchForm.addEventListener("submit", (e) => {
+    searchForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      
+
       const query = searchInput.value.trim();
       statusMessage.innerText = "";
       statusMessage.className = "status-msg";
+      resultCardWrapper.style.display = "none";
 
       if (!query) {
-        statusMessage.innerText = "Please enter your Roll Number or CNIC.";
+        statusMessage.innerText = "Please enter a valid Roll Number or CNIC.";
         statusMessage.classList.add("error");
         return;
       }
 
-      // Button state change
       searchBtn.disabled = true;
       searchBtn.innerText = "Searching...";
 
-      // Open new window with backend result-card route
-      const resultUrl = `/api/result-card?search=${encodeURIComponent(query)}`;
-      const newWindow = window.open(resultUrl, "_blank");
+      try {
+        // Fetch Result API Request
+        const response = await fetch(`/api/result/${encodeURIComponent(query)}`);
+        const result = await response.json();
 
-      if (!newWindow) {
-        statusMessage.innerText = "Pop-up blocked! Please allow pop-ups for this site.";
-        statusMessage.classList.add("error");
-      } else {
-        statusMessage.innerText = "Opening result card in a new window...";
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Result not found.");
+        }
+
+        const data = result.data;
+
+        // Fill fields with response data
+        document.getElementById("resRollNo").innerText = data.rollNo || data.cnic || query;
+        document.getElementById("resName").innerText = data.name || "-";
+        document.getElementById("resFatherName").innerText = data.fatherName || "-";
+        document.getElementById("resCaste").innerText = data.caste || "-";
+        document.getElementById("resApplyFor").innerText = data.applyFor || "-";
+        document.getElementById("resObtainedMarks").innerText = data.obtainedMarks || 0;
+
+        // Assigned Class Calculation
+        const assignedClass = calculateAssignedClass(data.applyFor, data.obtainedMarks);
+        document.getElementById("resAssignedClass").innerText = assignedClass;
+
+        // Show the Result Card
+        resultCardWrapper.style.display = "flex";
+        statusMessage.innerText = "Result loaded successfully!";
         statusMessage.classList.add("success");
-      }
 
-      // Reset button
-      setTimeout(() => {
+      } catch (err) {
+        statusMessage.innerText = err.message;
+        statusMessage.classList.add("error");
+      } finally {
         searchBtn.disabled = false;
         searchBtn.innerText = "Check Result";
-      }, 1000);
+      }
+    });
+  }
+
+  // Download PDF Handler
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", () => {
+      const element = document.getElementById("printableResultCard");
+      const rollNo = document.getElementById("resRollNo").innerText;
+
+      const opt = {
+        margin: 0,
+        filename: `ResultCard_${rollNo}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+      };
+
+      html2pdf().set(opt).from(element).save();
     });
   }
 });

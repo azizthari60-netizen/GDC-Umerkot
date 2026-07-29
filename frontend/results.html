@@ -45,18 +45,20 @@
     </div>
   </header>
   
- <!-- MAIN SEARCH SECTION -->
+<!-- MAIN RESULT SECTION -->
 <main class="result-search-container">
+  
+  <!-- Search Form Box -->
   <div class="search-card">
     <h2>Admission Test Result</h2>
-    <p>Enter your Roll Number or CNIC to view and download your result card.</p>
+    <p>Enter your Roll Number or CNIC to check your result.</p>
     
     <form id="resultSearchForm" class="search-form">
       <div class="input-group">
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="Enter Roll No or CNIC (e.g. 44101-XXXXXXX-X)..." 
+          placeholder="Enter Roll No or CNIC..." 
           required 
         />
         <button type="submit" id="searchBtn">Check Result</button>
@@ -65,8 +67,64 @@
     
     <div id="statusMessage" class="status-msg"></div>
   </div>
+
+  <!-- Result Card Container (Initially Hidden) -->
+  <div id="resultCardWrapper" class="result-card-wrapper">
+    <div id="printableResultCard" class="card-container">
+      
+      <!-- Blue Header with Logo and Name -->
+      <div class="card-header">
+        <img src="logo.png" alt="College Logo" class="college-logo" />
+        <h1 class="college-name">Government Degree College Umerkot</h1>
+      </div>
+
+      <!-- Title -->
+      <div class="card-title-box">
+        <h2 class="card-title">ADMISSION TEST RESULT CARD</h2>
+      </div>
+
+      <!-- Details in 2 Columns Grid -->
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="field-label">Roll No</span>
+          <span class="field-value" id="resRollNo">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Name</span>
+          <span class="field-value" id="resName">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Father Name</span>
+          <span class="field-value" id="resFatherName">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Caste</span>
+          <span class="field-value" id="resCaste">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Applied For</span>
+          <span class="field-value" id="resApplyFor">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="field-label">Obtained Marks</span>
+          <span class="field-value" id="resObtainedMarks">-</span>
+        </div>
+        <div class="detail-item full-width">
+          <span class="field-label">Assigned Class</span>
+          <span class="field-value assigned-class" id="resAssignedClass">-</span>
+        </div>
+      </div>
+
+      <!-- Blue Footer Strip -->
+      <div class="card-footer"></div>
+    </div>
+
+    <!-- Download PDF Button -->
+    <button type="button" id="downloadPdfBtn" class="btn-download">Download PDF Card</button>
+  </div>
+
 </main>
-  
+
   <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
@@ -125,6 +183,7 @@
   </footer>
   
   <script src="script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 </body>
 </html>

@@ -555,16 +555,90 @@ if (recoveryForm) {
     }
   });
 }
-document.addEventListener("DOMContentLoaded", () => {
-  const searchForm = document.getElementById("resultSearchForm");
+
+// Global Function for Search Form Submit
+async function handleResultSearch(e) {
+  // Page ko refresh hone se roknay ke liye
+  if (e) e.preventDefault();
+
   const searchInput = document.getElementById("searchInput");
   const searchBtn = document.getElementById("searchBtn");
   const statusMessage = document.getElementById("statusMessage");
   const resultCardWrapper = document.getElementById("resultCardWrapper");
-  const downloadPdfBtn = document.getElementById("downloadPdfBtn");
 
-  // Logic for Assigned Class calculation
-  function calculateAssignedClass(applyFor, marks) {
+  const query = searchInput ? searchInput.value.trim() : "";
+
+  if (statusMessage) {
+    statusMessage.innerText = "";
+    statusMessage.className = "status-msg";
+  }
+
+  if (resultCardWrapper) {
+    resultCardWrapper.style.display = "none";
+  }
+
+  if (!query) {
+    if (statusMessage) {
+      statusMessage.innerText = "Please enter a valid Roll Number or CNIC.";
+      statusMessage.classList.add("error");
+    }
+    return false;
+  }
+
+  if (searchBtn) {
+    searchBtn.disabled = true;
+    searchBtn.innerText = "Searching...";
+  }
+
+  try {
+    // API Call
+    const response = await fetch(`/api/result/${encodeURIComponent(query)}`);
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Result not found.");
+    }
+
+    const data = result.data;
+
+    // Data Fill
+    document.getElementById("resRollNo").innerText = data.rollNo || data.cnic || query;
+    document.getElementById("resName").innerText = data.name || "-";
+    document.getElementById("resFatherName").innerText = data.fatherName || "-";
+    document.getElementById("resCaste").innerText = data.caste || "-";
+    document.getElementById("resApplyFor").innerText = data.applyFor || "-";
+    document.getElementById("resObtainedMarks").innerText = data.obtainedMarks || 0;
+
+    // Assigned Class Calculation
+    const assignedClass = calculateAssignedClass(data.applyFor, data.obtainedMarks);
+    document.getElementById("resAssignedClass").innerText = assignedClass;
+
+    // Show Result Card
+    if (resultCardWrapper) {
+      resultCardWrapper.style.display = "flex";
+    }
+    if (statusMessage) {
+      statusMessage.innerText = "Result loaded successfully!";
+      statusMessage.classList.add("success");
+    }
+
+  } catch (err) {
+    if (statusMessage) {
+      statusMessage.innerText = err.message;
+      statusMessage.classList.add("error");
+    }
+  } finally {
+    if (searchBtn) {
+      searchBtn.disabled = false;
+      searchBtn.innerText = "Check Result";
+    }
+  }
+
+  return false;
+}
+
+// Logic for Assigned Class
+ function calculateAssignedClass(applyFor, marks) {
     const obtainedMarks = Number(marks);
     const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
 
@@ -576,6 +650,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (group.includes("P.M")) {
+      if (obtainedMarks >= 48) {
+        return "XI A";
+      } else if (obtainedMarks >= 33 && obtainedMarks < 48) {
+        return "Class B";
+      } else if (obtainedMarks >= 20 && obtainedMarks < 33) {
+        return "Class C";
+      } else {
+        return "Class D";
+      }
+    }
+
+    return "N/A";
+  }
+
+// PDF Download Trigger
+document.addEventListener("DOMContentLoaded", () => {
+  const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", () => {
+      const element = document.getElementById("printableResultCard");
+      const rollNo = document.getElementById("resRollNo").innerText;
+
+      const opt = {
+        margin: 0,
+        filename: `ResultCard_${rollNo}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+      };
+
+      html2pdf().set(opt).from(element).save();
+    });
+  }
+});
+ludes("P.M")) {
       if (obtainedMarks >= 48) {
         return "XI A";
       } else if (obtainedMarks >= 33 && obtainedMarks < 48) {
@@ -646,22 +755,3 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
-  // Download PDF Handler
-  if (downloadPdfBtn) {
-    downloadPdfBtn.addEventListener("click", () => {
-      const element = document.getElementById("printableResultCard");
-      const rollNo = document.getElementById("resRollNo").innerText;
-
-      const opt = {
-        margin: 0,
-        filename: `ResultCard_${rollNo}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
-      };
-
-      html2pdf().set(opt).from(element).save();
-    });
-  }
-});

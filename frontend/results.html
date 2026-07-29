@@ -46,24 +46,20 @@
   </header>
   
 <!-- MAIN RESULT SECTION -->
-<main class="result-search-container">
-  
-  <!-- Search Form Box -->
-  <div class="search-card">
-    <h2>Admission Test Result</h2>
-    <p>Enter your Roll Number or CNIC to check your result.</p>
-    
-    <form id="resultSearchForm" class="search-form">
-      <div class="input-group">
-        <input 
-          type="text" 
-          id="searchInput" 
-          placeholder="Enter Roll No or CNIC..." 
-          required 
-        />
-        <button type="submit" id="searchBtn">Check Result</button>
-      </div>
-    </form>
+
+<!-- Form Tag update -->
+<form id="resultSearchForm" class="search-form" onsubmit="handleResultSearch(event)">
+  <div class="input-group">
+    <input 
+      type="text" 
+      id="searchInput" 
+      placeholder="Enter Roll No or CNIC..." 
+      required 
+    />
+    <!-- Type button kar diya taake page refresh na ho -->
+    <button type="submit" id="searchBtn">Check Result</button>
+  </div>
+</form>
     
     <div id="statusMessage" class="status-msg"></div>
   </div>

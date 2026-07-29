@@ -46,31 +46,33 @@
   </header>
   
 <!-- MAIN RESULT SECTION -->
-
-<!-- Form Tag update -->
-<form id="resultSearchForm" class="search-form" onsubmit="handleResultSearch(event)">
-  <div class="input-group">
-    <input 
-      type="text" 
-      id="searchInput" 
-      placeholder="Enter Roll No or CNIC..." 
-      required 
-    />
-    <!-- Type button kar diya taake page refresh na ho -->
-    <button type="submit" id="searchBtn">Check Result</button>
-  </div>
-</form>
+<!-- MAIN RESULT SECTION WITH EMBEDDED SCRIPT -->
+<main class="result-search-container">
+  
+  <!-- Search Box (No <form> tag to completely prevent page reloads) -->
+  <div class="search-card">
+    <h2>Admission Test Result</h2>
+    <p>Enter your Roll Number or CNIC to check your result.</p>
+    
+    <div class="input-group">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Enter Roll No or CNIC..." 
+      />
+      <button type="button" id="searchBtn" onclick="fetchStudentResult()">Check Result</button>
+    </div>
     
     <div id="statusMessage" class="status-msg"></div>
   </div>
 
-  <!-- Result Card Container (Initially Hidden) -->
-  <div id="resultCardWrapper" class="result-card-wrapper">
+  <!-- Result Card Container (Hidden by default, shown on result) -->
+  <div id="resultCardWrapper" class="result-card-wrapper" style="display: none;">
     <div id="printableResultCard" class="card-container">
       
-      <!-- Blue Header with Logo and Name -->
+      <!-- Header -->
       <div class="card-header">
-        <img src="logo.png" alt="College Logo" class="college-logo" />
+        <img src="/college-logo.png" alt="College Logo" class="college-logo" />
         <h1 class="college-name">Government Degree College Umerkot</h1>
       </div>
 
@@ -79,7 +81,7 @@
         <h2 class="card-title">ADMISSION TEST RESULT CARD</h2>
       </div>
 
-      <!-- Details in 2 Columns Grid -->
+      <!-- Details Grid -->
       <div class="details-grid">
         <div class="detail-item">
           <span class="field-label">Roll No</span>
@@ -111,15 +113,124 @@
         </div>
       </div>
 
-      <!-- Blue Footer Strip -->
+      <!-- Footer Strip -->
       <div class="card-footer"></div>
     </div>
 
     <!-- Download PDF Button -->
-    <button type="button" id="downloadPdfBtn" class="btn-download">Download PDF Card</button>
+    <button type="button" id="downloadPdfBtn" onclick="downloadPDF()" class="btn-download">Download PDF Card</button>
   </div>
 
 </main>
+
+<!-- html2pdf Library CDN for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- Embedded Javascript Logic -->
+<script>
+  // Main Search Function
+  async function fetchStudentResult() {
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const statusMessage = document.getElementById("statusMessage");
+    const resultCardWrapper = document.getElementById("resultCardWrapper");
+
+    const query = searchInput ? searchInput.value.trim() : "";
+
+    // Reset Messages and Card
+    statusMessage.innerText = "";
+    statusMessage.className = "status-msg";
+    resultCardWrapper.style.display = "none";
+
+    if (!query) {
+      statusMessage.innerText = "Please enter a Roll Number or CNIC.";
+      statusMessage.classList.add("error");
+      return;
+    }
+
+    // Button State Update
+    searchBtn.disabled = true;
+    searchBtn.innerText = "Searching...";
+
+    try {
+      // Backend API Call
+      const response = await fetch('/api/result/' + encodeURIComponent(query));
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Result not found in database.");
+      }
+
+      const data = result.data;
+
+      // Fill Data into HTML Elements
+      document.getElementById("resRollNo").innerText = data.rollNo || data.cnic || query;
+      document.getElementById("resName").innerText = data.name || "-";
+      document.getElementById("resFatherName").innerText = data.fatherName || "-";
+      document.getElementById("resCaste").innerText = data.caste || "-";
+      document.getElementById("resApplyFor").innerText = data.applyFor || "-";
+      document.getElementById("resObtainedMarks").innerText = data.obtainedMarks || 0;
+
+      // Assigned Class Calculation
+      const assignedClass = getAssignedClass(data.applyFor, data.obtainedMarks);
+      document.getElementById("resAssignedClass").innerText = assignedClass;
+
+      // Show Result Card
+      resultCardWrapper.style.display = "flex";
+      statusMessage.innerText = "Result found!";
+      statusMessage.classList.add("success");
+
+    } catch (err) {
+      statusMessage.innerText = err.message;
+      statusMessage.classList.add("error");
+    } finally {
+      searchBtn.disabled = false;
+      searchBtn.innerText = "Check Result";
+    }
+  }
+
+  // Logic for Class Assignment
+  function getAssignedClass(applyFor, marks) {
+    const obtainedMarks = Number(marks);
+    const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
+
+    if (group.includes("P.E")) {
+      return "XI E";
+    }
+    if (group.includes("C.S")) {
+      return "XI F";
+    }
+    if (group.includes("P.M")) {
+      if (obtainedMarks >= 48) {
+        return "Class A";
+      } else if (obtainedMarks >= 33 && obtainedMarks < 48) {
+        return "Class B";
+      } else if (obtainedMarks >= 20 && obtainedMarks < 33) {
+        return "Class C";
+      } else {
+        return "Class D";
+      }
+    }
+
+    return "N/A";
+  }
+
+  // PDF Download Function
+  function downloadPDF() {
+    const element = document.getElementById("printableResultCard");
+    const rollNo = document.getElementById("resRollNo").innerText;
+
+    const opt = {
+      margin: 0,
+      filename: `ResultCard_${rollNo}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  }
+</script>
 
   <footer class="site-footer">
     <div class="container footer-grid">
@@ -177,10 +288,6 @@
       </div>
     </div>
   </footer>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js"></script>
-
-
 </body>
 </html>
 

@@ -1,5 +1,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -729,27 +731,273 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 });
 
 // Route to fetch result by Roll Number
-app.get('/api/result/:rollNo', async (req, res) => {
+// Express Route to render downloadable/printable Result Card HTML
+app.get('/api/result-card', async (req, res) => {
   try {
-    const rollNoInput = req.params.rollNo.trim();
-    
-    // Exact search using clean English field name: rollNo
-    const student = await db.collection('results').findOne({ rollNo: rollNoInput });
+    const searchVal = req.query.search ? req.query.search.trim() : "";
 
-    if (!student) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Result not found! Please check the Roll Number." 
-      });
+    if (!searchVal) {
+      return res.status(400).send("<h3>Please provide a Roll Number or CNIC.</h3>");
     }
 
-    res.json({ success: true, data: student });
-  } catch (error) {
-    console.error("Database Error:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Internal Server Error." 
+    // Search in MongoDB by rollNo or cnic
+    const student = await db.collection('results').findOne({
+      $or: [
+        { rollNo: searchVal },
+        { cnic: searchVal },
+        { RollNo: searchVal },
+        { CNIC: searchVal }
+      ]
     });
+
+    if (!student) {
+      return res.status(404).send(`
+        <div style="font-family: Arial; text-align: center; margin-top: 50px;">
+          <h2 style="color: #dc2626;">Result Not Found</h2>
+          <p>No student found matching Roll No / CNIC: <b>${searchVal}</b></p>
+          <button onclick="window.close()" style="padding: 8px 16px; cursor: pointer;">Close Window</button>
+        </div>
+      `);
+    }
+
+    // ----------------------------------------------------
+    // Logic for Assigned Class
+    // ----------------------------------------------------
+    const marks = Number(student.obtainedMarks || student.marks || 0);
+    const applyFor = (student.applyFor || "").trim().toLowerCase();
+    let assignedClass = "N/A";
+
+    if (applyFor.includes("P.E")) {
+      assignedClass = "XI E";
+    } else if (applyFor.includes("C.S")) {
+        assignedClass = "XI F";
+    } else if(applyFor.includes("P.M")) {
+      if (marks >= 48) {
+        assignedClass = "XI A";
+      } else if (marks >= 33 && marks < 48) {
+        assignedClass = "XI B";
+      } else if (marks >= 20 && marks < 33) {
+        assignedClass = "X C"
+      } else {
+        assignedClass = "Class C";
+      }
+    }
+
+    // ----------------------------------------------------
+    // HTML + CSS Template for Printable Result Card
+    // ----------------------------------------------------
+    const htmlResponse = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Result Card - ${student.rollNo || searchVal}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+          }
+          body {
+            background-color: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 10px;
+          }
+          .action-bar {
+            margin-bottom: 20px;
+          }
+          .btn-print {
+            background-color: #16a34a;
+            color: #ffffff;
+            border: none;
+            padding: 12px 26px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          .btn-print:hover {
+            background-color: #15803d;
+          }
+          
+          /* Card Container */
+          .card-container {
+            width: 700px;
+            background-color: #ffffff;
+            border: 2px solid #1e3a8a;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+          }
+
+          /* Blue Header */
+          .card-header {
+            background-color: #1e3a8a;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+          }
+          .logo {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: #ffffff;
+            padding: 3px;
+            object-fit: contain;
+          }
+          .college-name {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+          }
+
+          /* Card Title */
+          .card-title-box {
+            text-align: center;
+            padding: 12px 0;
+            border-bottom: 2px solid #e2e8f0;
+            background-color: #f8fafc;
+          }
+          .card-title {
+            font-size: 17px;
+            color: #1e3a8a;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+          }
+
+          /* Details Grid (Two Columns) */
+          .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+            padding: 30px 40px;
+          }
+          .detail-item {
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px dashed #cbd5e1;
+            padding-bottom: 5px;
+          }
+          .full-width {
+            grid-column: span 2;
+          }
+          .label {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+          .value {
+            font-size: 16px;
+            color: #0f172a;
+            font-weight: 600;
+            margin-top: 3px;
+          }
+          .assigned-class {
+            color: #1e3a8a;
+            font-size: 18px;
+            font-weight: 800;
+          }
+
+          /* Blue Footer Bar */
+          .card-footer {
+            background-color: #1e3a8a;
+            height: 20px;
+            margin-top: 15px;
+          }
+
+          /* Hide Action Bar on PDF / Print */
+          @media print {
+            body {
+              background-color: #ffffff;
+              padding: 0;
+            }
+            .action-bar {
+              display: none;
+            }
+            .card-container {
+              box-shadow: none;
+              width: 100%;
+              border: 2px solid #1e3a8a;
+            }
+          }
+        </style>
+      </head>
+      <body>
+
+        <div class="action-bar">
+          <button class="btn-print" onclick="window.print()">Download / Print PDF</button>
+        </div>
+
+        <div class="card-container">
+          <!-- Header -->
+          <div class="card-header">
+            <img src="/forntend/logo.png" alt="Logo" class="logo" />
+            <h1 class="college-name">Government Degree College Umerkot</h1>
+          </div>
+
+          <!-- Title -->
+          <div class="card-title-box">
+            <h2 class="card-title">ADMISSION TEST RESULT CARD</h2>
+          </div>
+
+          <!-- Details (2 Columns Grid) -->
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="label">Roll No</span>
+              <span class="value">${student.rollNo || "-"}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Name</span>
+              <span class="value">${student.name || "-"}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Father Name</span>
+              <span class="value">${student.fatherName || "-"}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Caste</span>
+              <span class="value">${student.caste || "-"}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Applied For</span>
+              <span class="value">${student.applyFor || "-"}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Obtained Marks</span>
+              <span class="value">${student.obtainedMarks || 0}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="label">Assigned Class</span>
+              <span class="value assigned-class">${assignedClass}</span>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="card-footer"></div>
+        </div>
+
+      </body>
+      </html>
+    `;
+
+    res.send(htmlResponse);
+
+  } catch (error) {
+    console.error("Error generating result card:", error);
+    res.status(500).send("<h3>Internal Server Error while generating result card.</h3>");
   }
 });
 

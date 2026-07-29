@@ -1271,6 +1271,89 @@ main > section:not(:last-of-type)::after {
   text-decoration: underline;
 }
 
+/* Result page Search Main Section Styles */
+.result-search-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+  background-color: #f8fafc;
+  min-height: 60vh;
+}
+
+.search-card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 40px 30px;
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.search-card h2 {
+  color: #1e3a8a;
+  font-size: 24px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.search-card p {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+.search-form .input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.search-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-form input:focus {
+  border-color: #1e3a8a;
+}
+
+.search-form button {
+  background-color: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.search-form button:hover {
+  background-color: #1d4ed8;
+}
+
+.status-msg {
+  margin-top: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-msg.error {
+  color: #dc2626;
+}
+
+.status-msg.success {
+  color: #16a34a;
+}
 /* Admin Page */
 .admin-container {
       max-width: 1400px;

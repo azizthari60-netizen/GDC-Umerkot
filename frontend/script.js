@@ -555,4 +555,48 @@ if (recoveryForm) {
     }
   });
 }
+// results page 
+document.addEventListener("DOMContentLoaded", () => {
+  const searchForm = document.getElementById("resultSearchForm");
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
+  const statusMessage = document.getElementById("statusMessage");
 
+  if (searchForm) {
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const query = searchInput.value.trim();
+      statusMessage.innerText = "";
+      statusMessage.className = "status-msg";
+
+      if (!query) {
+        statusMessage.innerText = "Please enter your Roll Number or CNIC.";
+        statusMessage.classList.add("error");
+        return;
+      }
+
+      // Button state change
+      searchBtn.disabled = true;
+      searchBtn.innerText = "Searching...";
+
+      // Open new window with backend result-card route
+      const resultUrl = `/api/result-card?search=${encodeURIComponent(query)}`;
+      const newWindow = window.open(resultUrl, "_blank");
+
+      if (!newWindow) {
+        statusMessage.innerText = "Pop-up blocked! Please allow pop-ups for this site.";
+        statusMessage.classList.add("error");
+      } else {
+        statusMessage.innerText = "Opening result card in a new window...";
+        statusMessage.classList.add("success");
+      }
+
+      // Reset button
+      setTimeout(() => {
+        searchBtn.disabled = false;
+        searchBtn.innerText = "Check Result";
+      }, 1000);
+    });
+  }
+});

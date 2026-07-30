@@ -731,27 +731,6 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 });
 
 // Express API route to search student by Roll No or CNIC
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://chemistrygdcu_db_user:xSPhXFmm3r0PXrn6@aziz.lgvuuc7.mongodb.net/?appName=Aziz&retryWrites=true&w=majority";
-const DB_NAME = "gdc-umerkot";
-
-let cachedClient = null;
-let cachedDb = null;
-
-// Database Connection Function
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-  
-  const client = await MongoClient.connect(MONGODB_URI);
-  const db = client.db(DB_NAME);
-  
-  cachedClient = client;
-  cachedDb = db;
-  return db;
-}
-
-// Result API Route
 app.get('/api/result/:searchVal', async (req, res) => {
   try {
     const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";

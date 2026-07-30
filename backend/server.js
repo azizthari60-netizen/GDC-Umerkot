@@ -20,22 +20,27 @@ const http = require('http');
 
 const app = express();
 
-// --- Configuration ---
-mongoose.connect(process.env.MONGODB_URI, {
-    dbName: 'gdc-umerkot',
-    serverSelectionTimeoutMS: 30000,
-})
-.then(async () => {
-    console.log("🚀 MongoDB Connected Successfully");
-})
-.catch(err => console.error("❌ DB Connection Error:", err));
 
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// --- DATABASE CONNECTION (Serverless Optimized) ---
+let cachedDb = null;
 
+async function connectToDatabase() {
+    if (cachedDb && mongoose.connection.readyState === 1) {
+        return cachedDb;
+    }
+
+    console.log("⏳ Connecting to MongoDB Atlas...");
+    
+    // اگر URI میں dbName نہ بھی ہو تو یہ زبردستی gdc-umerkot سے ہی کنیکٹ کرے گا
+    cachedDb = await mongoose.connect(process.env.MONGODB_URI, {
+        dbName: 'gdc-umerkot',
+        serverSelectionTimeoutMS: 5000, 
+        bufferCommands: false, // 🛑 buffering بند کرے گا تاکہ 10 سیکنڈ انتظار نہ کرے اور فوراً ایرر پکڑے
+    });
+
+    console.log("🚀 Connected to MongoDB: gdc-umerkot");
+    return cachedDb;
+}s
 // --- Middleware ---
 app.use(cors());
 app.use(morgan('dev'));
@@ -310,11 +315,15 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
     }
 });
 
+
 // --- ADMISSION TEST RESULT ROUTE ---
 app.get('/api/result/:searchVal', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
     try {
+        // 1. سرچ کرنے سے پہلے DB کنکشن کا انتظار کریں
+        await connectToDatabase();
+
         const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
 
         if (!rawVal) {
@@ -324,7 +333,6 @@ app.get('/api/result/:searchVal', async (req, res) => {
             });
         }
 
-        // Query both as String and Number to handle all database types
         const numVal = Number(rawVal);
         const queryConditions = [
             { rollNo: rawVal },
@@ -338,7 +346,8 @@ app.get('/api/result/:searchVal', async (req, res) => {
             queryConditions.push({ cnic: numVal });
         }
 
-        const student = await Result.findOne({ $or: queryConditions });
+        // 2. Query execute کریں
+        const student = await Result.findOne({ $or: queryConditions }).lean();
 
         if (!student) {
             return res.status(404).json({
@@ -356,7 +365,7 @@ app.get('/api/result/:searchVal', async (req, res) => {
         console.error("Result API Error:", error);
         return res.status(500).json({
             success: false,
-            message: "Server Error: " + error.message
+            message: "DB Connection Error: " + error.message
         });
     }
 });

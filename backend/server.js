@@ -741,10 +741,7 @@ app.get('/api/result/:searchVal', async (req, res) => {
         message: "Please enter a Roll Number or CNIC."
       });
     }
-
-    // Connect DB safely to prevent "undefined property" error
-    const db = await connectToDatabase();
-    
+  
     const numVal = Number(rawVal);
     const queryConditions = [
       { rollNo: rawVal },

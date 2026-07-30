@@ -733,6 +733,13 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 
 // Admission Test Result Route
 
+const mongoose = require('mongoose');
+
+// 1. Result Schema & Model (Ye "results" collection se automatic connect ho jaye ga)
+const ResultSchema = new mongoose.Schema({}, { strict: false, collection: 'results' });
+const ResultModel = mongoose.models.Result || mongoose.model('Result', ResultSchema);
+
+// 2. Admission Test Result Route
 app.get('/api/result/:searchVal', async (req, res) => {
   try {
     const searchVal = req.params.searchVal ? req.params.searchVal.trim() : "";
@@ -744,8 +751,8 @@ app.get('/api/result/:searchVal', async (req, res) => {
       });
     }
 
-    // Direct search using Mongoose Connection
-    const student = await mongoose.connection.db.collection('results').findOne({
+    // Direct search using Mongoose Model (No 'undefined collection' error anymore)
+    const student = await ResultModel.findOne({
       $or: [
         { rollNo: searchVal },
         { cnic: searchVal },

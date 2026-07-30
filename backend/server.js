@@ -756,6 +756,7 @@ app.get('/api/result/:searchVal', async (req, res) => {
     }
 
     // Mongo DB Query
+    const db = "gdc-umerkot"
     const student = await db.collection('results').findOne({
       $or: queryConditions
     });

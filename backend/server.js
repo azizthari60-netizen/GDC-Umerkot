@@ -732,6 +732,7 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 
 
 // Admission Test Result Route
+
 app.get('/api/result/:searchVal', async (req, res) => {
   try {
     const searchVal = req.params.searchVal ? req.params.searchVal.trim() : "";
@@ -743,33 +744,14 @@ app.get('/api/result/:searchVal', async (req, res) => {
       });
     }
 
-    // Database Reference (Agar aap Mongoose ya express local db use kar rahe hain)
-    const database = app.locals.db || db; 
-
-    if (!database) {
-      return res.status(500).json({
-        success: false,
-        message: "Database object is not available on server."
-      });
-    }
-
-    // Number conversion for queries where rollNo is stored as Integer in MongoDB
-    const numVal = Number(searchVal);
-    const queryConditions = [
-      { rollNo: searchVal },
-      { cnic: searchVal },
-      { RollNo: searchVal },
-      { CNIC: searchVal }
-    ];
-
-    if (!isNaN(numVal)) {
-      queryConditions.push({ rollNo: numVal });
-      queryConditions.push({ RollNo: numVal });
-    }
-
-    // Query MongoDB Collection
-    const student = await database.collection('results').findOne({
-      $or: queryConditions
+    // Direct search using Mongoose Connection
+    const student = await mongoose.connection.db.collection('results').findOne({
+      $or: [
+        { rollNo: searchVal },
+        { cnic: searchVal },
+        { RollNo: searchVal },
+        { CNIC: searchVal }
+      ]
     });
 
     if (!student) {
@@ -779,15 +761,14 @@ app.get('/api/result/:searchVal', async (req, res) => {
       });
     }
 
-    // Return exact result data
-    return res.json({
+    res.json({
       success: true,
       data: student
     });
 
   } catch (error) {
     console.error("Result Route Error:", error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Server Error: " + error.message
     });

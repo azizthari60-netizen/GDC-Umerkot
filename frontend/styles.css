@@ -1305,12 +1305,12 @@ main > section:not(:last-of-type)::after {
   margin-bottom: 20px;
 }
 
-.search-form .input-group {
+.input-group {
   display: flex;
   gap: 10px;
 }
 
-.search-form input {
+.input-group input {
   flex: 1;
   padding: 10px 14px;
   border: 1px solid #cbd5e1;
@@ -1319,11 +1319,11 @@ main > section:not(:last-of-type)::after {
   outline: none;
 }
 
-.search-form input:focus {
+.input-group input:focus {
   border-color: #1e3a8a;
 }
 
-.search-form button {
+.input-group button {
   background-color: #1e3a8a;
   color: #ffffff;
   border: none;
@@ -1334,7 +1334,7 @@ main > section:not(:last-of-type)::after {
   white-space: nowrap;
 }
 
-.search-form button:hover {
+.input-group button:hover {
   background-color: #1d4ed8;
 }
 

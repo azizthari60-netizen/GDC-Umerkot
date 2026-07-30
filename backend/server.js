@@ -731,22 +731,63 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 });
 
 // Express API route to search student by Roll No or CNIC
+const MONGODB_URI = process.env.MONGODB_URI || "آپ_کی_مٹیو_ڈیٹا_بیس_کی_کنیکشن_اسٹرنگ";
+const DB_NAME = "gdc-umerkot";
+
+let cachedClient = null;
+let cachedDb = null;
+
+// Database Connection Function
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+  
+  const client = await MongoClient.connect(MONGODB_URI);
+  const db = client.db(DB_NAME);
+  
+  cachedClient = client;
+  cachedDb = db;
+  return db;
+}
+
+// Result API Route
 app.get('/api/result/:searchVal', async (req, res) => {
   try {
-    const searchVal = req.params.searchVal.trim();
+    const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
+    
+    if (!rawVal) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a Roll Number or CNIC."
+      });
+    }
 
-    // Query MongoDB Collection for rollNo or cnic
+    // Connect DB safely to prevent "undefined property" error
+    const db = await connectToDatabase();
+    
+    const numVal = Number(rawVal);
+    const queryConditions = [
+      { rollNo: rawVal },
+      { cnic: rawVal },
+      { RollNo: rawVal },
+      { CNIC: rawVal }
+    ];
+
+    if (!isNaN(numVal)) {
+      queryConditions.push({ rollNo: numVal });
+      queryConditions.push({ RollNo: numVal });
+    }
+
+    // Mongo DB Query
     const student = await db.collection('results').findOne({
-      $or: [
-        { rollNo: searchVal },
-        { cnic: searchVal }
-      ]
+      $or: queryConditions
     });
 
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: "No result found for the provided Roll Number or CNIC."
+        message: `No result found for Roll No / CNIC: ${rawVal}`
       });
     }
 
@@ -756,10 +797,10 @@ app.get('/api/result/:searchVal', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Database Query Error:", error);
+    console.error("Backend Error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error while fetching result. Please try again."
+      message: "Server Connection Error: " + error.message
     });
   }
 });

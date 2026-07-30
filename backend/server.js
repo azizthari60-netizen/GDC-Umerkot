@@ -733,14 +733,15 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
 
 // Admission Test Result Route
 
-const mongoose = require('mongoose');
-
-// 1. Result Schema & Model (Ye "results" collection se automatic connect ho jaye ga)
+// Mongoose Model Setup (Safely check if model already exists)
 const ResultSchema = new mongoose.Schema({}, { strict: false, collection: 'results' });
 const ResultModel = mongoose.models.Result || mongoose.model('Result', ResultSchema);
 
-// 2. Admission Test Result Route
+// Result API Route
 app.get('/api/result/:searchVal', async (req, res) => {
+  // Always set JSON content type
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const searchVal = req.params.searchVal ? req.params.searchVal.trim() : "";
 
@@ -751,7 +752,7 @@ app.get('/api/result/:searchVal', async (req, res) => {
       });
     }
 
-    // Direct search using Mongoose Model (No 'undefined collection' error anymore)
+    // Search in MongoDB results collection
     const student = await ResultModel.findOne({
       $or: [
         { rollNo: searchVal },
@@ -768,14 +769,15 @@ app.get('/api/result/:searchVal', async (req, res) => {
       });
     }
 
-    res.json({
+    // Return student data
+    return res.status(200).json({
       success: true,
       data: student
     });
 
   } catch (error) {
-    console.error("Result Route Error:", error);
-    res.status(500).json({
+    console.error("Result API Error:", error);
+    return res.status(500).json({
       success: false,
       message: "Server Error: " + error.message
     });

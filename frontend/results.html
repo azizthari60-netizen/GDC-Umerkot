@@ -183,65 +183,72 @@
 <!-- Embedded Javascript Logic -->
 <script>
   // Main Search Function
-  async function fetchStudentResult() {
-    const searchInput = document.getElementById("searchInput");
-    const searchBtn = document.getElementById("searchBtn");
-    const statusMessage = document.getElementById("statusMessage");
-    const resultCardWrapper = document.getElementById("resultCardWrapper");
+ async function fetchStudentResult() {
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
+  const statusMessage = document.getElementById("statusMessage");
+  const resultCardWrapper = document.getElementById("resultCardWrapper");
 
-    const query = searchInput ? searchInput.value.trim() : "";
+  const query = searchInput ? searchInput.value.trim() : "";
 
-    // Reset Messages and Card
-    statusMessage.innerText = "";
-    statusMessage.className = "status-msg";
-    resultCardWrapper.style.display = "none";
+  statusMessage.innerText = "";
+  statusMessage.className = "status-msg";
+  resultCardWrapper.style.display = "none";
 
-    if (!query) {
-      statusMessage.innerText = "Please enter a Roll Number or CNIC.";
-      statusMessage.classList.add("error");
-      return;
-    }
-
-    // Button State Update
-    searchBtn.disabled = true;
-    searchBtn.innerText = "Searching...";
-
-    try {
-      // Backend API Call
-      const response = await fetch('/api/result/' + encodeURIComponent(query));
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Result not found in database.");
-      }
-
-      const data = result.data;
-
-      // Fill Data into HTML Elements
-      document.getElementById("resRollNo").innerText = data.rollNo || data.cnic || query;
-      document.getElementById("resName").innerText = data.name || "-";
-      document.getElementById("resFatherName").innerText = data.fatherName || "-";
-      document.getElementById("resCaste").innerText = data.caste || "-";
-      document.getElementById("resApplyFor").innerText = data.applyFor || "-";
-      document.getElementById("resObtainedMarks").innerText = data.obtainedMarks || 0;
-
-      // Assigned Class Calculation
-      const assignedClass = getAssignedClass(data.applyFor, data.obtainedMarks);
-      document.getElementById("resAssignedClass").innerText = assignedClass;
-
-      // Show Result Card
-      resultCardWrapper.style.display = "flex";
-      statusMessage.innerText = "Result found!";
-      statusMessage.classList.add("success");
-
-    } catch (err) {
-      statusMessage.innerText = err.message;
-      statusMessage.classList.add("error");
-    } finally {
-      searchBtn.disabled = false;
-      searchBtn.innerText = "Check Result";
-    }
+  if (!query) {
+    statusMessage.innerText = "Please enter a Roll Number or CNIC.";
+    statusMessage.classList.add("error");
+    return;
   }
+
+  searchBtn.disabled = true;
+  searchBtn.innerText = "Searching...";
+
+  try {
+    const response = await fetch('/api/result/' + encodeURIComponent(query));
+    
+    // Check if response is JSON or Plain Text
+    const contentType = response.headers.get("content-type");
+    let result;
+    
+    if (contentType && contentType.includes("application/json")) {
+      result = await response.json();
+    } else {
+      const textError = await response.text();
+      throw new Error(textError || "Server returned non-JSON response.");
+    }
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Result not found in database.");
+    }
+
+    const data = result.data;
+
+    // Fill details
+    document.getElementById("resRollNo").innerText = data.rollNo || data.cnic || query;
+    document.getElementById("resName").innerText = data.name || "-";
+    document.getElementById("resFatherName").innerText = data.fatherName || "-";
+    document.getElementById("resCaste").innerText = data.caste || "-";
+    document.getElementById("resApplyFor").innerText = data.applyFor || "-";
+    document.getElementById("resObtainedMarks").innerText = data.obtainedMarks || 0;
+
+    // Assigned Class Calculation
+    const assignedClass = getAssignedClass(data.applyFor, data.obtainedMarks);
+    document.getElementById("resAssignedClass").innerText = assignedClass;
+
+    // Display Card
+    resultCardWrapper.style.display = "flex";
+    statusMessage.innerText = "Result found!";
+    statusMessage.classList.add("success");
+
+  } catch (err) {
+    statusMessage.innerText = err.message;
+    statusMessage.classList.add("error");
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.innerText = "Check Result";
+  }
+}
 
   // Logic for Class Assignment
   function getAssignedClass(applyFor, marks) {

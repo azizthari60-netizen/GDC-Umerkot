@@ -743,7 +743,7 @@ async function connectToDatabase() {
     return cachedDb;
   }
   
-  const client = await MongoClient.connect(MONGODB_URI);
+  const client = await MongoClient.connect(process.env.MONGODB_URI);
   const db = client.db(DB_NAME);
   
   cachedClient = client;

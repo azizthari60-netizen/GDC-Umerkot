@@ -3,310 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Results - Government Boys Degree College Umerkot</title>
+  <title>Admission Test Result - GBDC Umerkot</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .result-container { max-width: 500px; margin: 40px auto; padding: 20px; font-family: sans-serif; }
+    .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-box input { flex: 1; padding: 10px; font-size: 16px; }
+    .search-box button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+    .result-display { display: none; background: #f4f4f4; padding: 20px; border-radius: 8px; border: 1px solid #ccc; }
+    .result-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
+    .error-msg { color: red; font-weight: bold; margin-top: 10px; }
+  </style>
 </head>
-
 <body>
-<header class="site-header">
-    <div class="header-inner container">
-      <a href="index.html" class="brand">
-        <div class="brand-logo"> <img src="logo.png" alt="Logo"></div>
-        <div class="brand-text">
-          <span class="brand-title">Government Boys Degree College Umerkot</span>
-          <span class="brand-subtitle">College Education Department, Sindh</span>
-        </div>
-      </a>
-      <div class="social-links">
-        <a href="#" class="social-link" aria-label="YouTube">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2s-.2-1.7-.8-2.5c-.7-.9-1.5-.9-1.9-1C18.7 2.4 12 2.4 12 2.4h0s-6.7 0-8.8.3c-.4 0-1.2.1-1.9 1C.7 4.6.5 6.2.5 6.2S0 8.3 0 10.5v3c0 2.2.5 4.3.5 4.3s.2 1.7.8 2.5c.7.9 1.6.9 2 1 1.5.2 8 .3 8 .3s6.7 0 8.8-.3c.4 0 1.2-.1 1.9-1 .6-.8.8-2.5.8-2.5s.5-2.1.5-4.3v-3c0-2.2-.5-4.3-.5-4.3Zm-14.2 8.5V8.8l6.4 2.9-6.4 2.9Z"/></svg>
-        </a>
-        <a href="https://www.facebook.com/governmentboysdegreecollegeumerkot" class="social-link" aria-label="Facebook">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.5-4.5-10-10-10S2 6.5 2 12c0 4.9 3.6 8.9 8.3 9.8v-6.9h-2.5v-2.9h2.5V9.4c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.3 0-1.7.8-1.7 1.7v2h2.9l-.5 2.9h-2.4v6.9C18.4 20.9 22 16.9 22 12Z"/></svg>
-        </a>
-      </div>
-      <nav class="main-nav" aria-label="Main navigation">
-        <ul>
-          <li><a href="index.html">Home</a></li>
-          <li><a href="academic-programs.html">Programs</a></li>
-          <li><a href="faculty.html">Faculty</a></li>
-          <li><a href="about.html">About Us</a></li>
-          <li><a href="download.html">Downloads</a></li>
-          <li><a href="results.html" class="active">Results</a></li>
-        </ul>
-      </nav>
-      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-</header>
-  
-<!-- MAIN RESULT SECTION WITH EMBEDDED SCRIPT -->
-<main class="result-search-container">
-  <div class="search-card">
-    <h2>Admission Test Result</h2>
-    <p>Enter your Roll Number or CNIC to check your result.</p>
-    
-    <div class="input-group">
-      <input 
-        type="text" 
-        id="searchInput" 
-        placeholder="Enter Roll No or CNIC..." 
-      />
-      <button type="button" id="searchBtn" onclick="fetchStudentResult()">Check Result</button>
-    </div>
-    
-    <div id="statusMessage" class="status-msg"></div>
+
+<div class="result-container">
+  <h2>Admission Test Result</h2>
+  <p>رول نمبر یا شناختی کارڈ نمبر درج کریں:</p>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Enter Roll No or CNIC..." />
+    <button id="searchBtn" onclick="searchResult()">Check Result</button>
   </div>
 
-  <!-- Result Card Container (Hidden by default, shown on result) -->
-  <div id="resultCardWrapper" class="result-card-wrapper" style="display: none;">
-    <div id="printableResultCard" class="card-container">
-      
-      <!-- Header -->
-      <div class="card-header">
-        <img src="logo.png" alt="College Logo" class="college-logo" />
-        <h1 class="college-name">Government Degree College Umerkot</h1>
-      </div>
+  <div id="statusMsg" class="error-msg"></div>
 
-      <!-- Title -->
-      <div class="card-title-box">
-        <h2 class="card-title">ADMISSION TEST RESULT CARD</h2>
-      </div>
-
-      <!-- Details Grid -->
-      <div class="details-grid">
-        <div class="detail-item">
-          <span class="field-label">Roll No</span>
-          <span class="field-value" id="resRollNo">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Name</span>
-          <span class="field-value" id="resName">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Father Name</span>
-          <span class="field-value" id="resFatherName">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Caste</span>
-          <span class="field-value" id="resCaste">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Applied For</span>
-          <span class="field-value" id="resApplyFor">-</span>
-        </div>
-        <div class="detail-item">
-          <span class="field-label">Obtained Marks</span>
-          <span class="field-value" id="resObtainedMarks">-</span>
-        </div>
-        <div class="detail-item full-width">
-          <span class="field-label">Assigned Class</span>
-          <span class="field-value assigned-class" id="resAssignedClass">-</span>
-        </div>
-      </div>
-
-      <!-- Footer Strip -->
-      <div class="card-footer"></div>
-    </div>
-
-    <!-- Download PDF Button -->
-    <button type="button" id="downloadPdfBtn" onclick="downloadPDF()" class="btn-download">Download PDF Card</button>
+  <!-- Result Box -->
+  <div id="resultBox" class="result-display">
+    <div class="result-row"><strong>Roll No:</strong> <span id="resRoll">-</span></div>
+    <div class="result-row"><strong>Name:</strong> <span id="resName">-</span></div>
+    <div class="result-row"><strong>Father Name:</strong> <span id="resFather">-</span></div>
+    <div class="result-row"><strong>Obtained Marks:</strong> <span id="resMarks">-</span></div>
+    <div class="result-row"><strong>Assigned Class:</strong> <span id="resClass" style="color: green; font-weight: bold;">-</span></div>
   </div>
-</main>
+</div>
 
-<footer class="site-footer">
-    <div class="container footer-grid">
-      <div class="footer-col">
-        <div class="brand footer-brand">
-          <div class="brand-logo"><img src="logo.png" alt="logo"></div>
-          <div class="brand-text">
-            <span class="brand-title">Government Boys Degree College Umerkot</span>
-            <span class="brand-subtitle">College Education Department, Sindh</span>
-          </div>
-        </div>
-        <div class="map-embed">
-            <iframe
-              title="Department Location"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
-              style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-        </div>
-      </div>
-      <div class="footer-col">
-        <h4>About Us</h4>
-        <p>
-          Government Boys Degree College Umerkot provides modern programs and a transparent admission process for students across Sindh.
-        </p>
-      </div>
-      <div class="footer-col">
-        <h4>Quick Links</h4>
-        <ul class="footer-links">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="academic-programs.html">Academic Programs</a></li>
-          <li><a href="faculty.html">Faculty</a></li>
-          <li><a href="policy.html">Policies</a></li>
-          <li><a href="about.html">About Us</a></li>
-          <li><a href="contact.html">Contact Us</a></li>
-          <li><a href="download.html">Downloads</a></li>
-          <li><a href="results.html">Results</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Contact Information</h4>
-        <p class="contact-info">
-          Government Boys Degree College Umerkot<br />
-          College Education Department<br />
-          Sindh, Pakistan
-        </p>
-        <p class="contact-info">
-          Phone: <a href="tel:(0238) 920101">(0238) 920101</a><br />
-          Email: <a href="mailto:info.gdcu@gmail.com">info.gdcu@gmail.com</a>
-        </p>
-      </div>
-    </div>
-    <div class="footer-copyright">
-      <div class="container">
-        <p>&copy; <span id="year"></span> Built by Prof Azizullah Samejo GBDC Umerkot. All rights reserved.</p>
-      </div>
-    </div>
-</footer>
-
-<!-- html2pdf Library CDN for PDF generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<!-- Embedded Javascript Logic -->
 <script>
-  // Set Current Year in Footer
-  document.getElementById("year").innerText = new Date().getFullYear();
+async function searchResult() {
+  const query = document.getElementById("searchInput").value.trim();
+  const statusMsg = document.getElementById("statusMsg");
+  const resultBox = document.getElementById("resultBox");
+  const searchBtn = document.getElementById("searchBtn");
 
-  // Handle Enter Key press inside input
-  document.getElementById("searchInput").addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      fetchStudentResult();
-    }
-  });
+  statusMsg.innerText = "";
+  resultBox.style.display = "none";
 
-  // Main Search Function
-  async function fetchStudentResult() {
-    const searchInput = document.getElementById("searchInput");
-    const searchBtn = document.getElementById("searchBtn");
-    const statusMessage = document.getElementById("statusMessage");
-    const resultCardWrapper = document.getElementById("resultCardWrapper");
-
-    const query = searchInput ? searchInput.value.trim() : "";
-
-    statusMessage.innerText = "";
-    statusMessage.className = "status-msg";
-    resultCardWrapper.style.display = "none";
-
-    if (!query) {
-      statusMessage.innerText = "Please enter a Roll Number or CNIC.";
-      statusMessage.classList.add("error");
-      return;
-    }
-
-    searchBtn.disabled = true;
-    searchBtn.innerText = "Searching...";
-
-    try {
-      const response = await fetch('/api/result/' + encodeURIComponent(query));
-      
-      const contentType = response.headers.get("content-type");
-      let result;
-      
-      if (contentType && contentType.includes("application/json")) {
-        result = await response.json();
-      } else {
-        const textError = await response.text();
-        throw new Error("Server Error: Unable to fetch JSON response.");
-      }
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Result not found in database.");
-      }
-
-      const data = result.data;
-
-      // Safe Data Extraction (Handles both lowercase and uppercase keys from DB)
-      const rollNo = data.rollNo || data.RollNo || data.cnic || data.CNIC || query;
-      const name = data.name || data.Name || "-";
-      const fatherName = data.fatherName || data.FatherName || data["father name"] || "-";
-      const caste = data.caste || data.Caste || "-";
-      const applyFor = data.applyFor || data.ApplyFor || data.faculty || "-";
-      const obtainedMarks = data.obtainedMarks ?? data.ObtainedMarks ?? data.marks ?? 0;
-
-      // Fill details into DOM
-      document.getElementById("resRollNo").innerText = rollNo;
-      document.getElementById("resName").innerText = name;
-      document.getElementById("resFatherName").innerText = fatherName;
-      document.getElementById("resCaste").innerText = caste;
-      document.getElementById("resApplyFor").innerText = applyFor;
-      document.getElementById("resObtainedMarks").innerText = obtainedMarks;
-
-      // Assigned Class Calculation
-      const assignedClass = getAssignedClass(applyFor, obtainedMarks);
-      document.getElementById("resAssignedClass").innerText = assignedClass;
-
-      // Display Card
-      resultCardWrapper.style.display = "flex";
-      statusMessage.innerText = "Result found!";
-      statusMessage.classList.add("success");
-
-    } catch (err) {
-      statusMessage.innerText = err.message;
-      statusMessage.classList.add("error");
-    } finally {
-      searchBtn.disabled = false;
-      searchBtn.innerText = "Check Result";
-    }
+  if (!query) {
+    statusMsg.innerText = "براہ کرم رول نمبر یا CNIC لکھیں۔";
+    return;
   }
 
-  // Logic for Class Assignment
-  function getAssignedClass(applyFor, marks) {
-    const obtainedMarks = Number(marks);
-    const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
+  searchBtn.disabled = true;
+  searchBtn.innerText = "Searching...";
 
-    if (group.includes("p.e") || group.includes("pre-engineering") || group.includes("pe")) {
-      return "XI E";
-    }
-    if (group.includes("c.s") || group.includes("computer science") || group.includes("cs")) {
-      return "XI F";
-    }
-    if (group.includes("p.m") || group.includes("pre-medical") || group.includes("pm")) {
-      if (obtainedMarks >= 48) {
-        return "Class A";
-      } else if (obtainedMarks >= 33 && obtainedMarks < 48) {
-        return "Class B";
-      } else if (obtainedMarks >= 20 && obtainedMarks < 33) {
-        return "Class C";
-      } else {
-        return "Class D";
-      }
+  try {
+    const res = await fetch('/api/result/' + encodeURIComponent(query));
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || "رزلٹ نہیں ملا۔");
     }
 
-    return "N/A";
+    const data = result.data;
+    const marks = data.obtainedMarks ?? data.ObtainedMarks ?? 0;
+    const applyFor = data.applyFor || data.ApplyFor || "";
+
+    // Class Logic
+    let assignedClass = "N/A";
+    const group = String(applyFor).toLowerCase();
+    if (group.includes("p.e") || group.includes("pe")) assignedClass = "XI E";
+    else if (group.includes("c.s") || group.includes("cs")) assignedClass = "XI F";
+    else if (group.includes("p.m") || group.includes("pm")) {
+      const m = Number(marks);
+      if (m >= 48) assignedClass = "Class A";
+      else if (m >= 33) assignedClass = "Class B";
+      else if (m >= 20) assignedClass = "Class C";
+      else assignedClass = "Class D";
+    }
+
+    document.getElementById("resRoll").innerText = data.rollNo || data.RollNo || query;
+    document.getElementById("resName").innerText = data.name || data.Name || "-";
+    document.getElementById("resFather").innerText = data.fatherName || data.FatherName || "-";
+    document.getElementById("resMarks").innerText = marks;
+    document.getElementById("resClass").innerText = assignedClass;
+
+    resultBox.style.display = "block";
+
+  } catch (err) {
+    statusMsg.innerText = err.message;
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.innerText = "Check Result";
   }
-
-  // PDF Download Function
-  function downloadPDF() {
-    const element = document.getElementById("printableResultCard");
-    const rollNo = document.getElementById("resRollNo").innerText;
-
-    const opt = {
-      margin: 0.2,
-      filename: `ResultCard_${rollNo}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
-    };
-
-    html2pdf().set(opt).from(element).save();
-  }
+}
 </script>
 
 </body>

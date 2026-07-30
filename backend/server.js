@@ -21,6 +21,8 @@ const http = require('http');
 const app = express();
 
 
+
+
 // --- DATABASE CONNECTION (Serverless Optimized) ---
 let cachedDb = null;
 
@@ -317,57 +319,63 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
+
+// Static Files Serve کرنے کے لیے (اگر آپ کے تمام HTML/CSS اسی فولڈر میں ہیں)
+app.use(express.static(__dirname));
+
+const uri = process.env.MONGODB_URI;
+let client;
+let clientPromise;
+
+if (!global._mongoClientPromise) {
+  client = new MongoClient(uri);
+  global._mongoClientPromise = client.connect();
+}
+clientPromise = global._mongoClientPromise;
+
+// --- 🎯 صرف رزلٹ دکھانے کا API روٹ ---
 app.get('/api/result/:searchVal', async (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-
-    try {
-        // 1. سرچ کرنے سے پہلے DB کنکشن کا انتظار کریں
-        await connectToDatabase();
-
-        const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
-
-        if (!rawVal) {
-            return res.status(400).json({
-                success: false,
-                message: "Please enter a Roll Number or CNIC."
-            });
-        }
-
-        const numVal = Number(rawVal);
-        const queryConditions = [
-            { rollNo: rawVal },
-            { cnic: rawVal },
-            { RollNo: rawVal },
-            { CNIC: rawVal }
-        ];
-
-        if (!isNaN(numVal)) {
-            queryConditions.push({ rollNo: numVal });
-            queryConditions.push({ cnic: numVal });
-        }
-
-        // 2. Query execute کریں
-        const student = await Result.findOne({ $or: queryConditions }).lean();
-
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: "No result found for Roll No / CNIC: " + rawVal
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: student
-        });
-
-    } catch (error) {
-        console.error("Result API Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "DB Connection Error: " + error.message
-        });
+  res.setHeader('Content-Type', 'application/json');
+  
+  try {
+    const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
+    if (!rawVal) {
+      return res.status(400).json({ success: false, message: "رول نمبر یا CNIC لکھنا لازمی ہے۔" });
     }
+
+    const dbClient = await clientPromise;
+    const db = dbClient.db('gdc-umerkot'); // ڈیٹا بیس
+    const collection = db.collection('results'); // کلیکشن
+
+    const numVal = Number(rawVal);
+    const queryConditions = [
+      { rollNo: rawVal },
+      { cnic: rawVal },
+      { RollNo: rawVal },
+      { CNIC: rawVal }
+    ];
+
+    if (!isNaN(numVal)) {
+      queryConditions.push({ rollNo: numVal });
+      queryConditions.push({ cnic: numVal });
+    }
+
+    // ڈیٹا بیس سے رزلٹ تلاش کریں
+    const student = await collection.findOne({ $or: queryConditions });
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: "کوئی رزلٹ نہیں ملا۔" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: student
+    });
+
+  } catch (error) {
+    console.error("API Error:", error);
+    return res.status(500).json({ success: false, message: "سرور کا مسئلہ: " + error.message });
+  }
 });
 
 // --- Server Start ---

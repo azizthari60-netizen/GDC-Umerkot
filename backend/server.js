@@ -12,14 +12,13 @@ const morgan = require('morgan');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const PDFDocument = require('pdfkit');
-const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+
 const app = express();
-const xlsx = require('xlsx');
 
 // --- Configuration ---
 mongoose.connect(process.env.MONGODB_URI, {
@@ -27,13 +26,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(async () => {
     console.log("🚀 MongoDB Connected Successfully");
-    // Initialize admin if not exists
-    const adminCount = await Admin.countDocuments();
-    if (adminCount === 0) {
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        await new Admin({ username: 'admin', password: hashedPassword }).save();
-        console.log("✅ Default admin created");
-    }
 })
 .catch(err => console.error("❌ DB Connection Error:", err));
 
@@ -50,22 +42,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// --- Database Models ---
-// Admin Schema
-const adminSchema = new mongoose.Schema({
-    username: { type: String, default: 'admin' },
-    password: { type: String, default: 'admin123' }
-});
+// --- Database Schemas & Models ---
 
-// Student Schema
-const studentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    cnic: { type: String, required: true },
-    password: { type: String, required: true },
-    confirmPassword: { type: String, required: true },
-});
-
-// result schema
+// Result Schema (Supports String and Number for Roll No & CNIC)
 const resultSchema = new mongoose.Schema({
     rollNo: { type: String, required: true },
     name: String,
@@ -73,22 +52,12 @@ const resultSchema = new mongoose.Schema({
     caste: String,
     obtainedMarks: Number,
     applyFor: String,
-    cnic: Number,
-    mobileNo: Number,
+    cnic: mongoose.Schema.Types.Mixed,
+    mobileNo: mongoose.Schema.Types.Mixed,
     createdAt: { type: Date, default: Date.now }
-});
+}, { collection: 'results' });
 
-// contact schema
-const contactSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    subject: String,
-    message: String,
-    submittedAt: { type: Date, default: Date.now },
-    replied: { type: Boolean, default: false }
-});
-
-// slip schema
+// Slip Schema
 const slipSchema = new mongoose.Schema({
     studentId: mongoose.Schema.Types.ObjectId,
     studentCnic: String,
@@ -99,7 +68,7 @@ const slipSchema = new mongoose.Schema({
     availableDate: Date
 });
 
-// admission schema
+// Admission Schema
 const admissionSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     fatherName: { type: String, required: true },
@@ -137,12 +106,10 @@ const admissionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-const Admin = mongoose.model('Admin', adminSchema);
-const Student = mongoose.model('Student', studentSchema);
-const Result = mongoose.model('Result', resultSchema);
-const Contact = mongoose.model('Contact', contactSchema);
-const Slip = mongoose.model('Slip', slipSchema);
-const Admission = mongoose.model('Admission', admissionSchema);
+// Safe Model Compilation
+const Result = mongoose.models.Result || mongoose.model('Result', resultSchema);
+const Slip = mongoose.models.Slip || mongoose.model('Slip', slipSchema);
+const Admission = mongoose.models.Admission || mongoose.model('Admission', admissionSchema);
 
 const upload = multer({ storage: multer.memoryStorage() });
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -150,7 +117,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Helper function to upload to Cloudinary
 function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
     return new Promise((resolve, reject) => {
-        // Check if Cloudinary is configured
         if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
             return reject(new Error('Cloudinary is not configured. Please check your environment variables.'));
         }
@@ -170,124 +136,9 @@ function uploadToCloudinary(buffer, folder = 'BS-Chemistry') {
     });
 }
 
-
 // --- ROUTES ---
-// 1. Student Sign Up
-app.post('/api/student/signup', async (req, res) => {
-    try {
-        const { fullName, cnic, password, confirmPassword } = req.body;
-        
-        if (password !== confirmPassword) {
-            return res.status(400).json({ message: "Passwords do not match" });
-        }
-        
-        const exists = await Student.findOne({ cnic });
-        if (exists) {
-            return res.status(400).json({ message: "CNIC already registered" });
-        }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newStudent = new Student({ 
-            fullName, 
-            cnic, 
-            password: hashedPassword 
-        });
-        await newStudent.save();
-        
-        res.status(201).json({ message: "Account created successfully! Please sign in." });
-    } catch (err) {
-        console.error("Signup error:", err);
-        res.status(500).json({ message: "Sign up error" });
-    }
-});
-
-// 2. Student Login (Fixed) ---
-app.post('/api/student/login', async (req, res) => {
-    try {
-        const { cnic, password } = req.body;
-        let student = await Student.findOne({ cnic });
-        
-        if (!student) {
-            return res.status(401).json({ message: "Invalid CNIC or password" });
-        }
-        
-        // ✅ پاسورڈ چیک کرنے کا صحیح طریقہ
-        const isPasswordValid = await bcrypt.compare(password, student.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid CNIC or password" });
-        }
-        
-        const token = jwt.sign({ id: student._id, cnic: student.cnic }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ 
-            message: "Login successful", 
-            token,
-            student: { _id: student._id, fullName: student.fullName, cnic: student.cnic }
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Login server error" });
-    }
-});
-
-// 3. Admin Login
-app.post('/api/admin/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const admin = await Admin.findOne({ username });
-        
-        if (!admin) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        
-        // Check if password is hashed or plain text
-        let isPasswordValid = false;
-        try {
-            isPasswordValid = await bcrypt.compare(password, admin.password);
-        } catch (bcryptError) {
-            // If bcrypt compare fails, might be plain text
-            isPasswordValid = admin.password === password;
-        }
-        
-        // Also check plain text for migration purposes
-        if (!isPasswordValid && admin.password !== password) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        
-        // If password is plain text, hash it for future use
-        if (admin.password === password && password !== 'admin123') {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            admin.password = hashedPassword;
-            await admin.save();
-        }
-        
-        const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(200).json({ message: "Admin login successful", token });
-    } catch (err) {
-        console.error("Admin login error:", err);
-        res.status(500).json({ message: "Login error" });
-    }
-});
-
-/// --- 3.5. Password Recovery (Fixed) ---
-app.post('/api/student/recovery', async (req, res) => {
-    try {
-        const { 'recovery-id': recoveryId, 'new-password': newPassword } = req.body;
-        
-        let student = await Student.findOne({ cnic: recoveryId });
-
-        if (!student) {
-            return res.status(404).json({ message: "CNIC not found in our records." });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await Student.updateOne({ cnic: recoveryId }, { $set: { password: hashedPassword } });
-
-        res.status(200).json({ message: "Password updated! You can now login." });
-    } catch (err) {
-        res.status(500).json({ message: "Recovery error: " + err.message });
-    }
-});
-
-// New public route for admission form submissions
+// Submit Application Route
 app.post('/api/applications/submit', upload.single('profileImage'), async (req, res) => {
     try {
         const {
@@ -351,10 +202,11 @@ app.post('/api/applications/submit', upload.single('profileImage'), async (req, 
         res.status(201).json({ success: true, applicationId: application._id, message: 'Your application has been submitted successfully.' });
     } catch (err) {
         console.error('Application submit error:', err);
-        res.status(500).json({ message: 'Server error: ' + err.message });
+        res.status(500).json({ success: false, message: 'Server error: ' + err.message });
     }
 });
 
+// Admission Slip Lookup
 app.get('/api/applications/slip/:cnic', async (req, res) => {
     try {
         const cnic = req.params.cnic;
@@ -365,7 +217,7 @@ app.get('/api/applications/slip/:cnic', async (req, res) => {
         res.status(200).json({ success: true, application });
     } catch (err) {
         console.error('Slip lookup error:', err);
-        res.status(500).json({ message: 'Server error: ' + err.message });
+        res.status(500).json({ success: false, message: 'Server error: ' + err.message });
     }
 });
 
@@ -387,12 +239,13 @@ async function fetchImage(url) {
     });
 }
 
+// PDF Slip Download
 app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
     try {
         const cnic = req.params.cnic;
         const application = await Admission.findOne({ cnic: cnic });
         if (!application) {
-            return res.status(404).json({ message: 'Application not found.' });
+            return res.status(404).json({ success: false, message: 'Application not found.' });
         }
 
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -419,36 +272,12 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
         const printRows = [
             ['Name', application.fullName],
             ['Father Name', application.fatherName],
-            ['Gender', application.gender],
-            ['Email', application.email || '-'],
             ['CNIC / B-Form', application.cnic],
-            ['Mobile No', application.mobile],
             ['Date of Birth', application.dob],
-            ['Place of Birth', application.placeOfBirth],
-            ['Nationality', application.nationality],
             ['Religion', application.religion],
             ['Domicile District', application.domicileDistrict],
-            ['Father\'s Domicile District', application.fathersDomicileDistrict],
-            ['Father/Guardian CNIC', application.fatherGuardianCnic],
-            ['Father/Guardian Mobile No', application.fatherGuardianMobile],
             ['Home Address', application.homeAddress],
-            ['Ninth Roll No', application.ninthRollNo || '-'],
-            ['Ninth Passing Year', application.ninthPassingYear || '-'],
-            ['Matric Roll No', application.matricRollNo || '-'],
-            ['Matric Passing Year', application.matricPassingYear || '-'],
-            ['Province', application.province || '-'],
-            ['Board', application.board || '-'],
-            ['Study Group', application.studyGroup || '-'],
-            ['Subject', application.subject || '-'],
-            ['School Name', application.schoolName || '-'],
-            ['Total Marks', application.totalMarks || '-'],
-            ['Obtained Marks', application.obtainedMarks || '-'],
-            ['Scaled Total Marks', application.scaledTotalMarks || '-'],
-            ['Scaled Obtained Marks', application.scaledObtainedMarks || '-'],
-            ['College Board', application.collegeBoard || '-'],
-            ['Zone', application.zone || '-'],
             ['Choice Of Faculty', application.choiceOfFaculty || '-'],
-            ['Chosen Colleges', application.chosenColleges || '-']
         ];
 
         const labelX = 50;
@@ -476,554 +305,58 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
         doc.end();
     } catch (err) {
         console.error('Application slip PDF error:', err);
-        res.status(500).json({ message: 'Slip PDF error' });
+        res.status(500).json({ success: false, message: 'Slip PDF error' });
     }
 });
 
-//  Generate Slip PDF
-app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
-    try {
-        const slip = await Slip.findById(req.params.slipId);
-        if (!slip) {
-            return res.status(404).json({ message: "Slip not found" });
-        }
-        
-        if (!slip.isAvailable) {
-            return res.status(403).json({ message: "Slip is not available yet" });
-        }
-        
-        let student = await Student.findById(slip.studentId);
-        if (!student) {
-            student = await OldStudent.findById(slip.studentId);
-        }
-        
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=admit-card-${slip.studentCnic}.pdf`);
-        
-        doc.pipe(res);
-        
-        // --- تصویر کھینچنے کا بہتر فنکشن (تصویر لانے کے لیے) ---
-        function fetchImage(url) {
-            return new Promise((resolve) => {
-                if (!url) return resolve(null);
-                const protocol = url.startsWith('https') ? https : http;
-                protocol.get(url, {
-                    headers: { 'User-Agent': 'Mozilla/5.0' } // کلاؤڈینیری سیکیورٹی بائی پاس کے لیے
-                }, (response) => {
-                    if (response.statusCode === 200) {
-                        const chunks = [];
-                        response.on('data', (chunk) => chunks.push(chunk));
-                        response.on('end', () => {
-                            resolve(Buffer.concat(chunks));
-                        });
-                    } else {
-                        console.error('Image status error:', response.statusCode);
-                        resolve(null);
-                    }
-                }).on('error', (err) => {
-                    console.error('Fetch error:', err.message);
-                    resolve(null);
-                });
-            });
-        }
-        
-        // Load department logo
-        let logoBuffer = null;
-        try {
-            const logoPath = path.join(__dirname, '..', 'frontend', 'logo.png');
-            const fs = require('fs');
-            if (fs.existsSync(logoPath)) {
-                logoBuffer = fs.readFileSync(logoPath);
-            }
-        } catch (err) {
-            console.error('Error loading logo:', err);
-        }
-        
-        // Header Section with Logo and QR Code
-        const headerY = 50;
-        const logoSize = 60;
-        const qrSize = 80;
-        const pageWidth = 595.28;
-        const leftMargin = 50;
-        const rightMargin = 50;
-        const qrX = pageWidth - rightMargin - qrSize;
-        
-        if (logoBuffer) {
-            doc.image(logoBuffer, leftMargin, headerY, { width: logoSize, height: logoSize, fit: [logoSize, logoSize] });
-        }
-        
-        const qrY = headerY;
-        if (slip.qrCode) {
-            doc.image(Buffer.from(slip.qrCode, 'base64'), qrX, qrY, { width: qrSize, height: qrSize });
-            if (slip.rollNumber) {
-                const rollParts = slip.rollNumber.split('/');
-                const rollSuffix = rollParts[rollParts.length - 1];
-                doc.fontSize(9).font('Helvetica-Bold').fillColor('#1565c0');
-                doc.text(rollSuffix, qrX, qrY + qrSize + 3, { width: qrSize, align: 'center' });
-            }
-        }
-        
-        const logoRightEdge = leftMargin + logoSize;
-        const qrLeftEdge = qrX;
-        const headerTextStartX = logoRightEdge + 10;
-        const headerTextWidth = qrLeftEdge - headerTextStartX - 10;
-        const startX = headerTextStartX;
-        const headerTextY = headerY + 5;
-        
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a237e');
-        doc.text('DEPARTMENT OF CHEMISTRY', startX, headerTextY, { align: 'center', width: headerTextWidth });
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1565c0');
-        doc.text('GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', startX, headerTextY + 18, { align: 'center', width: headerTextWidth });
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#c62828');
-        doc.text('ENTRY TEST SLIP', startX, headerTextY + 36, { align: 'center', width: headerTextWidth });
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
-        doc.text('BATCH 2K26', startX, headerTextY + 52, { align: 'center', width: headerTextWidth });
-        
-        doc.y = headerY + logoSize + 15;
-        doc.strokeColor('#757575').lineWidth(1);
-        doc.moveTo(50, doc.y).lineTo(pageWidth - rightMargin, doc.y).stroke();
-        doc.moveDown(1);
-        
-        const startY = doc.y;
-        let currentY = startY;
-        
-        doc.fontSize(13).font('Helvetica-Bold').fillColor('#1a237e');
-        doc.text('CANDIDATE INFORMATION', 50, currentY);
-        currentY += 28;
-        
-        const labelWidth = 160;
-        const valueWidth = 290;
-        let xPos = 50;
-        
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#424242');
-        doc.text('NAME:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').fillColor('#212121');
-        doc.text(student.fullName || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-        
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('FATHER\'S NAME:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').fillColor('#212121');
-        doc.text(student.formData?.fName || student.fatherName || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-        
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('SURNAME:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').fillColor('#212121');
-        doc.text(student.formData?.caste || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-        
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('CNIC:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica').fillColor('#212121');
-        doc.text(student.cnic || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-        
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('PROGRAM:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica-Bold').fillColor('#1565c0');
-        doc.text('BS CHEMISTRY', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-        
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('SEAT NO:', xPos, currentY, { width: labelWidth });
-        doc.font('Helvetica-Bold').fillColor('#c62828');
-        doc.text(slip.rollNumber || '-', xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-        
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('HELD ON:', xPos, currentY, { width: labelWidth });
-    
-        const heldIn = "07: Mar: 2026"; 
-        
-        doc.font('Helvetica').fillColor('#212121');
-        doc.text(heldIn, xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 20;
-
-        doc.font('Helvetica-Bold').fillColor('#424242');
-        doc.text('TIME:', xPos, currentY, { width: labelWidth });
-        const time = "10:00 AM to 12:00 PM";
-        doc.font('Helvetica').fillColor('#212121');
-        doc.text(time, xPos + labelWidth, currentY, { width: valueWidth });
-        currentY += 24;
-        
-        // Photo Section
-        const photoX = 420;
-        const photoY = startY + 25;
-        const photoWidth = 80;
-        const photoHeight = 100;
-        const borderWidth = 3;
-        
-        doc.strokeColor('#424242').lineWidth(borderWidth);
-        doc.rect(photoX - borderWidth/2, photoY - borderWidth/2, photoWidth + borderWidth, photoHeight + borderWidth).stroke();
-        
-        if (student.profileImage) {
-            try {
-                const smartImageUrl = student.profileImage.replace('/upload/', '/upload/c_fill,g_face,h_800,w_600,e_background_removal,b_rgb:0000FF/');
-                const imageBuffer = await fetchImage(smartImageUrl);
-                if (imageBuffer) {
-                    doc.image(imageBuffer, photoX, photoY, { 
-                        width: photoWidth, 
-                        height: photoHeight,
-                        fit: [photoWidth, photoHeight]
-                    });
-                } else {
-                    doc.fontSize(9).font('Helvetica').fillColor('#757575');
-                    doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
-                }
-            } catch (err) {
-                console.error('Error loading image:', err);
-                doc.fontSize(9).font('Helvetica').fillColor('#757575');
-                doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
-            }
-        } else {
-            doc.fontSize(9).font('Helvetica').fillColor('#757575');
-            doc.text('PHOTO', photoX, photoY + 45, { width: photoWidth, align: 'center' });
-        }
-        
-        // باقی انسٹرکشنز اور فوٹر (آپ کے اصل ڈیزائن کے مطابق)
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('#1a237e');
-        doc.text('EXAM CENTRE:', xPos, currentY);
-        doc.fontSize(10).font('Helvetica').fillColor('#212121');
-        doc.text('DEPARTMENT OF CHEMISTRY, GOVERNMENT BOYS DEGREE COLLEGE UMERKOT', xPos + 110, currentY);
-        currentY += 26;
-        
-        const noteTextWidth = pageWidth - rightMargin - xPos - 35;
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#c62828');
-        doc.text('NOTE:', xPos, currentY);
-        doc.font('Helvetica').fillColor('#424242');
-        doc.text('The Department of Chemistry Govt Boys Degree College Umerkot reserves the right of cancellation of examination, if registeration form/documents are found to be incomplete/incorrect at any stage.', xPos + 35, currentY, { width: noteTextWidth });
-        currentY += 28;
-        
-        const instructionTextWidth = pageWidth - rightMargin - xPos - 25;
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1a237e');
-        doc.text('INSTRUCTIONS:', xPos, currentY);
-        currentY += 15;
-        doc.fontSize(9).font('Helvetica').fillColor('#424242');
-        doc.text('(i) Mobile Phone / calculator or any other electronic device is not allowed.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 12;
-        doc.text('(ii) You are required to bring this admit card/Slip along with your original Computerized National Identity Card (CNIC).', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 12;
-        doc.text('(iii) Entry Test will be of 100 marks consisting of Multiple Choice Questions (MCQs).', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 12;
-        doc.text('(iv) Each question carries 1 mark. There is no negative marking for wrong answers.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 12;
-        doc.text('(v) The duration of the test will be 2 hours.', xPos + 25, currentY, { width: instructionTextWidth });
-        currentY += 12;
-        doc.text('(vi) Use of unfair means during examination is strictly prohibited and will lead to disqualification.', xPos + 25, currentY, { width: instructionTextWidth });
-        
-        const footerY = doc.y + 30;
-        doc.strokeColor('#e0e0e0').lineWidth(0.5);
-        doc.moveTo(leftMargin, footerY - 5).lineTo(pageWidth - rightMargin, footerY - 5).stroke();
-        doc.fontSize(8).font('Helvetica').fillColor('#757575');
-        doc.text('CREATED BY: IT TEAM - DEPARTMENT OF CHEMISTRY', leftMargin, footerY, { width: pageWidth - leftMargin - rightMargin, align: 'left' });
-        
-        doc.end();
-    } catch (err) {
-        console.error("Slip PDF error:", err);
-        res.status(500).json({ message: "Slip PDF error" });
-    }
-});
-
-
-// Admission Test Result Route
-
-// Mongoose Model Setup (Safely check if model already exists)
-const ResultSchema = new mongoose.Schema({}, { strict: false, collection: 'results' });
-const ResultModel = mongoose.models.Result || mongoose.model('Result', ResultSchema);
-
-// Result API Route
+// --- ADMISSION TEST RESULT ROUTE ---
 app.get('/api/result/:searchVal', async (req, res) => {
-  // Always set JSON content type
-  res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json');
 
-  try {
-    const searchVal = req.params.searchVal ? req.params.searchVal.trim() : "";
-
-    if (!searchVal) {
-      return res.status(400).json({
-        success: false,
-        message: "Please enter a Roll Number or CNIC."
-      });
-    }
-
-    // Search in MongoDB results collection
-    const student = await ResultModel.findOne({
-      $or: [
-        { rollNo: searchVal },
-        { cnic: searchVal },
-        { RollNo: searchVal },
-        { CNIC: searchVal }
-      ]
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "No result found for Roll No / CNIC: " + searchVal
-      });
-    }
-
-    // Return student data
-    return res.status(200).json({
-      success: true,
-      data: student
-    });
-
-  } catch (error) {
-    console.error("Result API Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server Error: " + error.message
-    });
-  }
-});
-
-// 22. Upload Slip for Student
-app.post('/api/admin/students/:id/slip', async (req, res) => {
     try {
-        const { testDate, rollNumberSuffix } = req.body; // rollNumberSuffix is the last part (001, 002, etc.)
-        const studentId = req.params.id;
-        
-        let student = await Student.findById(studentId);
-        if (!student) {
-            student = await OldStudent.findById(studentId);
-        }
-        
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        // Generate roll number in format: Chem/batch/2026/001
-        const batch = student.batch || "2026";
-        const suffix = rollNumberSuffix ? String(rollNumberSuffix).padStart(3, '0') : '001';
-        const rollNumber = `Chem/${batch}/${suffix}`;
-        
-        // Generate QR code with student registration information
-        const qrData = JSON.stringify({
-            studentId: student._id.toString(),
-            name: student.fullName,
-            cnic: student.cnic,
-            batch: student.batch,
-            rollNumber: rollNumber,
-            testDate: testDate,
-            registrationDate: student.registrationDate,
-            timestamp: Date.now()
-        });
-        const qrCodeBuffer = await QRCode.toBuffer(qrData);
-        const qrCodeBase64 = qrCodeBuffer.toString('base64');
-        
-        // Check if slip already exists, update it or create new
-        let slip = await Slip.findOne({ studentId });
-        if (slip) {
-            slip.qrCode = qrCodeBase64;
-            slip.testDate = testDate ? new Date(testDate) : null;
-            slip.rollNumber = rollNumber;
-            slip.isAvailable = true;
-            slip.availableDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // Make available immediately
-            await slip.save();
-        } else {
-            slip = new Slip({
-                studentId,
-                studentCnic: student.cnic,
-                qrCode: qrCodeBase64,
-                testDate: testDate ? new Date(testDate) : null,
-                rollNumber: rollNumber,
-                isAvailable: true,
-                availableDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Make available immediately
+        const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
+
+        if (!rawVal) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a Roll Number or CNIC."
             });
-            await slip.save();
         }
-        
-        res.status(201).json({ success: true, message: "Slip created successfully", slip });
-    } catch (err) {
-        console.error("Create slip error:", err);
-        res.status(500).json({ message: "Create slip error" });
-    }
-});
 
-// 23. Download Results Template (Excel)
-app.get('/api/admin/download-results-template', async (req, res) => {
-    try {
-        const adminToken = req.headers.authorization?.replace('Bearer ', '');
-        if (!adminToken) {
-            return res.status(401).json({ message: "Unauthorized" });
+        // Query both as String and Number to handle all database types
+        const numVal = Number(rawVal);
+        const queryConditions = [
+            { rollNo: rawVal },
+            { cnic: rawVal },
+            { RollNo: rawVal },
+            { CNIC: rawVal }
+        ];
+
+        if (!isNaN(numVal)) {
+            queryConditions.push({ rollNo: numVal });
+            queryConditions.push({ cnic: numVal });
         }
-        
-        // Verify admin token
-        jwt.verify(adminToken, JWT_SECRET);
-        
-        // Create a new workbook
-        const workbook = xlsx.utils.book_new();
-        
-        // Create sample data with headers
-        const sampleData = [
-            { CNIC: '12345-6789012-3', Marks: 45 },
-            { CNIC: '12345-6789012-4', Marks: 35 }
-        ];
-        
-        // Create worksheet from data
-        const worksheet = xlsx.utils.json_to_sheet(sampleData);
-        
-        // Set column widths for better readability
-        worksheet['!cols'] = [
-            { wch: 20 },  // CNIC column
-            { wch: 12 }   // Marks column
-        ];
-        
-        // Add worksheet to workbook
-        xlsx.utils.book_append_sheet(workbook, worksheet, 'Results');
-        
-        // Generate buffer
-        const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-        
-        // Send file as response
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename="resultsTemplate.xlsx"');
-        res.send(buffer);
-    } catch (err) {
-        console.error('Download template error:', err);
-        res.status(500).json({ message: 'Download template error' });
-    }
-});
 
-// 24. Bulk Upload Results for Student
-app.post('/api/admin/upload-results', upload.any(), 
-    async (req, res) => {
-    try {
-      // multer stores all uploaded files in req.files array
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      
-      const file = req.files[0];
-      const workbook = xlsx.read(file.buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rows = xlsx.utils.sheet_to_json(sheet);
+        const student = await Result.findOne({ $or: queryConditions });
 
-      let successCount = 0;
-      let errorCount = 0;
-      const errors = [];
-
-      for (const row of rows) {
-        try {
-          const cnic = row.CNIC || row.cnic;
-          const marks = row.Marks || row.marks;
-          const course = row.Course || row.course || 'Entry Test';
-          const semester = row.Semester || row.semester || 1;
-
-          if (!cnic || marks === undefined || marks === null) {
-            errors.push(`Row ${rows.indexOf(row) + 2}: Missing CNIC or Marks`);
-            errorCount++;
-            continue;
-          }
-
-          // Find existing result or create new
-          let result = await Result.findOne({ studentCnic: cnic, course, semester });
-          if (result) {
-            result.marks = marks;
-            await result.save();
-          } else {
-            result = new Result({
-              studentCnic: cnic,
-              course,
-              marks,
-              semester
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: "No result found for Roll No / CNIC: " + rawVal
             });
-            await result.save();
-          }
-
-          successCount++;
-        } catch (rowErr) {
-          console.error("Row error:", rowErr);
-          errors.push(`Row ${rows.indexOf(row) + 2}: ${rowErr.message}`);
-          errorCount++;
         }
-      }
 
-      res.status(200).json({ 
-        success: true, 
-        message: `Results uploaded: ${successCount} success, ${errorCount} errors`,
-        errors: errors.length > 0 ? errors : undefined
-      });
-    } catch (err) {
-        console.error("Upload results error:", err);
-        res.status(500).json({ message: "Upload results error" });
-    }
-});
-
-// 24. Get Contact Submissions
-app.get('/api/admin/contact-submissions', async (req, res) => {
-    try {
-        const submissions = await Contact.find().sort({ submittedAt: -1 });
-        res.status(200).json({ success: true, submissions });
-    } catch (err) {
-        console.error("Get contact submissions error:", err);
-        res.status(500).json({ message: "Get contact submissions error" });
-    }
-});
-
-// 25. Reply to Contact
-app.post('/api/admin/contact/:id/reply', async (req, res) => {
-    try {
-        const { replyMessage } = req.body;
-        const contact = await Contact.findById(req.params.id);
-        
-        if (!contact) {
-            return res.status(404).json({ message: "Contact not found" });
-        }
-        
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER || 'chemisrty.gdcu@gmail.com',
-            to: contact.email,
-            subject: `Re: ${contact.subject}`,
-            html: `<p>${replyMessage}</p>`
+        return res.status(200).json({
+            success: true,
+            data: student
         });
-        
-        contact.replied = true;
-        await contact.save();
-        
-        res.status(200).json({ success: true, message: "Reply sent" });
-    } catch (err) {
-        console.error("Reply contact error:", err);
-        res.status(500).json({ message: "Reply contact error" });
-    }
-});
 
-// 26. Get Admin Stats
-app.get('/api/admin/stats', async (req, res) => {
-    try {
-        const totalStudents = await Student.countDocuments() + await OldStudent.countDocuments();
-        const activeStudents = await Student.countDocuments({ status: 'Approved' }) + await OldStudent.countDocuments();
-        const pendingRequests = await Student.countDocuments({ status: 'Pending' });
-        
-        res.status(200).json({ 
-            success: true, 
-            totalStudents, 
-            activeStudents, 
-            pendingRequests 
+    } catch (error) {
+        console.error("Result API Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error: " + error.message
         });
-    } catch (err) {
-        console.error("Get stats error:", err);
-        res.status(500).json({ message: "Get stats error" });
-    }
-});
-
-// 27. Contact Form Submission
-app.post('/api/contact', async (req, res) => {
-    try {
-        const contact = new Contact(req.body);
-        await contact.save();
-        res.status(200).json({ success: true, message: "Message received. We will contact you soon." });
-    } catch (err) {
-        console.error("Contact form error:", err);
-        res.status(500).json({ message: "Contact form error" });
     }
 });
 

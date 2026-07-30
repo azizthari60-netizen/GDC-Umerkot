@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
 </head>
 
 <body>
@@ -31,19 +30,19 @@
       </div>
       <nav class="main-nav" aria-label="Main navigation">
         <ul>
-          <li><a href="index.html" class="active">Home</a></li>
+          <li><a href="index.html">Home</a></li>
           <li><a href="academic-programs.html">Programs</a></li>
           <li><a href="faculty.html">Faculty</a></li>
           <li><a href="about.html">About Us</a></li>
           <li><a href="download.html">Downloads</a></li>
-          <li><a href="results.html">Results</a></li>
+          <li><a href="results.html" class="active">Results</a></li>
         </ul>
       </nav>
       <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
-  </header>
+</header>
   
 <!-- MAIN RESULT SECTION WITH EMBEDDED SCRIPT -->
 <main class="result-search-container">
@@ -119,7 +118,7 @@
   </div>
 </main>
 
-  <footer class="site-footer">
+<footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-col">
         <div class="brand footer-brand">
@@ -130,12 +129,12 @@
           </div>
         </div>
         <div class="map-embed">
-              <iframe
-                title="Department Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
-                style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-              </iframe>
-            </div>
+            <iframe
+              title="Department Location"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
+              style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
       </div>
       <div class="footer-col">
         <h4>About Us</h4>
@@ -174,94 +173,111 @@
         <p>&copy; <span id="year"></span> Built by Prof Azizullah Samejo GBDC Umerkot. All rights reserved.</p>
       </div>
     </div>
-  </footer>
+</footer>
 
-  
 <!-- html2pdf Library CDN for PDF generation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <!-- Embedded Javascript Logic -->
 <script>
+  // Set Current Year in Footer
+  document.getElementById("year").innerText = new Date().getFullYear();
+
+  // Handle Enter Key press inside input
+  document.getElementById("searchInput").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      fetchStudentResult();
+    }
+  });
+
   // Main Search Function
- async function fetchStudentResult() {
-  const searchInput = document.getElementById("searchInput");
-  const searchBtn = document.getElementById("searchBtn");
-  const statusMessage = document.getElementById("statusMessage");
-  const resultCardWrapper = document.getElementById("resultCardWrapper");
+  async function fetchStudentResult() {
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const statusMessage = document.getElementById("statusMessage");
+    const resultCardWrapper = document.getElementById("resultCardWrapper");
 
-  const query = searchInput ? searchInput.value.trim() : "";
+    const query = searchInput ? searchInput.value.trim() : "";
 
-  statusMessage.innerText = "";
-  statusMessage.className = "status-msg";
-  resultCardWrapper.style.display = "none";
+    statusMessage.innerText = "";
+    statusMessage.className = "status-msg";
+    resultCardWrapper.style.display = "none";
 
-  if (!query) {
-    statusMessage.innerText = "Please enter a Roll Number or CNIC.";
-    statusMessage.classList.add("error");
-    return;
-  }
-
-  searchBtn.disabled = true;
-  searchBtn.innerText = "Searching...";
-
-  try {
-    const response = await fetch('/api/result/' + encodeURIComponent(query));
-    
-    // Check if response is JSON or Plain Text
-    const contentType = response.headers.get("content-type");
-    let result;
-    
-    if (contentType && contentType.includes("application/json")) {
-      result = await response.json();
-    } else {
-      const textError = await response.text();
-      throw new Error(textError || "Server returned non-JSON response.");
+    if (!query) {
+      statusMessage.innerText = "Please enter a Roll Number or CNIC.";
+      statusMessage.classList.add("error");
+      return;
     }
 
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Result not found in database.");
+    searchBtn.disabled = true;
+    searchBtn.innerText = "Searching...";
+
+    try {
+      const response = await fetch('/api/result/' + encodeURIComponent(query));
+      
+      const contentType = response.headers.get("content-type");
+      let result;
+      
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json();
+      } else {
+        const textError = await response.text();
+        throw new Error("Server Error: Unable to fetch JSON response.");
+      }
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Result not found in database.");
+      }
+
+      const data = result.data;
+
+      // Safe Data Extraction (Handles both lowercase and uppercase keys from DB)
+      const rollNo = data.rollNo || data.RollNo || data.cnic || data.CNIC || query;
+      const name = data.name || data.Name || "-";
+      const fatherName = data.fatherName || data.FatherName || data["father name"] || "-";
+      const caste = data.caste || data.Caste || "-";
+      const applyFor = data.applyFor || data.ApplyFor || data.faculty || "-";
+      const obtainedMarks = data.obtainedMarks ?? data.ObtainedMarks ?? data.marks ?? 0;
+
+      // Fill details into DOM
+      document.getElementById("resRollNo").innerText = rollNo;
+      document.getElementById("resName").innerText = name;
+      document.getElementById("resFatherName").innerText = fatherName;
+      document.getElementById("resCaste").innerText = caste;
+      document.getElementById("resApplyFor").innerText = applyFor;
+      document.getElementById("resObtainedMarks").innerText = obtainedMarks;
+
+      // Assigned Class Calculation
+      const assignedClass = getAssignedClass(applyFor, obtainedMarks);
+      document.getElementById("resAssignedClass").innerText = assignedClass;
+
+      // Display Card
+      resultCardWrapper.style.display = "flex";
+      statusMessage.innerText = "Result found!";
+      statusMessage.classList.add("success");
+
+    } catch (err) {
+      statusMessage.innerText = err.message;
+      statusMessage.classList.add("error");
+    } finally {
+      searchBtn.disabled = false;
+      searchBtn.innerText = "Check Result";
     }
-
-    const data = result.data;
-
-    // Fill details
-    document.getElementById("resRollNo").innerText = data.rollNo || data.cnic || query;
-    document.getElementById("resName").innerText = data.name || "-";
-    document.getElementById("resFatherName").innerText = data.fatherName || "-";
-    document.getElementById("resCaste").innerText = data.caste || "-";
-    document.getElementById("resApplyFor").innerText = data.applyFor || "-";
-    document.getElementById("resObtainedMarks").innerText = data.obtainedMarks || 0;
-
-    // Assigned Class Calculation
-    const assignedClass = getAssignedClass(data.applyFor, data.obtainedMarks);
-    document.getElementById("resAssignedClass").innerText = assignedClass;
-
-    // Display Card
-    resultCardWrapper.style.display = "flex";
-    statusMessage.innerText = "Result found!";
-    statusMessage.classList.add("success");
-
-  } catch (err) {
-    statusMessage.innerText = err.message;
-    statusMessage.classList.add("error");
-  } finally {
-    searchBtn.disabled = false;
-    searchBtn.innerText = "Check Result";
   }
-}
 
   // Logic for Class Assignment
   function getAssignedClass(applyFor, marks) {
     const obtainedMarks = Number(marks);
     const group = applyFor ? String(applyFor).trim().toLowerCase() : "";
 
-    if (group.includes("P.E")) {
+    if (group.includes("p.e") || group.includes("pre-engineering") || group.includes("pe")) {
       return "XI E";
     }
-    if (group.includes("C.S")) {
+    if (group.includes("c.s") || group.includes("computer science") || group.includes("cs")) {
       return "XI F";
     }
-    if (group.includes("P.M")) {
+    if (group.includes("p.m") || group.includes("pre-medical") || group.includes("pm")) {
       if (obtainedMarks >= 48) {
         return "Class A";
       } else if (obtainedMarks >= 33 && obtainedMarks < 48) {
@@ -282,7 +298,7 @@
     const rollNo = document.getElementById("resRollNo").innerText;
 
     const opt = {
-      margin: 0,
+      margin: 0.2,
       filename: `ResultCard_${rollNo}.pdf`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
@@ -295,4 +311,3 @@
 
 </body>
 </html>
-

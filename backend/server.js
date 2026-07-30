@@ -22,6 +22,7 @@ const app = express();
 
 // --- Configuration ---
 mongoose.connect(process.env.MONGODB_URI, {
+    dbName: 'gdc-umerkot',
     serverSelectionTimeoutMS: 30000,
 })
 .then(async () => {

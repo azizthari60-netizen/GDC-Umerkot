@@ -730,24 +730,36 @@ app.get('/api/student/slip/pdf/:slipId', async (req, res) => {
     }
 });
 
-// Express API route to search student by Roll No or CNIC
+
+// Admission Test Result Route
 app.get('/api/result/:searchVal', async (req, res) => {
   try {
-    const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
-    
-    if (!rawVal) {
+    const searchVal = req.params.searchVal ? req.params.searchVal.trim() : "";
+
+    if (!searchVal) {
       return res.status(400).json({
         success: false,
         message: "Please enter a Roll Number or CNIC."
       });
     }
-  
-    const numVal = Number(rawVal);
+
+    // Database Reference (Agar aap Mongoose ya express local db use kar rahe hain)
+    const database = app.locals.db || db; 
+
+    if (!database) {
+      return res.status(500).json({
+        success: false,
+        message: "Database object is not available on server."
+      });
+    }
+
+    // Number conversion for queries where rollNo is stored as Integer in MongoDB
+    const numVal = Number(searchVal);
     const queryConditions = [
-      { rollNo: rawVal },
-      { cnic: rawVal },
-      { RollNo: rawVal },
-      { CNIC: rawVal }
+      { rollNo: searchVal },
+      { cnic: searchVal },
+      { RollNo: searchVal },
+      { CNIC: searchVal }
     ];
 
     if (!isNaN(numVal)) {
@@ -755,29 +767,29 @@ app.get('/api/result/:searchVal', async (req, res) => {
       queryConditions.push({ RollNo: numVal });
     }
 
-    // Mongo DB Query
-    const db = "gdc-umerkot"
-    const student = await db.collection('results').findOne({
+    // Query MongoDB Collection
+    const student = await database.collection('results').findOne({
       $or: queryConditions
     });
 
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: `No result found for Roll No / CNIC: ${rawVal}`
+        message: "No result found for Roll No / CNIC: " + searchVal
       });
     }
 
-    res.json({
+    // Return exact result data
+    return res.json({
       success: true,
       data: student
     });
 
   } catch (error) {
-    console.error("Backend Error:", error);
-    res.status(500).json({
+    console.error("Result Route Error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Server Connection Error: " + error.message
+      message: "Server Error: " + error.message
     });
   }
 });

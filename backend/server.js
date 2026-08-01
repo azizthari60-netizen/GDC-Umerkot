@@ -321,9 +321,6 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
-// اگر آپ mongoose استعمال کر رہے ہیں
-// const Result = require('./models/Result'); // اپنے Model کا صحیح پاتھ دیں
-
 app.get('/api/search-result', async (req, res) => {
     try {
         const { query } = req.query;
@@ -334,15 +331,15 @@ app.get('/api/search-result', async (req, res) => {
 
         const searchQuery = query.trim();
 
-        // Database search
-        const student = await Result.findOne({
+        // فرض کریں db آپ کا MongoDB connection object ہے
+        const student = await db.collection('results').findOne({
             $or: [
                 { rollNo: searchQuery },
                 { cnic: searchQuery },
                 { cnicNo: searchQuery },
                 { cnic_no: searchQuery }
             ]
-        }).lean();
+        });
 
         if (!student) {
             return res.status(404).json({ success: false, message: 'کوئی ریکارڈ نہیں ملا۔' });
@@ -389,7 +386,6 @@ app.get('/api/search-result', async (req, res) => {
         return res.status(500).json({ success: false, message: 'سرور ایرر۔' });
     }
 });
-
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;

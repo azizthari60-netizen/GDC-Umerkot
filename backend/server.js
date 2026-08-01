@@ -17,6 +17,7 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const { stringAt } = require('pdfkit/js/data');
 
 const app = express();
 
@@ -62,6 +63,7 @@ const resultSchema = new mongoose.Schema({
     applyFor: String,
     cnic: mongoose.Schema.Types.Mixed,
     mobileNo: mongoose.Schema.Types.Mixed,
+    district: String,
     createdAt: { type: Date, default: Date.now }
 }, { collection: 'results' });
 
@@ -319,64 +321,76 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
+const express = require('express');
+const mongoose = require('mongoose');
 
-// Static Files Serve کرنے کے لیے (اگر آپ کے تمام HTML/CSS اسی فولڈر میں ہیں)
-app.use(express.static(__dirname));
 
-const uri = process.env.MONGODB_URI;
-let client;
-let clientPromise;
+app.get('/api/search-result', async (req, res) => {
+    try {
+        const { query } = req.query; // یہ رول نمبر یا CNIC ہوگا
 
-if (!global._mongoClientPromise) {
-  client = new MongoClient(uri);
-  global._mongoClientPromise = client.connect();
-}
-clientPromise = global._mongoClientPromise;
+        if (!query) {
+            return res.status(400).json({ success: false, message: 'براہ کرم رول نمبر یا شناختی کارڈ نمبر درج کریں۔' });
+        }
 
-// --- 🎯 صرف رزلٹ دکھانے کا API روٹ ---
-app.get('/api/result/:searchVal', async (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  
-  try {
-    const rawVal = req.params.searchVal ? req.params.searchVal.trim() : "";
-    if (!rawVal) {
-      return res.status(400).json({ success: false, message: "رول نمبر یا CNIC لکھنا لازمی ہے۔" });
+        // رول نمبر یا CNIC (CNIC/CNIC_NO) کی بنیاد پر ڈیٹا بیس میں تلاش
+        // نوٹ: اگر آپ کے ڈیٹا بیس میں CNIC کا کالم کا نام cnic یا cnicNo ہے تو اس حساب سے تبدیل کر لیں
+        const student = await mongoose.connection.collection('results').findOne({
+            $or: [
+                { rollNo: query.trim() },
+                { cnic: query.trim() },
+                { cnicNo: query.trim() } // اگر کالم کا نام cnicNo ہے
+            ]
+        });
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'کوئی ریکار ڈ نہیں ملا۔' });
+        }
+
+        // ==========================================
+        //  Assigned Class کی لاجک (Logic)
+        // ==========================================
+        let assignedClass = 'N/A';
+        const applyFor = (student.applyFor || '').toLowerCase().trim();
+        const marks = Number(student.marks) || 0;
+
+        if (applyFor.includes('engineering') || applyFor.includes('pre-engineering') || applyFor.includes('pre engineering')) {
+            assignedClass = 'XI-E';
+        } 
+        else if (applyFor.includes('computer') || applyFor.includes('ics') || applyFor.includes('computer science')) {
+            assignedClass = 'XI-F';
+        } 
+        else if (applyFor.includes('medical') || applyFor.includes('pre-medical') || applyFor.includes('pre medical')) {
+            if (marks >= 48) {
+                assignedClass = 'XI-A';
+            } else if (marks >= 33 && marks < 48) {
+                assignedClass = 'XI-B';
+            } else if (marks >= 20 && marks < 33) {
+                assignedClass = 'XI-C';
+            } else {
+                assignedClass = 'XI-D';
+            }
+        }
+
+        // صرف مطلوبہ ڈیٹا کلائنٹ کو بھیجنا
+        const responseData = {
+            rollNo: student.rollNo || 'N/A',
+            name: student.name || 'N/A',
+            fatherName: student.fatherName || student.father_name || 'N/A',
+            caste: student.caste || 'N/A',
+            applyFor: student.applyFor || 'N/A',
+            marks: student.marks !== undefined ? student.marks : 'N/A',
+            assignedClass: assignedClass
+        };
+
+        return res.status(200).json({ success: true, data: responseData });
+
+    } catch (error) {
+        console.error('Error fetching result:', error);
+        return res.status(500).json({ success: false, message: 'سرور میں خرابی آئی ہے۔ دوبارہ کوشش کریں۔' });
     }
-
-    const dbClient = await clientPromise;
-    const db = dbClient.db('gdc-umerkot'); // ڈیٹا بیس
-    const collection = db.collection('results'); // کلیکشن
-
-    const numVal = Number(rawVal);
-    const queryConditions = [
-      { rollNo: rawVal },
-      { cnic: rawVal },
-      { RollNo: rawVal },
-      { CNIC: rawVal }
-    ];
-
-    if (!isNaN(numVal)) {
-      queryConditions.push({ rollNo: numVal });
-      queryConditions.push({ cnic: numVal });
-    }
-
-    // ڈیٹا بیس سے رزلٹ تلاش کریں
-    const student = await collection.findOne({ $or: queryConditions });
-
-    if (!student) {
-      return res.status(404).json({ success: false, message: "کوئی رزلٹ نہیں ملا۔" });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: student
-    });
-
-  } catch (error) {
-    console.error("API Error:", error);
-    return res.status(500).json({ success: false, message: "سرور کا مسئلہ: " + error.message });
-  }
 });
+
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;

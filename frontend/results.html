@@ -3,100 +3,175 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admission Test Result - GBDC Umerkot</title>
+  <title>Government Boys Degree College Umerkot</title>
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .result-container { max-width: 500px; margin: 40px auto; padding: 20px; font-family: sans-serif; }
-    .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
-    .search-box input { flex: 1; padding: 10px; font-size: 16px; }
-    .search-box button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-    .result-display { display: none; background: #f4f4f4; padding: 20px; border-radius: 8px; border: 1px solid #ccc; }
-    .result-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
-    .error-msg { color: red; font-weight: bold; margin-top: 10px; }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
-<body>
-
-<div class="result-container">
-  <h2>Admission Test Result</h2>
-  <p>رول نمبر یا شناختی کارڈ نمبر درج کریں:</p>
-
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Enter Roll No or CNIC..." />
-    <button id="searchBtn" onclick="searchResult()">Check Result</button>
+<body class="home-page">
+  <!-- Loader -->
+  <div class="loader-overlay" id="loader">
+    <div class="loader-container">
+      <div class="loader-logo">
+        <img src="logo.png" alt="Logo">
+      </div>
+    </div>
   </div>
+  <header class="site-header">
+    <div class="header-inner container">
+      <a href="index.html" class="brand">
+        <div class="brand-logo"> <img src="logo.png" alt="Logo"></div>
+        <div class="brand-text">
+          <span class="brand-title">Government Boys Degree College Umerkot</span>
+          <span class="brand-subtitle">College Education Department, Sindh</span>
+        </div>
+      </a>
+      <div class="social-links">
+        <a href="#" class="social-link" aria-label="YouTube">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2s-.2-1.7-.8-2.5c-.7-.9-1.5-.9-1.9-1C18.7 2.4 12 2.4 12 2.4h0s-6.7 0-8.8.3c-.4 0-1.2.1-1.9 1C.7 4.6.5 6.2.5 6.2S0 8.3 0 10.5v3c0 2.2.5 4.3.5 4.3s.2 1.7.8 2.5c.7.9 1.6.9 2 1 1.5.2 8 .3 8 .3s6.7 0 8.8-.3c.4 0 1.2-.1 1.9-1 .6-.8.8-2.5.8-2.5s.5-2.1.5-4.3v-3c0-2.2-.5-4.3-.5-4.3Zm-14.2 8.5V8.8l6.4 2.9-6.4 2.9Z"/></svg>
+        </a>
+        <a href="https://www.facebook.com/governmentboysdegreecollegeumerkot" class="social-link" aria-label="Facebook">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.5-4.5-10-10-10S2 6.5 2 12c0 4.9 3.6 8.9 8.3 9.8v-6.9h-2.5v-2.9h2.5V9.4c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.3 0-1.7.8-1.7 1.7v2h2.9l-.5 2.9h-2.4v6.9C18.4 20.9 22 16.9 22 12Z"/></svg>
+        </a>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <ul>
+          <li><a href="index.html" class="active">Home</a></li>
+          <li><a href="academic-programs.html">Programs</a></li>
+          <li><a href="faculty.html">Faculty</a></li>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="results.html">Results</a></li>
+          <li><a href="download.html">Downloads</a></li>
+        </ul>
+      </nav>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
 
-  <div id="statusMsg" class="error-msg"></div>
+    <!-- Result Main Section -->
+  <main class="result-container" style="max-width: 700px; margin: 40px auto; padding: 20px; font-family: sans-serif;">
+    <h2 style="text-align: center;">Admission Test Results</h2>
+    
+    <!-- Search Form -->
+    <div class="search-box" style="display: flex; gap: 10px; margin-bottom: 25px;">
+        <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Please input yor Roll No or CNIC" 
+            style="flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;"
+        >
+        <button 
+            id="searchBtn" 
+            onclick="searchResult()" 
+            style="padding: 12px 24px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;"
+        >
+            Search
+        </button>
+    </div>
 
-  <!-- Result Box -->
-  <div id="resultBox" class="result-display">
-    <div class="result-row"><strong>Roll No:</strong> <span id="resRoll">-</span></div>
-    <div class="result-row"><strong>Name:</strong> <span id="resName">-</span></div>
-    <div class="result-row"><strong>Father Name:</strong> <span id="resFather">-</span></div>
-    <div class="result-row"><strong>Obtained Marks:</strong> <span id="resMarks">-</span></div>
-    <div class="result-row"><strong>Assigned Class:</strong> <span id="resClass" style="color: green; font-weight: bold;">-</span></div>
-  </div>
-</div>
+    <!-- Error Message Box -->
+    <div id="errorMsg" style="color: red; text-align: center; margin-bottom: 15px; display: none;"></div>
 
-<script>
-async function searchResult() {
-  const query = document.getElementById("searchInput").value.trim();
-  const statusMsg = document.getElementById("statusMsg");
-  const resultBox = document.getElementById("resultBox");
-  const searchBtn = document.getElementById("searchBtn");
+    <!-- Loading Spinner -->
+    <div id="loading" style="text-align: center; display: none; margin-bottom: 15px;">Searching...</div>
 
-  statusMsg.innerText = "";
-  resultBox.style.display = "none";
+    <!-- Result Display Card -->
+    <div id="resultCard" style="display: none; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background-color: #f9f9f9; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px;">طالب علم کی تفصیلا ت</h3>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr>
+                <td style="padding: 8px; font-weight: bold; width: 40%;">رول نمبر:</td>
+                <td id="resRollNo" style="padding: 8px;"></td>
+            </tr>
+            <tr style="background-color: #f1f1f1;">
+                <td style="padding: 8px; font-weight: bold;">نام:</td>
+                <td id="resName" style="padding: 8px;"></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; font-weight: bold;">والد کا نام:</td>
+                <td id="resFatherName" style="padding: 8px;"></td>
+            </tr>
+            <tr style="background-color: #f1f1f1;">
+                <td style="padding: 8px; font-weight: bold;">ذات / قوم:</td>
+                <td id="resCaste" style="padding: 8px;"></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; font-weight: bold;">اپلائے فار (Apply For):</td>
+                <td id="resApplyFor" style="padding: 8px;"></td>
+            </tr>
+            <tr style="background-color: #f1f1f1;">
+                <td style="padding: 8px; font-weight: bold;">مارکس (Obtained Marks):</td>
+                <td id="resMarks" style="padding: 8px;"></td>
+            </tr>
+            <tr style="background-color: #e2f0d9;">
+                <td style="padding: 10px; font-weight: bold; color: #2e7d32; font-size: 18px;">اسائینڈ کلاس (Assigned Class):</td>
+                <td id="resAssignedClass" style="padding: 10px; font-weight: bold; color: #2e7d32; font-size: 18px;"></td>
+            </tr>
+        </table>
+    </div>
+  </main>
 
-  if (!query) {
-    statusMsg.innerText = "براہ کرم رول نمبر یا CNIC لکھیں۔";
-    return;
-  }
-
-  searchBtn.disabled = true;
-  searchBtn.innerText = "Searching...";
-
-  try {
-    const res = await fetch('/api/result/' + encodeURIComponent(query));
-    const result = await res.json();
-
-    if (!res.ok || !result.success) {
-      throw new Error(result.message || "رزلٹ نہیں ملا۔");
-    }
-
-    const data = result.data;
-    const marks = data.obtainedMarks ?? data.ObtainedMarks ?? 0;
-    const applyFor = data.applyFor || data.ApplyFor || "";
-
-    // Class Logic
-    let assignedClass = "N/A";
-    const group = String(applyFor).toLowerCase();
-    if (group.includes("p.e") || group.includes("pe")) assignedClass = "XI E";
-    else if (group.includes("c.s") || group.includes("cs")) assignedClass = "XI F";
-    else if (group.includes("p.m") || group.includes("pm")) {
-      const m = Number(marks);
-      if (m >= 48) assignedClass = "Class A";
-      else if (m >= 33) assignedClass = "Class B";
-      else if (m >= 20) assignedClass = "Class C";
-      else assignedClass = "Class D";
-    }
-
-    document.getElementById("resRoll").innerText = data.rollNo || data.RollNo || query;
-    document.getElementById("resName").innerText = data.name || data.Name || "-";
-    document.getElementById("resFather").innerText = data.fatherName || data.FatherName || "-";
-    document.getElementById("resMarks").innerText = marks;
-    document.getElementById("resClass").innerText = assignedClass;
-
-    resultBox.style.display = "block";
-
-  } catch (err) {
-    statusMsg.innerText = err.message;
-  } finally {
-    searchBtn.disabled = false;
-    searchBtn.innerText = "Check Result";
-  }
-}
-</script>
-
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-col">
+        <div class="brand footer-brand">
+          <div class="brand-logo"><img src="logo.png" alt="logo"></div>
+          <div class="brand-text">
+            <span class="brand-title">Government Boys Degree College Umerkot</span>
+            <span class="brand-subtitle">College Education Department, Sindh</span>
+          </div>
+        </div>
+        <div class="map-embed">
+              <iframe
+                title="Department Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3605.417065834503!2d69.73566617444736!3d25.35733502519757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x394f21de7bb3da23%3A0xca07d6515e47f444!2sGovernment%20Boys%20Degree%20College%20Umerkot!5e0!3m2!1sen!2s!4v1767267663994!5m2!1sen!2s"
+                style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+              </iframe>
+            </div>
+      </div>
+      <div class="footer-col">
+        <h4>About Us</h4>
+        <p>
+          Government Boys Degree College Umerkot provides modern programs and a transparent admission process for students across Sindh.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academic-programs.html">Academic Programs</a></li>
+          <li><a href="faculty.html">Faculty</a></li>
+          <li><a href="policy.html">Policies</a></li>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+          <li><a href="download.html">Downloads</a></li>
+          <li><a href="results.html">Results</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact Information</h4>
+        <p class="contact-info">
+          Government Boys Degree College Umerkot<br />
+          College Education Department<br />
+          Sindh, Pakistan
+        </p>
+        <p class="contact-info">
+          Phone: <a href="tel:(0238) 920101">(0238) 920101</a><br />
+          Email: <a href="mailto:info.gdcu@gmail.com">info.gdcu@gmail.com</a>
+        </p>
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+        <p>&copy; <span id="year"></span> Built by Prof Azizullah Samejo GBDC Umerkot. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  
+  <script src="script.js"></script>
 </body>
 </html>

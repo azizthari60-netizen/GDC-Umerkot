@@ -555,3 +555,61 @@ if (recoveryForm) {
     }
   });
 }
+async function searchResult() {
+    const searchInput = document.getElementById('searchInput').value.trim();
+    const errorMsg = document.getElementById('errorMsg');
+    const loading = document.getElementById('loading');
+    const resultCard = document.getElementById('resultCard');
+
+    // ابتدائی سیٹنگز Reset
+    errorMsg.style.display = 'none';
+    resultCard.style.display = 'none';
+
+    if (!searchInput) {
+        errorMsg.innerText = 'براہ کرم رول نمبر یا شناختی کارڈ نمبر درج کریں!';
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    // لوڈنگ شروع
+    loading.style.display = 'block';
+
+    try {
+        const response = await fetch(`/api/search-result?query=${encodeURIComponent(searchInput)}`);
+        const result = await response.json();
+
+        loading.style.display = 'none';
+
+        if (result.success) {
+            const data = result.data;
+
+            // HTML میں ڈیٹا فل کریں
+            document.getElementById('resRollNo').innerText = data.rollNo;
+            document.getElementById('resName').innerText = data.name;
+            document.getElementById('resFatherName').innerText = data.fatherName;
+            document.getElementById('resCaste').innerText = data.caste;
+            document.getElementById('resApplyFor').innerText = data.applyFor;
+            document.getElementById('resMarks').innerText = data.marks;
+            document.getElementById('resAssignedClass').innerText = data.assignedClass;
+
+            // رزلٹ کارڈ دکھائیں
+            resultCard.style.display = 'block';
+        } else {
+            errorMsg.innerText = result.message || 'کوئی ریکارڈ نہیں ملا!';
+            errorMsg.style.display = 'block';
+        }
+
+    } catch (error) {
+        loading.style.display = 'none';
+        console.error('Fetch Error:', error);
+        errorMsg.innerText = 'ڈیٹا حاصل کرنے میں ناکامی ہوئی۔ نیٹ ورک یا سرور چیک کریں۔';
+        errorMsg.style.display = 'block';
+    }
+}
+
+// Enter کی پریس کرنے پر بھی سرچ فعال کریں
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchResult();
+    }
+});

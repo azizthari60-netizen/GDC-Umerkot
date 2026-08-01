@@ -555,6 +555,8 @@ if (recoveryForm) {
     }
   });
 }
+
+// search
 async function searchResult() {
     const searchInput = document.getElementById('searchInput').value.trim();
     const errorMsg = document.getElementById('errorMsg');

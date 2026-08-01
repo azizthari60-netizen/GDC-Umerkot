@@ -321,46 +321,45 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
-const express = require('express');
-const mongoose = require('mongoose');
-
+// اگر آپ mongoose استعمال کر رہے ہیں
+// const Result = require('./models/Result'); // اپنے Model کا صحیح پاتھ دیں
 
 app.get('/api/search-result', async (req, res) => {
     try {
-        const { query } = req.query; // یہ رول نمبر یا CNIC ہوگا
+        const { query } = req.query;
 
         if (!query) {
             return res.status(400).json({ success: false, message: 'براہ کرم رول نمبر یا شناختی کارڈ نمبر درج کریں۔' });
         }
 
-        // رول نمبر یا CNIC (CNIC/CNIC_NO) کی بنیاد پر ڈیٹا بیس میں تلاش
-        // نوٹ: اگر آپ کے ڈیٹا بیس میں CNIC کا کالم کا نام cnic یا cnicNo ہے تو اس حساب سے تبدیل کر لیں
-        const student = await mongoose.connection.collection('results').findOne({
+        const searchQuery = query.trim();
+
+        // Database search
+        const student = await Result.findOne({
             $or: [
-                { rollNo: query.trim() },
-                { cnic: query.trim() },
-                { cnicNo: query.trim() } // اگر کالم کا نام cnicNo ہے
+                { rollNo: searchQuery },
+                { cnic: searchQuery },
+                { cnicNo: searchQuery },
+                { cnic_no: searchQuery }
             ]
-        });
+        }).lean();
 
         if (!student) {
-            return res.status(404).json({ success: false, message: 'کوئی ریکار ڈ نہیں ملا۔' });
+            return res.status(404).json({ success: false, message: 'کوئی ریکارڈ نہیں ملا۔' });
         }
 
-        // ==========================================
-        //  Assigned Class کی لاجک (Logic)
-        // ==========================================
+        // Assigned Class Logic
         let assignedClass = 'N/A';
-        const applyFor = (student.applyFor || '').toLowerCase().trim();
+        const applyFor = String(student.applyFor || '').toLowerCase().trim();
         const marks = Number(student.marks) || 0;
 
-        if (applyFor.includes('engineering') || applyFor.includes('pre-engineering') || applyFor.includes('pre engineering')) {
+        if (applyFor.includes('engineering') || applyFor.includes('pre engineering') || applyFor.includes('pre-engineering')) {
             assignedClass = 'XI-E';
         } 
         else if (applyFor.includes('computer') || applyFor.includes('ics') || applyFor.includes('computer science')) {
             assignedClass = 'XI-F';
         } 
-        else if (applyFor.includes('medical') || applyFor.includes('pre-medical') || applyFor.includes('pre medical')) {
+        else if (applyFor.includes('medical') || applyFor.includes('pre medical') || applyFor.includes('pre-medical')) {
             if (marks >= 48) {
                 assignedClass = 'XI-A';
             } else if (marks >= 33 && marks < 48) {
@@ -372,22 +371,22 @@ app.get('/api/search-result', async (req, res) => {
             }
         }
 
-        // صرف مطلوبہ ڈیٹا کلائنٹ کو بھیجنا
-        const responseData = {
-            rollNo: student.rollNo || 'N/A',
-            name: student.name || 'N/A',
-            fatherName: student.fatherName || student.father_name || 'N/A',
-            caste: student.caste || 'N/A',
-            applyFor: student.applyFor || 'N/A',
-            marks: student.marks !== undefined ? student.marks : 'N/A',
-            assignedClass: assignedClass
-        };
-
-        return res.status(200).json({ success: true, data: responseData });
+        return res.status(200).json({
+            success: true,
+            data: {
+                rollNo: student.rollNo || student.roll_no || searchQuery,
+                name: student.name || 'N/A',
+                fatherName: student.fatherName || student.father_name || 'N/A',
+                caste: student.caste || 'N/A',
+                applyFor: student.applyFor || 'N/A',
+                marks: student.marks !== undefined ? student.marks : 'N/A',
+                assignedClass: assignedClass
+            }
+        });
 
     } catch (error) {
-        console.error('Error fetching result:', error);
-        return res.status(500).json({ success: false, message: 'سرور میں خرابی آئی ہے۔ دوبارہ کوشش کریں۔' });
+        console.error('API Error:', error);
+        return res.status(500).json({ success: false, message: 'سرور ایرر۔' });
     }
 });
 

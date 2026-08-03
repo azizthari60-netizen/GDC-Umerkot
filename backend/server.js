@@ -17,26 +17,25 @@ const app = express();
 
 
 
-// --- DATABASE CONNECTION (Serverless Optimized) ---
-let cachedDb = null;
+// configuretion
 
-async function connectToDatabase() {
-    if (cachedDb && mongoose.connection.readyState === 1) {
-        return cachedDb;
-    }
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-    console.log("⏳ Connecting to MongoDB Atlas...");
-    
-    // اگر URI میں dbName نہ بھی ہو تو یہ زبردستی gdc-umerkot سے ہی کنیکٹ کرے گا
-    cachedDb = await mongoose.connect(process.env.MONGODB_URI, {
-        dbName: 'gdc-umerkot',
-        serverSelectionTimeoutMS: 5000, 
-        bufferCommands: false, // 🛑 buffering بند کرے گا تاکہ 10 سیکنڈ انتظار نہ کرے اور فوراً ایرر پکڑے
-    });
 
-    console.log("🚀 Connected to MongoDB: gdc-umerkot");
-    return cachedDb;
-}
+mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 30000,
+})
+.then(async () => {
+    console.log("🚀 MongoDB Connected Successfully");
+   
+})
+.catch(err => console.error("❌ DB Connection Error:", err));
+
+
 // --- Middleware ---
 app.use(cors());
 app.use(morgan('dev'));
@@ -314,17 +313,6 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
-
-// MongoDB Connection Caching for Vercel
-let isConnected = false;
-async function connectToDatabase() {
-    if (isConnected) return;
-    if (!process.env.MONGODB_URI) {
-        throw new Error('MONGODB_URI is not defined in environment variables');
-    }
-    const db = await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = db.connections[0].readyState;
-}
 
 app.post('/api/results/check', async (req, res) => {
     try {

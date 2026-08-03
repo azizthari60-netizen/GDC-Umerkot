@@ -556,12 +556,12 @@ if (recoveryForm) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+
+// Search results
     const resultsForm = document.getElementById('results-form');
     const resultsDisplay = document.getElementById('results-display');
 
-    if (!resultsForm) return;
-
+    if (resultsForm) {
     resultsForm.addEventListener('submit', async (e) => {
         e.preventDefault(); // پیج ریفریش ہونے سے روکے گا
 
@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-});
+  }
 
 // اسائینڈ کلاس کی لاجک کا فنکشن
 function determineAssignedClass(student) {

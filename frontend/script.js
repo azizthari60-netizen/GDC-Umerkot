@@ -557,6 +557,5 @@ if (recoveryForm) {
 }
 
 
-// Search results
-    
+
   

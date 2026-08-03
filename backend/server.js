@@ -333,20 +333,20 @@ app.post('/api/results/check', async (req, res) => {
         await connectToDatabase();
 
         // MongoDB Atlas میں CNIC یا Roll No سے میچ کریں
-        const student = await Result.findOne({
+        const result = await Result.findOne({
             $or: [
                 { cnic: searchQuery },
                 { rollNo: searchQuery }
             ]
         });
 
-        if (!student) {
+        if (!result) {
             return res.status(404).json({ success: false, message: 'اس CNIC / Roll No کا کوئی رزلٹ نہیں ملا۔' });
         }
 
         return res.status(200).json({
             success: true,
-            results: [student]
+            results: [result] // ایک رزلٹ واپس کریں تاکہ frontend میں array کے طور پر ہینڈل کیا جا سکے      
         });
     } catch (err) {
         console.error('Result fetch error:', err);

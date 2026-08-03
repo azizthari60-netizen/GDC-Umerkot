@@ -324,7 +324,7 @@ app.post('/api/results/check', async (req, res) => {
         const searchQuery = (cnic || rollNo || '').trim();
 
         if (!searchQuery) {
-            return res.status(400).json({ success: false, message: 'CNIC یا Roll Number درج کرنا ضروری ہے' });
+            return res.status(400).json({ success: false, message: 'CNIC or Roll Number is required' });
         }
 
         // اپ کے Schema/Model کا نام (مثلاً Result)
@@ -336,7 +336,7 @@ app.post('/api/results/check', async (req, res) => {
         });
 
         if (!student) {
-            return res.status(404).json({ success: false, message: 'اس CNIC یا Roll Number کا کوئی ریکارڈ نہیں ملا' });
+            return res.status(404).json({ success: false, message: 'Record not found' });
         }
 
         return res.status(200).json({ success: true, results: [student] });

@@ -55,11 +55,12 @@
     <main class="results-main">
       <div class="container">
         <h1>Check Your Results</h1>
-        <form id="results-form" class="results-form">
-          <label for="cnic">Enter Your CNIC or Roll Number:</label>
-          <input type="text" id="cnic" name="cnic" placeholder="e.g., 12345-6789012-3" required>
-          <button type="submit">Check Results</button>
-        </form>
+        <div class="form-group">
+          <label for="cnic">CNIC:</label>
+          <input type="text" id="cnic" name="cnic" placeholder="Enter CNIC (e.g., 12345-6789012-3)" />
+        </div>
+        <button type="button" id="check-results" onclick="checkResults()">Check Results</button>
+        
         <div id="results-display" class="results-display"></div>
       </div>
     </main>

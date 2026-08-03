@@ -1,63 +1,80 @@
+// page loader
+    
+const loader = document.getElementById('loader');
+if (loader) {
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      loader.classList.add('hidden');
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 400);
+    }, 900);
+  });
+}
+
 // Search results for CNIC or Roll Number
-const searchResultsContainer = document.getElementById('search-results');
-const searchForm = document.getElementById('search-form');
+async function checkResult() {
+    const cnicInput = document.getElementById('cnic');
+    const resultsDisplay = document.getElementById('results-display');
+    const submitButton = document.getElementById('search-btn');
 
-searchForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const cnic = document.getElementById('cnic').value.trim();
-  const rollNo = document.getElementById('rollNo').value.trim();
-  try {
-    const response = await fetch('/api/results/check', {
-      method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cnic, rollNo }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      displayResults(data.results);
-    } else {
-      searchResultsContainer.innerHTML = `<p>${data.message}</p>`;
-    }
-    } catch (error) {
-        console.error('Error fetching results:', error);
-        searchResultsContainer.innerHTML = `<p>نتائج حاصل کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔</p>`;
-    }
-});
+    const cnic = cnicInput ? cnicInput.value.trim() : '';
 
-function displayResults(results) {
-    if (results.length === 0) {
-        searchResultsContainer.innerHTML = '<p>کوئی نتائج نہیں ملے۔</p>';
+    if (!cnic) {
+        alert('براہ کرم CNIC یا Roll Number درج کریں۔');
         return;
     }
 
-    let resultsHTML = '<ul>';
-    results.forEach((result) => {
-        resultsHTML += `<li>Roll No: ${result.rollNo}, Name: ${result.name}, CNIC: ${result.cnic}, Applied For: ${result.appllyFor}, Assigned Class: ${determinedClass(results)}</li>`;
-    });
-    resultsHTML += '</ul>';
-    searchResultsContainer.innerHTML = resultsHTML;
-}
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Checking...';
+    }
 
-// determinedClass function to determine the class based on the results
-function determinedClass(results) {
-    const apllyFor = results[0].appllyFor; // Assuming all results have the same 'appllyFor' value
-    const marks = results[0].marks; // Assuming all results have the same 'marks' value
+    try {
+        const res = await fetch('/api/results/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cnic })
+        });
 
-    if (apllyFor === 'P.E') {
-        return "XI E";
-    } else if (apllyFor === 'C.S')  {
-        return "XI F";
-    } else if (apllyFor === 'P.M') {
-        if (marks >= 48) {
-            return "XI A";
-        } else if (marks >= 33 && marks < 48) {
-            return "XI B";
-        } else if (marks >= 20 && marks < 33) {
-            return "XI C";
+        const data = await res.json();
+
+        if (res.ok && data.success && data.results && data.results.length > 0) {
+            const student = data.results[0];
+            const assignedClass = determineAssignedClass(student);
+
+            resultsDisplay.innerHTML = `
+                <div style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #fff;">
+                    <h3 style="margin-bottom: 1rem; color: #1e3a8a;">رزلٹ کی تفصیلات</h3>
+                    <p><strong>Name:</strong> ${student.name || 'N/A'}</p>
+                    <p><strong>Father Name:</strong> ${student.fatherName || 'N/A'}</p>
+                    <p><strong>Marks:</strong> ${student.marks ?? 'N/A'}</p>
+                    <p><strong>Applied For:</strong> ${student.appliedFor || 'N/A'}</p>
+                    <p><strong>Assigned Class:</strong> <span style="color: #2563eb; font-weight: bold;">${assignedClass}</span></p>
+                </div>
+            `;
         } else {
-            return "XI D";
+            resultsDisplay.innerHTML = `<p style="color: red; margin-top: 15px;">${data.message || 'No results found'}</p>`;
+        }
+    } catch (error) {
+        console.error(error);
+        resultsDisplay.innerHTML = `<p style="color: red; margin-top: 15px;">Server Error!</p>`;
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Check Results';
         }
     }
+}
+
+function determineAssignedClass(student) {
+    const field = (student.appliedFor || '').toLowerCase();
+    const marks = Number(student.marks) || 0;
+
+    if (field.includes('engineering') || field.includes('computer science') || field.includes('ics')) {
+        return 'First Year E';
+    } else if (field.includes('medical') || field.includes('pre-medical')) {
+        return marks >= 49 ? 'First Year A' : 'First Year B';
+    }
+    return 'First Year';
 }

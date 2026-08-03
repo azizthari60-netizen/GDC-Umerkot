@@ -20,17 +20,16 @@ if (loader) {
     const cnicInput = document.getElementById('cnic');
     const resultsDisplay = document.getElementById('results-display');
     const cnic = cnicInput ? cnicInput.value.trim() : '';
+    const searchbtn = document.getElementById('check-results');
 
     if (!cnic) {
         alert('Please enter a CNIC or Roll Number.');
         return;
     }
 
-    if (checkResults.isChecking) {
-        const button = document.getElementById('check-results');
-        button.disabled = true;
-        button.textContent = 'Checking...';
-        return;
+    if (searchbtn) {
+        searchbtn.disabled = true;
+        searchbtn.textContent = 'Checking...';
     }
 
     try {

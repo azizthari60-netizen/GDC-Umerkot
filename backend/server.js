@@ -10,15 +10,8 @@ const streamifier = require('streamifier');
 const cors = require('cors');
 const morgan = require('morgan');
 const multer = require('multer');
-const jwt = require('jsonwebtoken');
-const PDFDocument = require('pdfkit');
-const nodemailer = require('nodemailer');
-const bcrypt = require('bcryptjs');
-const fs = require('fs');
 const https = require('https');
 const http = require('http');
-const { stringAt } = require('pdfkit/js/data');
-
 const app = express();
 
 

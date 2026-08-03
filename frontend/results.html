@@ -60,7 +60,7 @@
       </div>
 
       <div class="results-card">
-        <form class="results-form" id="results-form">
+        <form class="results-form" onsubmit="event.preventDefault();" id="results-form">
           <div class="form-group">
             <label for="cnic">CNIC Number</label>
             <input type="text" id="cnic" name="cnic" placeholder="12345-1234567-1" required pattern="[0-9]{5}-[0-9]{7}-[0-9]" />

@@ -131,72 +131,80 @@
   </footer>
   
       <script>
-        const resultsForm = document.getElementById('results-form');
+    const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
+
+    const resultsForm = document.getElementById('results-form');
     const resultsDisplay = document.getElementById('results-display');
 
     if (resultsForm) {
-    resultsForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); // پیج ریفریش ہونے سے روکے گا
-
-        const cnicInput = document.getElementById('cnic');
-        const cnic = cnicInput ? cnicInput.value.trim() : '';
+      resultsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const cnic = document.getElementById('cnic').value;
         const submitButton = resultsForm.querySelector('button[type="submit"]');
-        const originalText = submitButton ? submitButton.textContent : '';
-
-        if (!cnic) {
-            alert('براہ کرم CNIC یا Roll Number درج کریں۔');
-            return;
-        }
-
+        const originalText = submitButton ? submitButton.textContent : 'Check Results';
+        
         if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = 'مطلوبہ ڈیٹا تلاش ہو رہا ہے...';
+          submitButton.disabled = true;
+          submitButton.textContent = 'Loading...';
         }
 
         try {
-            // اپنے backend کا صحیح endpoint پاس کریں
-            const res = await fetch('/api/results/check', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cnic })
-            });
+          const res = await fetch(`${API_BASE_URL}/results/check`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cnic })
+          });
 
-            const data = await res.json();
+          const data = await res.json();
 
-            if (res.ok && data.success && data.results && data.results.length > 0) {
-                const student = data.results[0];
-                
-                // Class Allocation Logic
-                const assignedClass = determineAssignedClass(student);
-
-                // Display Result Table
-                resultsDisplay.innerHTML = `
-                    <div style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #fff;">
-                        <h3 style="margin-bottom: 1rem; color: #1e3a8a;">رزلٹ کی تفصیلاٹ</h3>
-                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                            <tr><th style="padding: 8px; border-bottom: 1px solid #ddd;">رول نمبر / CNIC:</th><td style="padding: 8px; border-bottom: 1px solid #ddd;">${student.rollNo || student.cnic || 'N/A'}</td></tr>
-                            <tr><th style="padding: 8px; border-bottom: 1px solid #ddd;">نام (Name):</th><td style="padding: 8px; border-bottom: 1px solid #ddd;">${student.name || 'N/A'}</td></tr>
-                            <tr><th style="padding: 8px; border-bottom: 1px solid #ddd;">والد کا نام (Father Name):</th><td style="padding: 8px; border-bottom: 1px solid #ddd;">${student.fatherName || 'N/A'}</td></tr>
-                            <tr><th style="padding: 8px; border-bottom: 1px solid #ddd;">حاصل کردہ نمبر (Marks):</th><td style="padding: 8px; border-bottom: 1px solid #ddd;">${student.marks ?? 'N/A'}</td></tr>
-                            <tr><th style="padding: 8px; border-bottom: 1px solid #ddd;">شعبہ (Applied For):</th><td style="padding: 8px; border-bottom: 1px solid #ddd;">${student.appliedFor || 'N/A'}</td></tr>
-                            <tr><th style="padding: 8px; border-bottom: 1px solid #ddd;">مقرر کردہ کلاس (Assigned Class):</th><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; color: #2563eb;">${assignedClass}</td></tr>
-                        </table>
-                    </div>
-                `;
+          if (res.ok && data.success) {
+            if (data.results && data.results.length > 0) {
+              resultsDisplay.innerHTML = `
+                <h3 style="margin-bottom: 1rem; color: #1e3a8a;">Your Results</h3>
+                <table class="results-table">
+                  <thead>
+                    <tr>
+                      <th>Course</th>
+                      <th>Marks</th>
+                      <th>Semester</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${data.results.map(result => `
+                      <tr>
+                        <td>${result.course}</td>
+                        <td>${result.marks}</td>
+                        <td>${result.semester}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              `;
             } else {
-                resultsDisplay.innerHTML = `<p style="color: red; margin-top: 15px;">${data.message || 'کوئی رزلٹ نہیں ملا۔'}</p>`;
+              resultsDisplay.innerHTML = '<p style="color: #6b7280; padding: 1rem 0; text-align: center;">No results found for this CNIC.</p>';
             }
-        } catch (error) {
-            console.error('Fetch Error:', error);
-            resultsDisplay.innerHTML = `<p style="color: red; margin-top: 15px;">سرور کے ساتھ رابطہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔</p>`;
+          } else {
+            resultsDisplay.innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">' + (data.message || 'No results found.') + '</p>';
+          }
+        } catch (err) {
+          console.error('Error checking results:', err);
+          resultsDisplay.innerHTML = '<p style="color: #dc2626; padding: 1rem 0; text-align: center;">Network error. Please try again.</p>';
         } finally {
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = originalText;
-            }
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+          }
         }
-    });
-  }
+      });
+    }
+
+    // Footer year
+    const yearSpan = document.getElementById('year');
+    if (yearSpan) {
+      yearSpan.textContent = new Date().getFullYear();
+    }
+
 
 // اسائینڈ کلاس کی لاجک کا فنکشن
 function determineAssignedClass(student) {

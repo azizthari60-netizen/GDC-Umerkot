@@ -324,31 +324,33 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 app.post('/api/results/check', async (req, res) => {
     try {
         const { cnic, rollNo } = req.body;
-        const searchQuery = cnic || rollNo;
+        const searchQuery = (cnic || rollNo || '').trim();
+
         if (!searchQuery) {
-            return res.status(400).json({ success: false, message: 'CNIC یا رول نمبر فراہم کریں۔' });
+            return res.status(400).json({ success: false, message: 'CNIC یا Roll No درج کرنا ضروری ہے۔' });
         }
 
         await connectToDatabase();
+
+        // MongoDB Atlas میں CNIC یا Roll No سے میچ کریں
         const student = await Result.findOne({
             $or: [
                 { cnic: searchQuery },
-                { rollNo: searchQuery },
+                { rollNo: searchQuery }
             ]
         });
 
         if (!student) {
-            return res.status(404).json({ success: false, message: 'ریکارڈ نہیں ملا۔' });
+            return res.status(404).json({ success: false, message: 'اس CNIC / Roll No کا کوئی رزلٹ نہیں ملا۔' });
         }
 
-        // Determine the assigned class for the student
-        determineAssignedClass(student);
-        
-
-        res.status(200).json({ success: true, results: [student] });
+        return res.status(200).json({
+            success: true,
+            results: [student]
+        });
     } catch (err) {
-        console.error('Result check error:', err);
-        res.status(500).json({ success: false, message: 'سرور کی خرابی۔' });
+        console.error('Result fetch error:', err);
+        return res.status(500).json({ success: false, message: 'سرور میں تکنیکی خرابی ہے۔' });
     }
 });
 

@@ -316,7 +316,9 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 app.post('/api/results/check', async (req, res) => {
     try {
-        await connectToDatabase();
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 30000,
+        });
 
         const { cnic, rollNo } = req.body || {};
         const searchQuery = (cnic || rollNo || '').trim();

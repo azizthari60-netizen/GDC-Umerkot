@@ -23,6 +23,12 @@ async function checkResults() {
         return;
     }
 
+    if (checkResults.isChecking) {
+        button.disabled = true;
+        button.textContent = 'Checking...';
+        return;
+    }
+
     try {
         const res = await fetch('/api/results/check', {
             method: 'POST',
@@ -41,7 +47,7 @@ async function checkResults() {
 
         if (res.ok && data.success && data.results && data.results.length > 0) {
             const student = data.results[0];
-            const assignedClass = determineAssignedClass(student);
+            const assignedClass = assignedClass(student);
 
             resultsDisplay.innerHTML = `
                 <div style="margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fff;">

@@ -36,7 +36,7 @@ async function connectToDatabase() {
 
     console.log("🚀 Connected to MongoDB: gdc-umerkot");
     return cachedDb;
-}s
+}
 // --- Middleware ---
 app.use(cors());
 app.use(morgan('dev'));

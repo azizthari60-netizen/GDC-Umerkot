@@ -65,11 +65,17 @@ if (loader) {
         } else {
             resultsDisplay.innerHTML = `<p style="color:red; margin-top:15px;">${data.message || 'Record not found'}</p>`;
         }
+        
     } catch (err) {
         console.error(err);
         resultsDisplay.innerHTML = `<p style="color:red; margin-top:15px;">${err.message}</p>`;
+    } finally {
+        if (searchbtn) {
+            searchbtn.disabled = false;
+            searchbtn.textContent = 'Check Results';
+        }
     }
-};
+}
 
         // AssignedClass 
         function getAssignedClass(applyFor, obtainedMarks) {
@@ -96,4 +102,4 @@ if (loader) {
     }
 
     return 'First Year';
-}
+   }

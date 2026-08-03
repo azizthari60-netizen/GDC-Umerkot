@@ -12,23 +12,10 @@ if (loader) {
   });
 }
 
+
+
+
 // Search results for CNIC or Roll Number
-async function checkResults() {
-    const cnicInput = document.getElementById('cnic');
-    const resultsDisplay = document.getElementById('results-display');
-    const cnic = cnicInput ? cnicInput.value.trim() : '';
-
-    if (!cnic) {
-        alert('Please enter a CNIC or Roll Number.');
-        return;
-    }
-
-    if (checkResults.isChecking) {
-        button.disabled = true;
-        button.textContent = 'Checking...';
-        return;
-    }
-
     try {
         const res = await fetch('/api/results/check', {
             method: 'POST',
@@ -48,6 +35,26 @@ async function checkResults() {
         if (res.ok && data.success && data.results && data.results.length > 0) {
             const student = data.results[0];
             const assignedClass = assignedClass(student);
+            function assignedClass(student) {
+                const field = (student.applyFor || '').toLowerCase();
+                const marks = Number(student.obtainedMarks) || 0;
+
+                 if (field.includes('P.E') || field.includes('C.S') || field.includes('ics')) {
+                     return 'First Year E';
+                     } else if (field.includes('P.M') || field.includes('pre-medical')) {
+                          if (marks >= 48) {
+                             return 'First Year A';
+                         } else if (marks >= 33 && marks < 48) {
+                             return 'First Year B';
+                         } else if (marks >= 20 && marks < 33) {
+                             return 'First Year C';
+                         } else {
+                             return 'First Year D';
+                          }
+                     } 
+                return 'First Year';
+            }
+
 
             resultsDisplay.innerHTML = `
                 <div style="margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fff;">
@@ -62,28 +69,7 @@ async function checkResults() {
         } else {
             resultsDisplay.innerHTML = `<p style="color:red; margin-top:15px;">${data.message || 'Record not found'}</p>`;
         }
-    } catch (err) {
+     } catch (err) {
         console.error(err);
         resultsDisplay.innerHTML = `<p style="color:red; margin-top:15px;">${err.message}</p>`;
     }
-}
-
-function assignedClass(student) {
-    const field = (student.applyFor || '').toLowerCase();
-    const marks = Number(student.obtainedMarks) || 0;
-
-    if (field.includes('P.E') || field.includes('C.S') || field.includes('ics')) {
-        return 'First Year E';
-    } else if (field.includes('P.M') || field.includes('pre-medical')) {
-        if (marks >= 48) {
-            return 'First Year A';
-        } else if (marks >= 33 && marks < 48) {
-            return 'First Year B';
-        } else if (marks >= 20 && marks < 33) {
-            return 'First Year C';
-        } else {
-            return 'First Year D';
-        }
-    }
-    return 'First Year';
-}

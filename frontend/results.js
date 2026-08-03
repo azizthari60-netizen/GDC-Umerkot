@@ -58,7 +58,7 @@ if (loader) {
                     <p><strong>Father's Name:</strong> ${student.fatherName || 'N/A'}</p>
                     <p><strong>Marks Obtained:</strong> ${student.obtainedMarks ?? 'N/A'}</p>
                     <p><strong>Stream:</strong> ${student.applyFor || 'N/A'}</p>
-                    <p><strong>Assigned Class:</strong> <span style="color:#2563eb; font-weight:bold;">${assignedClass || 'N/A'}</span></p>
+                    <p><strong>Assigned Class:</strong> <span style="color:#2563eb; font-weight:bold;">${student.assignedClass || 'N/A'}</span></p>
                 </div>
             `;
         } else {

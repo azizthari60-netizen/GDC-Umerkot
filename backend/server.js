@@ -324,7 +324,7 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 app.post('/api/results/check', async (req, res) => {
     try {
         const { cnic, rollNo } = req.body;
-        let searchQuery = cnic || rollNo;
+        const searchQuery = cnic || rollNo;
         if (!searchQuery) {
             return res.status(400).json({ success: false, message: 'CNIC یا رول نمبر فراہم کریں۔' });
         }
@@ -340,6 +340,10 @@ app.post('/api/results/check', async (req, res) => {
         if (!student) {
             return res.status(404).json({ success: false, message: 'ریکارڈ نہیں ملا۔' });
         }
+
+        // Determine the assigned class for the student
+        determineAssignedClass(student);
+        
 
         res.status(200).json({ success: true, results: [student] });
     } catch (err) {

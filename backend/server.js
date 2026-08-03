@@ -328,7 +328,7 @@ app.post('/api/results/check', async (req, res) => {
         }
 
         // اپ کے Schema/Model کا نام (مثلاً Result)
-        const student = await resultSchema.findOne({
+        const student = await Result.findOne({
             $or: [
                 { cnic: searchQuery },
                 { rollNo: searchQuery }

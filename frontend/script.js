@@ -559,6 +559,7 @@ if (recoveryForm) {
 // search results
 
  // Assigned Class Logic
+ function determineAssignedClass(student) {
         let assignedClass = 'N/A';
         const applyFor = String(student.applyFor || '').toLowerCase().trim();
         const marks = Number(student.marks) || 0;
@@ -580,9 +581,8 @@ if (recoveryForm) {
                 assignedClass = 'XI-D';
             }
         }
+      }
 //  api route
-    const API_BASE_URL = (window.location.hostname === 'localhost') ? 'http://localhost:3000/api' : '/api';
-
     const resultsForm = document.getElementById('results-form');
     const resultsDisplay = document.getElementById('results-display');
 
@@ -591,7 +591,6 @@ if (recoveryForm) {
         e.preventDefault();
         
         const cnic = document.getElementById('cnic').value;
-        const rollNo = document.getElementById('rollNo').value;
         const submitButton = resultsForm.querySelector('button[type="submit"]');
         const originalText = submitButton ? submitButton.textContent : 'Check Results';
         
@@ -604,7 +603,7 @@ if (recoveryForm) {
           const res = await fetch(`${API_BASE_URL}/results/check`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cnic, rollNo })
+            body: JSON.stringify({ cnic })
           });
           
           const data = await res.json();
@@ -632,7 +631,7 @@ if (recoveryForm) {
                         <td>${result.fatherName}</td>
                         <td>${result.applyFor}</td>
                         <td>${result.marks}</td>
-                        <td>${result.assignedClass}</td>
+                        <td>${determineAssignedClass(result)}</td>
                       </tr>
                     `).join('')}
                   </tbody>

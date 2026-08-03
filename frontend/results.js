@@ -27,6 +27,7 @@ if (loader) {
     }
 
     if (checkResults.isChecking) {
+        const button = document.getElementById('check-results');
         button.disabled = true;
         button.textContent = 'Checking...';
         return;
@@ -50,6 +51,7 @@ if (loader) {
 
         if (res.ok && data.success && data.results && data.results.length > 0) {
             const student = data.results[0];
+            const assignedClass = getAssignedClass(student.applyFor, student.obtainedMarks);
 
             resultsDisplay.innerHTML = `
                 <div style="margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fff;">
@@ -58,7 +60,7 @@ if (loader) {
                     <p><strong>Father's Name:</strong> ${student.fatherName || 'N/A'}</p>
                     <p><strong>Marks Obtained:</strong> ${student.obtainedMarks ?? 'N/A'}</p>
                     <p><strong>Stream:</strong> ${student.applyFor || 'N/A'}</p>
-                    <p><strong>Assigned Class:</strong> <span style="color:#2563eb; font-weight:bold;">${student.assignedClass || 'N/A'}</span></p>
+                    <p><strong>Assigned Class:</strong> <span style="color:#2563eb; font-weight:bold;">${assignedClass || 'N/A'}</span></p>
                 </div>
             `;
         } else {
@@ -69,3 +71,30 @@ if (loader) {
         resultsDisplay.innerHTML = `<p style="color:red; margin-top:15px;">${err.message}</p>`;
     }
 };
+
+        // AssignedClass 
+        function getAssignedClass(applyFor, obtainedMarks) {
+    if (!applyFor) return 'N/A';
+    
+    const stream = applyFor.toString().trim().toUpperCase();
+    const marks = Number(obtainedMarks) || 0;
+
+    // CS / Engineering / ICS
+    if (stream.includes('C.S') || stream.includes('CS') || stream.includes('P.E') || stream.includes('ICS')) {
+        return 'First Year E';
+    } 
+    // Medical / Pre-Medical
+    else if (stream.includes('P.M') || stream.includes('PRE-MED')) {
+        if (marks >= 48) {
+            return 'First Year A';
+        } else if (marks >= 33 && marks < 48) {
+            return 'First Year B';
+        } else if (marks >= 20 && marks < 33) {
+            return 'First Year C';
+        } else {
+            return 'First Year D';
+        }
+    }
+
+    return 'First Year';
+}

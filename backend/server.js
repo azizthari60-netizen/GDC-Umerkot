@@ -321,36 +321,47 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
+
+// MongoDB Connection Caching for Vercel
+let isConnected = false;
+async function connectToDatabase() {
+    if (isConnected) return;
+    if (!process.env.MONGODB_URI) {
+        throw new Error('MONGODB_URI is not defined in environment variables');
+    }
+    const db = await mongoose.connect(process.env.MONGODB_URI);
+    isConnected = db.connections[0].readyState;
+}
+
 app.post('/api/results/check', async (req, res) => {
     try {
-        const { cnic, rollNo } = req.body;
+        await connectToDatabase();
+
+        const { cnic, rollNo } = req.body || {};
         const searchQuery = (cnic || rollNo || '').trim();
 
         if (!searchQuery) {
-            return res.status(400).json({ success: false, message: 'CNIC یا Roll No درج کرنا ضروری ہے۔' });
+            return res.status(400).json({ success: false, message: 'CNIC یا Roll Number درج کرنا ضروری ہے' });
         }
 
-        await connectToDatabase();
-
-        // MongoDB Atlas میں CNIC یا Roll No سے میچ کریں
-        const result = await Result.findOne({
+        // اپ کے Schema/Model کا نام (مثلاً Result)
+        const student = await resultSchema.findOne({
             $or: [
                 { cnic: searchQuery },
                 { rollNo: searchQuery }
             ]
         });
 
-        if (!result) {
-            return res.status(404).json({ success: false, message: 'اس CNIC / Roll No کا کوئی رزلٹ نہیں ملا۔' });
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'اس CNIC یا Roll Number کا کوئی ریکارڈ نہیں ملا' });
         }
 
-        return res.status(200).json({
-            success: true,
-            results: [result] // ایک رزلٹ واپس کریں تاکہ frontend میں array کے طور پر ہینڈل کیا جا سکے      
-        });
+        return res.status(200).json({ success: true, results: [student] });
+
     } catch (err) {
-        console.error('Result fetch error:', err);
-        return res.status(500).json({ success: false, message: 'سرور میں تکنیکی خرابی ہے۔' });
+        console.error('Server Crash Error:', err);
+        // سرور کریش پر بھی JSON بھیجیں تاکہ فرنٹ اینڈ پر SyntaxError نہ آئے
+        return res.status(500).json({ success: false, message: 'Server Error: ' + err.message });
     }
 });
 

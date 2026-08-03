@@ -321,71 +321,33 @@ app.get('/api/applications/slip/:cnic/pdf', async (req, res) => {
 
 
 // --- ADMISSION TEST RESULT ROUTE ---
-app.get('/api/search-result', async (req, res) => {
+app.post('/api/results/check', async (req, res) => {
     try {
-        const { query } = req.query;
-
-        if (!query) {
-            return res.status(400).json({ success: false, message: 'براہ کرم رول نمبر یا شناختی کارڈ نمبر درج کریں۔' });
+        const { cnic, rollNo } = req.body;
+        let searchQuery = cnic || rollNo;
+        if (!searchQuery) {
+            return res.status(400).json({ success: false, message: 'CNIC یا رول نمبر فراہم کریں۔' });
         }
 
-        const searchQuery = query.trim();
-
-        // فرض کریں db آپ کا MongoDB connection object ہے
-        const student = await db.collection('results').findOne({
+        await connectToDatabase();
+        const student = await Result.findOne({
             $or: [
-                { rollNo: searchQuery },
                 { cnic: searchQuery },
-                { cnicNo: searchQuery },
-                { cnic_no: searchQuery }
+                { rollNo: searchQuery },
             ]
         });
 
         if (!student) {
-            return res.status(404).json({ success: false, message: 'کوئی ریکارڈ نہیں ملا۔' });
+            return res.status(404).json({ success: false, message: 'ریکارڈ نہیں ملا۔' });
         }
 
-        // Assigned Class Logic
-        let assignedClass = 'N/A';
-        const applyFor = String(student.applyFor || '').toLowerCase().trim();
-        const marks = Number(student.marks) || 0;
-
-        if (applyFor.includes('engineering') || applyFor.includes('pre engineering') || applyFor.includes('pre-engineering')) {
-            assignedClass = 'XI-E';
-        } 
-        else if (applyFor.includes('computer') || applyFor.includes('ics') || applyFor.includes('computer science')) {
-            assignedClass = 'XI-F';
-        } 
-        else if (applyFor.includes('medical') || applyFor.includes('pre medical') || applyFor.includes('pre-medical')) {
-            if (marks >= 48) {
-                assignedClass = 'XI-A';
-            } else if (marks >= 33 && marks < 48) {
-                assignedClass = 'XI-B';
-            } else if (marks >= 20 && marks < 33) {
-                assignedClass = 'XI-C';
-            } else {
-                assignedClass = 'XI-D';
-            }
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: {
-                rollNo: student.rollNo || student.roll_no || searchQuery,
-                name: student.name || 'N/A',
-                fatherName: student.fatherName || student.father_name || 'N/A',
-                caste: student.caste || 'N/A',
-                applyFor: student.applyFor || 'N/A',
-                marks: student.marks !== undefined ? student.marks : 'N/A',
-                assignedClass: assignedClass
-            }
-        });
-
-    } catch (error) {
-        console.error('API Error:', error);
-        return res.status(500).json({ success: false, message: 'سرور ایرر۔' });
+        res.status(200).json({ success: true, results: [student] });
+    } catch (err) {
+        console.error('Result check error:', err);
+        res.status(500).json({ success: false, message: 'سرور کی خرابی۔' });
     }
 });
+
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;

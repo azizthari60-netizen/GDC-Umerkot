@@ -13,7 +13,7 @@ if (loader) {
 }
 
 // Search results for CNIC or Roll Number
-async function checkResult() {
+async function checkResults() {
     const cnicInput = document.getElementById('cnic');
     const resultsDisplay = document.getElementById('results-display');
     const submitButton = document.getElementById('search-btn');
